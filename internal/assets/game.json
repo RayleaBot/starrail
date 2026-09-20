@@ -1,0 +1,110 @@
+{
+  "id": "starrail",
+  "name": "崩坏：星穹铁道",
+  "prefix": "星铁",
+  "region": "prod_gf_cn",
+  "operations": [
+    {
+      "name": "starrail.profile",
+      "label": "星铁信息",
+      "command": "星铁信息",
+      "input": "none"
+    },
+    {
+      "name": "starrail.note",
+      "label": "星铁实时便笺",
+      "command": "星铁体力",
+      "input": "none"
+    },
+    {
+      "name": "starrail.characters",
+      "label": "星铁角色列表",
+      "command": "星铁角色",
+      "input": "none"
+    },
+    {
+      "name": "starrail.character",
+      "label": "星铁角色详情",
+      "command": "星铁面板",
+      "input": "characters_optional"
+    },
+    {
+      "name": "starrail.challenge",
+      "label": "混沌回忆",
+      "command": "星铁混沌",
+      "input": "period"
+    },
+    {
+      "name": "starrail.story",
+      "label": "虚构叙事",
+      "command": "星铁虚构",
+      "input": "period"
+    },
+    {
+      "name": "starrail.boss",
+      "label": "末日幻影",
+      "command": "星铁末日",
+      "input": "period"
+    },
+    {
+      "name": "starrail.monthly",
+      "label": "开拓月历",
+      "command": "星铁月历",
+      "input": "year_month"
+    },
+    {
+      "name": "starrail.peak",
+      "label": "异相仲裁",
+      "command": "星铁仲裁",
+      "input": "period"
+    },
+    {
+      "name": "starrail.rogue",
+      "label": "模拟宇宙",
+      "command": "星铁宇宙",
+      "input": "rogue_period"
+    },
+    {
+      "name": "starrail.swarm",
+      "label": "寰宇蝗灾",
+      "command": "星铁蝗灾",
+      "input": "none"
+    },
+    {
+      "name": "starrail.gears",
+      "label": "黄金与机械",
+      "command": "星铁黄金",
+      "input": "none"
+    },
+    {
+      "name": "starrail.unknowable",
+      "label": "不可知域",
+      "command": "星铁不可知域",
+      "input": "none"
+    },
+    {
+      "name": "starrail.divergent",
+      "label": "差分宇宙",
+      "command": "星铁差分",
+      "input": "none"
+    },
+    {
+      "name": "starrail.currency_wars",
+      "label": "货币战争",
+      "command": "星铁货币战争",
+      "input": "none"
+    },
+    {
+      "name": "starrail.periodic",
+      "label": "周期活动",
+      "command": "星铁周期活动",
+      "input": "none"
+    },
+    {
+      "name": "starrail.gacha_summary",
+      "label": "跃迁摘要",
+      "command": "星铁跃迁摘要",
+      "input": "starrail_pool"
+    }
+  ]
+}
