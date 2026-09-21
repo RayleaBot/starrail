@@ -146,7 +146,8 @@
         "resources/common/",
         "resources/character/",
         "resources/profile/",
-        "resources/help/"
+        "resources/help/",
+        "resources/wiki/"
       ],
       "extensions": [
         ".webp",
