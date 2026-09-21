@@ -73,10 +73,10 @@ func TestDivergentRunsFollowTheCommandWord(t *testing.T) {
 
 func TestOfficialRichTextKeepsOnlyFormatting(t *testing.T) {
 	for text, want := range map[string]string{
-		`<color=#f29e38ff>暴击</color>提高<br/>10%`:                  `<span style="color: #f29e38ff">暴击</span>提高<br>10%`,
-		`<span style="color: #FFD780;">伤害</span>`:                  `<span style="color: #FFD780">伤害</span>`,
+		`<color=#f29e38ff>暴击</color>提高<br/>10%`:                       `<span style="color: #f29e38ff">暴击</span>提高<br>10%`,
+		`<span style="color: #FFD780;">伤害</span>`:                     `<span style="color: #FFD780">伤害</span>`,
 		`<img src=x onerror=alert(1)><script>x</script>a&b <unbreak>`: `xa&amp;b `,
-		`<span style="color: red" onclick="x">文字</span>`:            `文字</span>`,
+		`<span style="color: red" onclick="x">文字</span>`:              `文字</span>`,
 	} {
 		if got := officialRichText(text); got != want {
 			t.Errorf("officialRichText(%q) = %q, want %q", text, got, want)
