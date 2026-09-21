@@ -34,4 +34,4 @@ GPL-3.0 和 Apache-2.0 许可分别保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt` 
 
 ## 图片模板
 
-`templates/note/` 按 StarRail-plugin 的 new_note 改写（Apache-2.0，见 `LICENSES/StarRail-plugin-Apache-2.0.txt`），图片地址改为宿主渲染资源。模板用到的图片与字体不随插件分发，由管理员通过“素材更新”在运行时从上游仓库下载。
+`templates/note/` 按 StarRail-plugin 的 new_note 改写（Apache-2.0，见 `LICENSES/StarRail-plugin-Apache-2.0.txt`）；`templates/panel/` 的样式由 miao-plugin 固定提交的 `common/common.css` 与 `character/profile-detail.css` 转换而来（MIT）。两者的图片地址都改为宿主渲染资源。模板用到的图片与字体不随插件分发，由管理员通过“素材更新”在运行时从上游仓库下载。
