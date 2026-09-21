@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" data-render-resource="container-bg">
+  <article data-render-resource="article-bg">
+    <header>
+      {{ with .user }}{{ with .avatar_url }}<img class="avatar" src="{{ . }}" alt="">{{ end }}{{ end }}
+      <div class="info">
+        <p><span class="grey">昵称：</span>{{ .nickname }}</p>
+        <p><span class="grey">UID：</span>{{ .uid }} | {{ .level }}级</p>
+      </div>
+      <div class="sign-in">
+        <span class="grey">今日米游社：</span>
+        {{ if .signed }}<span class="is golden">已签到</span>{{ else }}<span class="is grey">未签到</span>{{ end }}
+      </div>
+    </header>
+    <time>- 统计时间：{{ .time }} -</time>
+    <section class="energy">
+      <div class="title">
+        <div class="text">开拓力状态：</div>
+        <div class="number"><span class="golden">{{ .stamina.current }}</span>/{{ .stamina.max }}</div>
+      </div>
+      <div class="progress-bar"><div class="progress" style="width: {{ .stamina.progress }};"></div></div>
+      <div class="info">
+        {{ if .stamina.full }}开拓力<span class="golden">已完全恢复</span>！{{ else }}{{ .stamina.wait }} <span class="golden">{{ .stamina.day }}</span> {{ .stamina.clock }}{{ end }}
+      </div>
+    </section>
+    <section class="other">
+      <p>每日实训：<span class="golden">{{ .train }}</span></p>
+      <p>模拟宇宙：<span class="golden">{{ .rogue }}</span></p>
+    </section>
+    <section class="entrust">
+      <div class="title">
+        <div>委托状态:</div>
+        <div class="right">委托执行：<span class="golden">{{ .accepted }}</span>/{{ .total }}</div>
+      </div>
+      <div class="item-list">
+        {{ range .expeditions }}
+        <div class="item">
+          <div class="data">
+            <div class="text">{{ .name }}</div>
+            <div class="mark{{ if .finished }} done{{ end }}">{{ .remaining }}</div>
+            <div class="avatar">{{ range .avatars }}<img data-render-resource="{{ . }}" alt="">{{ end }}</div>
+          </div>
+          <div class="progress" style="width: {{ .progress }};"></div>
+        </div>
+        {{ end }}
+      </div>
+    </section>
+    <div class="uid">UID：{{ .uid }}</div>
+  </article>
+  {{ with .render_footer }}<footer>{{ . }}</footer>{{ end }}
+</div>
+</body>
+</html>

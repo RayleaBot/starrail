@@ -1,0 +1,38 @@
+/* Each element's own resource only; a missing one must not show its parent's. */
+@property --render-resource { syntax: "*"; inherits: false; }
+* { box-sizing: border-box; padding: 0; margin: 0; }
+body { zoom: 1.6; width: 600px; font-size: 18px; font-family: "Microsoft YaHei UI", "Noto Sans SC", sans-serif; }
+.container { width: 600px; padding: 20px 15px 10px; background: #2b2b33 var(--render-resource, none) center / contain; }
+article { position: relative; height: 780px; padding: 23px 75px 0; background: #f3f3f3 var(--render-resource, none) no-repeat center / cover; }
+article span.grey { color: #767676; }
+article span.golden { color: #9c8d5c; }
+article header { position: relative; display: flex; align-items: center; height: 100px; margin-top: 7px; border-bottom: 2px solid #767676; }
+article header .avatar { height: 80px; margin: 0 15px; border: 3px solid #767676; border-radius: 50%; }
+article header .info p:nth-child(1) { max-width: 70%; margin-bottom: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+article header .sign-in { position: absolute; right: 1px; bottom: 4px; display: flex; align-items: center; font-size: 14px; }
+article header .sign-in .is { height: 16px; padding: 1px 2px; border: 1px solid #9c8d5c; border-radius: 3px; font-size: 12px; line-height: 14px; }
+article header .sign-in .is.grey { border-color: #767676; }
+article time { display: block; margin: 5px 0; text-align: center; font-size: 13px; }
+article section { margin-bottom: 12px; padding: 7px 15px; background: #e8e7e7; }
+article section.energy .title { display: flex; }
+article section.energy .title .text { width: 70%; padding: 5px 0; border-bottom: 2px solid #767676; }
+article section.energy .title .number { display: flex; flex: 1; align-items: flex-end; justify-content: center; }
+article section.energy .title .number span { font-size: 27px; }
+article section.energy .progress-bar { height: 10px; margin: 7px 0; overflow: hidden; border: 1px solid #ac9854; border-radius: 10px; background-color: #767676; }
+article section.energy .progress-bar .progress { height: 100%; border-radius: inherit; background-color: #e7c554; }
+article section.energy .info { font-size: 15px; }
+article section.other { display: flex; justify-content: space-between; font-size: 16px; }
+article section.other span { font-size: 22px; }
+article section.entrust .title { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 7px; }
+article section.entrust .title .right { font-size: 15px; }
+article section.entrust .title .right span { font-size: 18px; }
+article section.entrust .item-list { min-height: 180px; }
+article section.entrust .item-list .item { margin-bottom: 5px; background: #cccccc; }
+article section.entrust .item-list .item .data { display: flex; justify-content: space-between; align-items: center; height: 35px; padding: 0 10px; font-size: 15px; }
+article section.entrust .item-list .item .data .avatar { display: flex; justify-content: space-between; width: 68px; }
+article section.entrust .item-list .item .data .avatar img { height: 30px; border: 1px solid #9c8d5c; border-radius: 50%; }
+article section.entrust .item-list .item .data .mark { --color: #000000; position: absolute; left: 50%; transform: translateX(-50%); padding: 0 3px; border: 1.5px solid var(--color); border-radius: 3px; color: var(--color); font-size: 13px; }
+article section.entrust .item-list .item .data .mark.done { --color: #9c8d5c; }
+article section.entrust .item-list .item .progress { height: 5px; background: #ac9854; }
+article .uid { position: absolute; right: 35px; bottom: 15px; color: #767676; font-size: 14px; }
+footer { margin-top: 10px; text-align: center; color: #fff; font-size: 14px; }
