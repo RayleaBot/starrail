@@ -1,0 +1,11 @@
+{
+  "id": "gacha-simulation",
+  "name": "星铁模拟十连",
+  "description": "十连命令的图片，布局参照 StarRail-plugin 的 gachasimulation",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 2200,
+  "height": 1040
+}

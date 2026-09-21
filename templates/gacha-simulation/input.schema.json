@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["rows", "icon", "background", "line", "sparkle", "star"],
+  "properties": {
+    "rows": { "type": "array" },
+    "icon": { "type": "string" },
+    "background": { "type": "string" },
+    "line": { "type": "string" },
+    "sparkle": { "type": "string" },
+    "star": { "type": "string" },
+    "user": { "type": "object" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
