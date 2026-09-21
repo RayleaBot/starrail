@@ -23,6 +23,12 @@
       "input": "none"
     },
     {
+      "name": "starrail.training",
+      "label": "练度统计",
+      "command": "练度统计",
+      "input": "none"
+    },
+    {
       "name": "starrail.character",
       "label": "星铁角色详情",
       "command": "面板",

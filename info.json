@@ -91,6 +91,17 @@
       }
     },
     {
+      "id": "training",
+      "name": "练度统计",
+      "description": "全部角色的等级、星魂、行迹、光锥与遗器评分",
+      "usage": "#练度统计 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:面板|喵喵)?练度统计$"
+      }
+    },
+    {
       "id": "accounts",
       "name": "账号",
       "description": "查看已授权角色与默认 UID",
@@ -1119,6 +1130,7 @@
         "profile",
         "note",
         "characters",
+        "training",
         "accounts",
         "select",
         "monthly",
