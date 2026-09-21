@@ -100,5 +100,63 @@
       "command": "跃迁摘要",
       "input": "starrail_pool"
     }
+  ],
+  "artwork": [
+    {
+      "id": "miao-plugin",
+      "name": "喵喵插件图片",
+      "archives": [
+        "https://codeload.github.com/yoimiya-kokomi/miao-plugin/tar.gz/HEAD"
+      ],
+      "include": [
+        "resources/meta-sr/",
+        "resources/common/",
+        "resources/character/",
+        "resources/profile/",
+        "resources/help/"
+      ],
+      "extensions": [
+        ".webp",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif"
+      ]
+    },
+    {
+      "id": "starrail-plugin",
+      "name": "星铁插件图片",
+      "archives": [
+        "https://codeload.github.com/TsukinaKasumi/StarRail-plugin/tar.gz/HEAD"
+      ],
+      "include": [
+        "resources/"
+      ],
+      "extensions": [
+        ".webp",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif"
+      ]
+    },
+    {
+      "id": "star-rail-atlas",
+      "name": "Atlas 星铁图鉴",
+      "archives": [
+        "https://gitee.com/Nwflower/star-rail-atlas/repository/archive/master.tar.gz",
+        "https://codeload.github.com/Nwflower/star-rail-atlas/tar.gz/HEAD"
+      ],
+      "include": [],
+      "extensions": [
+        ".webp",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".json",
+        ".yaml"
+      ]
+    }
   ]
 }
