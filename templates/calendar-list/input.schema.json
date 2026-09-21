@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["mode", "months", "list_class", "rows", "abyss", "now_left", "now_time"],
+  "properties": {
+    "mode": { "type": "string" },
+    "months": { "type": "array" },
+    "list_class": { "type": "string" },
+    "rows": { "type": "array" },
+    "abyss": { "type": "array" },
+    "now_left": { "type": "string" },
+    "now_time": { "type": "string" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
