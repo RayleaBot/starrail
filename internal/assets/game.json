@@ -201,6 +201,19 @@
       ]
     },
     {
+      "id": "yunzai-genshin",
+      "name": "原神插件星铁图片",
+      "archives": [
+        "https://codeload.github.com/TimeRainStarSky/Yunzai-genshin/tar.gz/HEAD"
+      ],
+      "include": [
+        "resources/StarRail/img/other/"
+      ],
+      "extensions": [
+        ".png"
+      ]
+    },
+    {
       "id": "mihoyo",
       "name": "官方图片缓存",
       "mirrors": [
