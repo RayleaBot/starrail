@@ -42,7 +42,7 @@ func Peak(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 		return gamekit.Image{}, false
 	}
 
-	resources := &challengeResources{context: context}
+	resources := newChallengeResources(context)
 	for _, item := range peakArtwork {
 		resources.local(item[0], item[1])
 	}
@@ -116,5 +116,5 @@ func Peak(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 	case 3:
 		template, tag = "peak-recent", "最近三期"
 	}
-	return gamekit.Image{Template: template, Data: map[string]any{"uid": result.Role.UID, "tag": tag, "records": runs}, Resources: resources.list}, true
+	return gamekit.Image{Template: template, Data: map[string]any{"uid": result.Role.UID, "tag": tag, "records": runs}, Resources: resources.List}, true
 }

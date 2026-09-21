@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	gamekit "github.com/RayleaBot/game-plugin-kit"
 )
 
@@ -67,13 +66,13 @@ func latestChallenge(now time.Time) challengeKind {
 // does.
 func challengeImage(kind challengeKind) gamekit.ImageBuilder {
 	return func(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
-		resources := &challengeResources{context: context}
+		resources := newChallengeResources(context)
 		record, ok := challengeRecordData(context, kind, result.Data, resources)
 		if !ok {
 			return gamekit.Image{}, false
 		}
 		record["uid"], record["period"] = result.Role.UID, challengePeriod(context)
-		return gamekit.Image{Template: "challenge", Data: record, Resources: resources.list}, true
+		return gamekit.Image{Template: "challenge", Data: record, Resources: resources.List}, true
 	}
 }
 
@@ -95,7 +94,7 @@ func allChallengesImage(context gamekit.ImageContext, result gamekit.QueryResult
 	if context.Query == nil {
 		return gamekit.Image{}, false
 	}
-	resources := &challengeResources{context: context}
+	resources := newChallengeResources(context)
 	resources.local("all-bg", "resources/challenge/images/pc_bg.46428ec0.png")
 	records := []any{}
 	for _, kind := range []challengeKind{memoryOfChaos, apocalypticShadow, pureFiction} {
@@ -117,7 +116,7 @@ func allChallengesImage(context gamekit.ImageContext, result gamekit.QueryResult
 		}
 		records = append(records, record)
 	}
-	return gamekit.Image{Template: "challenge-all", Data: map[string]any{"uid": result.Role.UID, "period": challengePeriod(context), "records": records}, Resources: resources.list}, true
+	return gamekit.Image{Template: "challenge-all", Data: map[string]any{"uid": result.Role.UID, "period": challengePeriod(context), "records": records}, Resources: resources.List}, true
 }
 
 func challengePeriod(context gamekit.ImageContext) string {
@@ -268,43 +267,20 @@ func challengeClock(record map[string]any) string {
 	return ""
 }
 
-// challengeResources collects a challenge image's resources, each file once:
-// StarRail-plugin art, element icons, and the official images the response
-// links to, cached on demand.
-type challengeResources struct {
-	context gamekit.ImageContext
-	list    []rayleabot.RenderImageResource
-	seen    map[string]string
-}
+// challengeResources collects a challenge image's resources: StarRail-plugin
+// art, element icons, and the official images the response links to, cached
+// on demand.
+type challengeResources struct{ gamekit.ImageResources }
 
-func (r *challengeResources) once(key string, add func() (rayleabot.RenderImageResource, bool)) string {
-	if id, ok := r.seen[key]; ok {
-		return id
-	}
-	if r.seen == nil {
-		r.seen = map[string]string{}
-	}
-	id := ""
-	if resource, ok := add(); ok {
-		r.list = append(r.list, resource)
-		id = resource.ID
-	}
-	r.seen[key] = id
-	return id
+func newChallengeResources(context gamekit.ImageContext) *challengeResources {
+	return &challengeResources{gamekit.ImageResources{Context: context}}
 }
 
 func (r *challengeResources) local(id, name string) string {
-	return r.once(name, func() (rayleabot.RenderImageResource, bool) {
-		return r.context.ArtworkResource(id, "starrail-plugin", name)
-	})
+	return r.Artwork(id, "starrail-plugin", name)
 }
 
-func (r *challengeResources) official(url any) string {
-	id := "official-" + strconv.Itoa(len(r.seen))
-	return r.once(gamekit.Text(url), func() (rayleabot.RenderImageResource, bool) {
-		return r.context.FetchURLResource(id, "mihoyo", gamekit.Text(url))
-	})
-}
+func (r *challengeResources) official(url any) string { return r.URL("mihoyo", url) }
 
 // team lists a node's or record's characters as upstream's avatar cards show
 // them; the element files are lower case.
