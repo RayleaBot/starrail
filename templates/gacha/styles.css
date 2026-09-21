@@ -1,0 +1,319 @@
+/* resources/common/common.css */
+@charset "UTF-8";
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: "SR", sans-serif;
+  font-size: 18px;
+  width: 600px;
+}
+
+.container {
+  width: 600px;
+  padding: 20px 15px 10px 15px;
+  background-size: contain;
+}
+
+.head-box {
+  border-radius: 15px;
+  padding: 10px 20px;
+  position: relative;
+  color: #fff;
+  margin-top: 30px;
+}
+
+.head-box .title {
+  font-family: "tttgbnumber", "印品南征北战NZBZ体", NZBZ, "汉仪文黑-65W", YS, PingFangSC-Medium, "PingFang SC", sans-serif;
+  font-size: 36px;
+  text-shadow: 0 0 1px #000, 1px 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.head-box .title .label {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.head-box .genshin_logo {
+  position: absolute;
+  top: 1px;
+  right: 15px;
+  width: 97px;
+}
+
+.head-box .label {
+  font-size: 16px;
+  text-shadow: 0 0 1px #000, 1px 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.head-box .label span {
+  color: #d3bc8e;
+  padding: 0 2px;
+}
+
+.copyright {
+  font-size: 14px;
+  text-align: center;
+  color: #fff;
+  position: relative;
+  padding-left: 10px;
+  text-shadow: 1px 1px 1px #000;
+  margin: 10px 0;
+}
+
+.copyright .version {
+  color: #d3bc8e;
+  display: inline-block;
+  padding: 0 3px;
+}
+
+.const-rank-0 {
+  background: #606060;
+}
+
+.const-rank-1 {
+  background: #89cb26;
+}
+
+.const-rank-2 {
+  background: #d1949e;
+}
+
+.const-rank-3 {
+  background: #1aa1d7;
+}
+
+.const-rank-4 {
+  background: #F08080;
+}
+
+.const-rank-5 {
+  background: #7B68EE;
+}
+
+.const-rank-6 {
+  background: #ff5222;
+}
+
+/* resources/gatcha/new.css */
+/* * {
+  box-sizing: border-box;
+}
+
+html, body, div, ul, li, h1, h2, h3, h4, h5, h6, p, dl, dt, dd, ol, form, input, textarea, th, td, select {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: PingFangSC-Medium, PingFang SC, sans-serif;
+  width: 810px;
+} 
+
+ul,ol {
+  list-style: none;
+} */
+
+.container {
+  padding: 40px 40px 0 40px;
+  width: 810px;
+  overflow: hidden;
+  background: var(--render-resource-common-cont-bkg, none) center no-repeat;
+  background-size: cover;
+  color: #f0eaca;
+  font-family: 'SR', sans-serif;
+  font-size: 1.2rem;
+}
+
+.title {
+  border-bottom: 2px solid #f0eaca;
+  padding-bottom: 8px;
+}
+
+.title-text {
+  font-size: 32px;
+}
+
+.title-sub {
+  margin-left: 8px;
+}
+
+.card {
+  position: relative;
+  margin-top: 16px;
+}
+
+.card-header {
+  padding: 8px 18px;
+  border-top-right-radius: 36px;
+  border-bottom: 4px solid #e2c494;
+  border-top: 1px solid #838385;
+  border-right: 1px solid #838385;
+  background-color: #202020;
+  font-size: 24px;
+}
+
+.card-content {
+  padding: 40px;
+  background-color: rgba(255,255,255, .8);
+}
+
+.card-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: var(--render-resource-common-cont-logo, none);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: .1;
+}
+
+.card-item-head {
+  padding: 6px 0;
+  background-color: black;
+  color: #f0eaca;
+  text-align: center;
+  font-size: 22px;
+}
+
+.card-item-head-tag {
+  margin-left: 20px;
+  padding: 0 6px;
+  border: 2px solid #f0eaca;
+  border-radius: 8px;
+  font-size: 18px;
+}
+
+.card-item-content {
+  padding: 20px 0 10px 0;
+}
+
+.card-item-content .item-up {
+  position: relative;
+}
+
+.card-item-content .item-up::before {
+  content: 'UP';
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-bottom-left-radius: 10px;
+  width: 40px;
+  height: 20px;
+  background-color: black;
+  font-weight: 400;
+  vertical-align: middle;
+  opacity: .75;
+  font-size: 14px;
+}
+
+.data-sum {
+  padding: 30px;
+}
+
+.data-sum .row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.data-sum .row .col {
+  width: 25%;
+  text-align: center;
+  font-size: 36px;
+  color: #000;
+}
+
+.data-sum .row .col span {
+  font-size: 18px;
+}
+
+.data-sum .row .col p {
+  display: block;
+  font-size: 16px;
+  color: #616161;
+}
+
+.card-item-content .mark {
+  font-size: 16px;
+  color: #616161;
+  text-align: center;
+}
+
+.card-item-content .mark::before {
+  content: '-';
+  margin-right: 20px;
+}
+
+.card-item-content .mark::after {
+  content: '-';
+  margin-left: 20px;
+}
+
+.card-item-content ul {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.card-item-content ul > li {
+  position: relative;
+  margin-bottom: 10px;
+  border: 1px solid #000;
+  border-radius: 8px;
+  width: 100px;
+  height: 120px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.card-item-content ul > li.rank5 {
+  background-image: var(--render-resource-images-rank5bg, none);
+}
+
+.card-item-content ul > li.rank4 {
+  background-image: var(--render-resource-images-rank4bg, none);
+}
+
+
+.card-item-content ul > li img {
+  width: 100%;
+  height: 100px;
+}
+
+.card-item-content ul > li.char img {
+  /* transform: scale(1.2); */
+  object-fit: cover;
+}
+
+.card-item-content ul > li:not(:nth-child(6n)) {
+  margin-right: 10px;
+}
+
+.card-item-content ul > li > .number {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 20px;
+  background-color: rgb(240,234,202, .6);
+  color: #000;
+}
+
+.logo {
+  font-size: 24px;
+  font-family: 'tttgbnumber';
+  color: #f0eaca;
+  text-align: center;
+  margin-top: 30px;
+  padding-bottom: 30px;
+}
+
+/* Each record card reads its own item image. */
+@property --render-resource { syntax: "*"; inherits: false; }

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+  <div class="title">
+    <span class="title-text">跃迁记录</span>
+    <span class="title-sub">UID:{{ .uid }}</span>
+  </div>
+  <div class="card">
+    <div class="card-header">跃迁详情</div>
+    <div class="card-content">
+      <div class="card-item">
+        <div class="card-item-head">数据总览</div>
+        <div class="card-item-content data-sum">
+          <div class="row">
+            <div class="col"><div>{{ .total }}<span>抽</span><p>累计已抽</p></div></div>
+            <div class="col"><div>{{ .current_total }}<span>抽</span><p>本期已抽</p></div></div>
+            <div class="col"><div>{{ .pity_role }}<span>抽</span><p>角色未出五星</p></div></div>
+            <div class="col"><div>{{ .pity_cone }}<span>抽</span><p>光锥未出五星</p></div></div>
+          </div>
+          {{ if .overview }}
+          <div class="row">
+            <div class="col"><div>{{ index .hold 1 }}<span>　</span><p>五星总计</p></div></div>
+            <div class="col"><div>{{ index .hold_rate 1 }}<span>%</span><p>五星持有率</p></div></div>
+            <div class="col"><div>{{ index .hold 0 }}<span>　</span><p>四星总计</p></div></div>
+            <div class="col"><div>{{ index .hold_rate 0 }}<span>%</span><p>四星持有率</p></div></div>
+          </div>
+          {{ end }}
+          <div class="mark">抽卡记录时间段: {{ .first_time }} - {{ .last_time }}</div>
+        </div>
+      </div>
+      {{ if .overview }}
+      {{ range .lists }}
+      <div class="card-item">
+        <div class="card-item-head">{{ .name }}</div>
+        <div class="card-item-content">
+          <ul>
+            {{ range .records }}{{ if .show }}<li class="{{ .class }}"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="{{ .name }}"><div class="number">{{ .until }}</div></li>{{ end }}{{ end }}
+          </ul>
+        </div>
+      </div>
+      {{ end }}
+      {{ else }}
+      {{ range .lists }}
+      {{ range .groups }}
+      <div class="card-item">
+        <div class="card-item-head">{{ .pool.version }} {{ .pool.half }}<span class="card-item-head-tag">{{ .total }}抽</span></div>
+        <div class="card-item-content">
+          <ul>
+            {{ range .records }}{{ if .show }}<li class="{{ .class }}{{ if .up }} item-up{{ end }}"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="{{ .name }}"><div class="number">{{ .until }}</div></li>{{ end }}{{ end }}
+          </ul>
+          {{ if .pool.from }}<div class="mark">卡池时间: {{ .pool.from }} - {{ .pool.to }}</div>{{ end }}
+        </div>
+      </div>
+      {{ end }}
+      {{ end }}
+      {{ end }}
+    </div>
+  </div>
+  {{ with .render_footer }}<div class="logo">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
