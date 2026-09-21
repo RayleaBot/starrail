@@ -1,0 +1,11 @@
+{
+  "id": "month",
+  "name": "星铁开拓月历",
+  "description": "月历命令的图片，布局参照 StarRail-plugin month",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 605,
+  "height": 1000
+}

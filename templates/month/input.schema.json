@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["month", "legend", "sectors", "month_hcoin", "month_pass", "today_hcoin", "today_pass", "yesterday_hcoin", "yesterday_pass"],
+  "properties": {
+    "month": { "type": "string" },
+    "legend": { "type": "array" },
+    "sectors": { "type": "array" },
+    "month_hcoin": { "type": "string" },
+    "month_pass": { "type": "string" },
+    "today_hcoin": { "type": "string" },
+    "today_pass": { "type": "string" },
+    "yesterday_hcoin": { "type": "string" },
+    "yesterday_pass": { "type": "string" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

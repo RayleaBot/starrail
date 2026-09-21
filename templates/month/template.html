@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+  <div class="title">{{ .month }} | 开拓日历</div>
+  <div class="hint">继续努力，星辰大海在等着你呢！</div>
+  <div class="general">
+    <div class="general-title">当月共获取</div>
+    <div class="xq"><img data-render-resource="month-hcoin" class="icon" alt="">星琼：{{ .month_hcoin }}<img data-render-resource="month-pass" class="icon pass" alt="">星轨通票&amp;星轨专票：{{ .month_pass }}</div>
+  </div>
+  <div class="general">
+    <div class="general-title">今日共获取</div>
+    <div class="xq"><img data-render-resource="month-hcoin" class="icon" alt="">星琼：{{ .today_hcoin }}<img data-render-resource="month-pass" class="icon pass" alt="">星轨通票&amp;星轨专票：{{ .today_pass }}</div>
+  </div>
+  <div class="general">
+    <div class="general-title">昨日共获取</div>
+    <div class="xq"><img data-render-resource="month-hcoin" class="icon" alt="">星琼：{{ .yesterday_hcoin }}<img data-render-resource="month-pass" class="icon pass" alt="">星轨通票&amp;星轨专票：{{ .yesterday_pass }}</div>
+  </div>
+  <div class="general">
+    <div class="general-title">本月星琼收入</div>
+    <div id="Chart">
+      <svg width="578" height="300" viewBox="0 0 578 300">
+        {{ range .sectors }}<path d="{{ .path }}" fill="{{ .color }}" stroke="#fff" stroke-width="2"></path>{{ end }}
+        {{ range .sectors }}<text class="sector-label" x="{{ .x }}" y="{{ .y }}">{{ .label }}</text>{{ end }}
+        {{ range .legend }}<rect x="29" y="{{ .y }}" width="25" height="14" rx="3" fill="{{ .color }}" transform="translate(0 -7)"></rect><text class="legend-text" x="59" y="{{ .y }}">{{ .name }}</text>{{ end }}
+        <text class="total" x="377" y="135">总计</text>
+        <text class="total" x="377" y="165">{{ .month_hcoin }}</text>
+      </svg>
+    </div>
+  </div>
+  <div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>

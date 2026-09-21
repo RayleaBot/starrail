@@ -1,0 +1,199 @@
+/* Converted from StarRail-plugin common/common.css and month/month.css; the
+   chart upstream draws with ECharts is SVG here. */
+/* resources/common/common.css */
+@charset "UTF-8";
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: "SR", sans-serif;
+  font-size: 18px;
+  width: 600px;
+}
+
+.container {
+  width: 600px;
+  padding: 20px 15px 10px 15px;
+  background-size: contain;
+}
+
+.head-box {
+  border-radius: 15px;
+  padding: 10px 20px;
+  position: relative;
+  color: #fff;
+  margin-top: 30px;
+}
+
+.head-box .title {
+  font-family: "tttgbnumber", "印品南征北战NZBZ体", NZBZ, "汉仪文黑-65W", YS, PingFangSC-Medium, "PingFang SC", sans-serif;
+  font-size: 36px;
+  text-shadow: 0 0 1px #000, 1px 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.head-box .title .label {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.head-box .genshin_logo {
+  position: absolute;
+  top: 1px;
+  right: 15px;
+  width: 97px;
+}
+
+.head-box .label {
+  font-size: 16px;
+  text-shadow: 0 0 1px #000, 1px 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.head-box .label span {
+  color: #d3bc8e;
+  padding: 0 2px;
+}
+
+.copyright {
+  font-size: 14px;
+  text-align: center;
+  color: #fff;
+  position: relative;
+  padding-left: 10px;
+  text-shadow: 1px 1px 1px #000;
+  margin: 10px 0;
+}
+
+.copyright .version {
+  color: #d3bc8e;
+  display: inline-block;
+  padding: 0 3px;
+}
+
+.const-rank-0 {
+  background: #606060;
+}
+
+.const-rank-1 {
+  background: #89cb26;
+}
+
+.const-rank-2 {
+  background: #d1949e;
+}
+
+.const-rank-3 {
+  background: #1aa1d7;
+}
+
+.const-rank-4 {
+  background: #F08080;
+}
+
+.const-rank-5 {
+  background: #7B68EE;
+}
+
+.const-rank-6 {
+  background: #ff5222;
+}
+
+.container {
+    background-image: var(--render-resource-month-bg, none);
+    background-size: cover;
+    /* 设置背景图片尺寸 */
+    background-position: center center;
+    /* 设置背景图片位置 */
+    font-family: "hanyi", sans-serif;
+    padding: 10px 13px 10px 7px;
+    /*background: #faf9f7;*/
+    width: 605px;
+}
+
+.xq {
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-left: 10px;
+    font-weight: bold;
+    color: #565656;
+}
+
+.general-title {
+    font-size: 30px;
+    margin-left: 10px;
+    font-weight: bold;
+    padding-top: 10px;
+    color: #f38d38;
+}
+
+.xq-detail-line {
+    margin-left: 10px;
+    font-size: 24px;
+    margin-top: 5px;
+    width: 50%;
+    margin-bottom: 5px;
+}
+
+
+.xq-detail-line-value {
+    color: #424242;
+    font-weight: bold;
+}
+
+.hint {
+    font-size: 20px;
+    color: #2e353e;
+    margin-bottom: 10px;
+}
+
+.title {
+    padding-top: 10px;
+    display: flex;
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 36px;
+}
+
+.title div {
+    margin-left: 3px;
+    font-weight: bold;
+}
+
+.icon {
+    width: 20px;
+    margin-top: 5px;
+    margin-right: 5px;
+}
+
+.general {
+    font-size: 40px;
+    width: 580px;
+    /*height: 132px;*/
+    padding-bottom: 10px;
+
+    background-color: rgba(244, 242, 229, 0.6);
+    border-radius: 5px 25px 5px 5px;
+    margin-bottom: 10px;
+    border: #cecece 1px solid;
+}
+
+.logo {
+    font-size: 24px;
+    font-family: "tttgbnumber";
+    color: #8f8f8f;
+    text-align: center;
+    margin-top: 10px;
+    padding-bottom: 10px;
+}
+/* The ring upstream draws with ECharts. */
+#Chart { height: 300px; }
+#Chart svg { display: block; }
+#Chart .sector-label { fill: #fff; font-size: 17px; text-anchor: middle; dominant-baseline: central; }
+#Chart .legend-text { fill: #333; font-size: 17px; dominant-baseline: central; }
+#Chart .total { fill: #464646; font-size: 24px; text-anchor: middle; dominant-baseline: central; }
+body { width: 605px; }
+.xq .icon.pass { margin-left: 20px; }
