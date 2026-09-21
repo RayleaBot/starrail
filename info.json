@@ -960,7 +960,7 @@
       "id": "peak",
       "name": "异相仲裁",
       "description": "异相仲裁",
-      "usage": "#[上期]异相仲裁 [UID]",
+      "usage": "#[上期|往期]异相仲裁 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",

@@ -56,7 +56,7 @@
       "name": "starrail.peak",
       "label": "异相仲裁",
       "command": "仲裁",
-      "input": "period"
+      "input": "peak_period"
     },
     {
       "name": "starrail.rogue",

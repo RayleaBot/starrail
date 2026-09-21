@@ -78,44 +78,12 @@ func challengeImage(kind challengeKind) gamekit.ImageBuilder {
 			return gamekit.Image{}, false
 		}
 
-		resources := []rayleabot.RenderImageResource{}
-		local := func(id, name string) string {
-			resource, ok := context.ArtworkResource(id, "starrail-plugin", name)
-			if !ok {
-				return ""
-			}
-			resources = append(resources, resource)
-			return id
-		}
+		resources := &challengeResources{context: context}
 		for _, item := range challengeArtwork {
-			local(item[0], item[1])
+			resources.local(item[0], item[1])
 		}
 		for id, name := range map[string]string{"bg": kind.bg, "top-bg": kind.top, "floor-bg": kind.floor} {
-			local(id, "resources/challenge/images/"+name+".png")
-		}
-		official := map[string]string{}
-		officialImage := func(url string) string {
-			if id, seen := official[url]; seen {
-				return id
-			}
-			id := "official-" + strconv.Itoa(len(official))
-			resource, ok := context.FetchURLResource(id, "mihoyo", url)
-			if ok {
-				resources = append(resources, resource)
-			} else {
-				id = ""
-			}
-			official[url] = id
-			return id
-		}
-		elements := map[string]string{}
-		element := func(name string) string {
-			name = strings.ToLower(name)
-			if id, seen := elements[name]; seen {
-				return id
-			}
-			elements[name] = local("element-"+name, "resources/common/element/"+name+".png")
-			return elements[name]
+			resources.local(id, "resources/challenge/images/"+name+".png")
 		}
 
 		// Upstream shows the mark by the refresh schedule, whichever period
@@ -134,7 +102,7 @@ func challengeImage(kind challengeKind) gamekit.ImageBuilder {
 					continue
 				}
 				bosses = append(bosses, map[string]any{"label": "节点" + strconv.Itoa(index+1), "name": gamekit.Text(boss["name_mi18n"]),
-					"icon": officialImage(gamekit.Text(boss["icon"])), "third": index == 2})
+					"icon": resources.official(boss["icon"]), "third": index == 2})
 			}
 		}
 
@@ -175,25 +143,10 @@ func challengeImage(kind challengeKind) gamekit.ImageBuilder {
 						scored = true
 					}
 				}
-				clock := ""
-				if at, ok := challengeTime(node["challenge_time"]); ok {
-					clock = at.Format("2006.01.02 15:04")
-				}
 				_, boss := node["boss_defeated"]
 				defeated, _ := node["boss_defeated"].(bool)
-				avatars := []any{}
-				members, _ := node["avatars"].([]any)
-				for _, rawAvatar := range members {
-					avatar, _ := rawAvatar.(map[string]any)
-					avatars = append(avatars, map[string]any{"rarity": gamekit.Int(avatar["rarity"]), "rank": gamekit.Int(avatar["rank"]),
-						"element": element(gamekit.Text(avatar["element"])), "icon": officialImage(gamekit.Text(avatar["icon"])), "level": gamekit.Text(avatar["level"])})
-				}
-				var buff any
-				if raw, _ := node["buff"].(map[string]any); raw != nil {
-					buff = map[string]any{"icon": officialImage(gamekit.Text(raw["icon"])), "name": gamekit.Text(raw["name_mi18n"]), "desc": gamekit.Text(raw["desc_mi18n"])}
-				}
-				nodes = append(nodes, map[string]any{"label": "节点" + strconv.Itoa(index+1), "third": index == 2, "time": clock,
-					"boss": boss, "defeated": defeated, "score": nodeScore, "avatars": avatars, "buff": buff})
+				nodes = append(nodes, map[string]any{"label": "节点" + strconv.Itoa(index+1), "third": index == 2, "time": challengeClock(node),
+					"boss": boss, "defeated": defeated, "score": nodeScore, "avatars": resources.team(node), "buff": resources.buff(node)})
 			}
 			_, hasRound := floor["round_num"]
 			total := ""
@@ -214,7 +167,7 @@ func challengeImage(kind challengeKind) gamekit.ImageBuilder {
 			"star_num": gamekit.Int(data["star_num"]), "extra_star_num": gamekit.Int(data["extra_star_num"]),
 			"max_floor": gamekit.Text(data["max_floor"]), "battle_num": gamekit.Text(data["battle_num"]),
 			"bosses": bosses, "floors": floors,
-		}, Resources: resources}, true
+		}, Resources: resources.list}, true
 	}
 }
 
@@ -226,4 +179,74 @@ func challengeTime(value any) (time.Time, bool) {
 		return time.Time{}, false
 	}
 	return time.Date(year, time.Month(gamekit.Int(fields["month"])), gamekit.Int(fields["day"]), gamekit.Int(fields["hour"]), gamekit.Int(fields["minute"]), 0, 0, chinaTime), true
+}
+
+// challengeClock formats when a node or record was cleared; quick clears
+// carry no time.
+func challengeClock(record map[string]any) string {
+	if at, ok := challengeTime(record["challenge_time"]); ok {
+		return at.Format("2006.01.02 15:04")
+	}
+	return ""
+}
+
+// challengeResources collects a challenge image's resources, each file once:
+// StarRail-plugin art, element icons, and the official images the response
+// links to, cached on demand.
+type challengeResources struct {
+	context gamekit.ImageContext
+	list    []rayleabot.RenderImageResource
+	seen    map[string]string
+}
+
+func (r *challengeResources) once(key string, add func() (rayleabot.RenderImageResource, bool)) string {
+	if id, ok := r.seen[key]; ok {
+		return id
+	}
+	if r.seen == nil {
+		r.seen = map[string]string{}
+	}
+	id := ""
+	if resource, ok := add(); ok {
+		r.list = append(r.list, resource)
+		id = resource.ID
+	}
+	r.seen[key] = id
+	return id
+}
+
+func (r *challengeResources) local(id, name string) string {
+	return r.once(name, func() (rayleabot.RenderImageResource, bool) {
+		return r.context.ArtworkResource(id, "starrail-plugin", name)
+	})
+}
+
+func (r *challengeResources) official(url any) string {
+	id := "official-" + strconv.Itoa(len(r.seen))
+	return r.once(gamekit.Text(url), func() (rayleabot.RenderImageResource, bool) {
+		return r.context.FetchURLResource(id, "mihoyo", gamekit.Text(url))
+	})
+}
+
+// team lists a node's or record's characters as upstream's avatar cards show
+// them; the element files are lower case.
+func (r *challengeResources) team(record map[string]any) []any {
+	list := []any{}
+	avatars, _ := record["avatars"].([]any)
+	for _, raw := range avatars {
+		avatar, _ := raw.(map[string]any)
+		element := strings.ToLower(gamekit.Text(avatar["element"]))
+		list = append(list, map[string]any{"rarity": gamekit.Int(avatar["rarity"]), "rank": gamekit.Int(avatar["rank"]), "level": gamekit.Text(avatar["level"]),
+			"element": r.local("element-"+element, "resources/common/element/"+element+".png"), "icon": r.official(avatar["icon"])})
+	}
+	return list
+}
+
+// buff is a node's or record's buff with its icon, or nil.
+func (r *challengeResources) buff(record map[string]any) any {
+	buff, _ := record["buff"].(map[string]any)
+	if buff == nil {
+		return nil
+	}
+	return map[string]any{"icon": r.official(buff["icon"]), "name": gamekit.Text(buff["name_mi18n"]), "desc": gamekit.Text(buff["desc_mi18n"])}
 }

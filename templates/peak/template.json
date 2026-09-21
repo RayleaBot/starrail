@@ -1,0 +1,11 @@
+{
+  "id": "peak",
+  "name": "星铁异相仲裁",
+  "description": "本期或上期异相仲裁的战绩图片，布局参照 StarRail-plugin",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 800,
+  "height": 2400
+}

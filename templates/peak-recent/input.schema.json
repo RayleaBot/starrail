@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "tag", "records"],
+  "properties": {
+    "uid": { "type": "string" },
+    "tag": { "type": "string" },
+    "records": { "type": "array", "minItems": 1, "maxItems": 3 },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

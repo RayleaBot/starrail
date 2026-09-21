@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container">
+  <h2 class="head">UID: {{ .uid }} 的异相仲裁数据 <span class="tag">{{ .tag }}</span></h2>
+  <div class="body">
+    {{ range .records }}{{ template "run" . }}{{ end }}
+  </div>
+  <div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>
+{{ define "team" }}
+<div class="detail-avatars">
+  {{ range . }}
+  <div class="detail-avatar rank{{ .rarity }}">
+    <div class="detail-avatar-border">
+      <span class="life life{{ .rank }}">{{ .rank }}魂</span>
+      <img class="element"{{ with .element }} data-render-resource="{{ . }}"{{ end }} alt="">
+      <img class="char"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+      <div class="level">等级 {{ .level }}</div>
+    </div>
+  </div>
+  {{ end }}
+</div>
+{{ end }}
+{{ define "cleared" }}
+<div> 使用轮次 <span class="count"> {{ .rounds }} </span>
+  <span class="boss-star-container"><span class="detail-boss-defeated-text">已通关</span></span>
+</div>
+{{ range .stars }}<img class="rogue-star-small" data-render-resource="{{ . }}" alt="">{{ end }}
+{{ end }}
+{{ define "run" }}
+<div class="run">
+  <div class="time-container"><div class="count">统计周期: {{ .begin }}-{{ .end }}</div></div>
+  <div class="summar">
+    <h2>异相仲裁挑战回顾</h2>
+    <div class="summar-content">
+      <div class="summar-info summar-medal-container"><img class="rank-icon"{{ with .rank_icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+      <div class="summar-info summar-star-container">
+        <div>王棋关卡: {{ .boss_stars }} 星</div>
+        <div class="second">骑士关卡: {{ .mob_stars }} 星</div>
+      </div>
+      <div class="summar-info summar-medal-container"><img class="rank-icon"{{ with .theme }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+      <div class="summar-info summar-name-container">
+        <div>{{ .version }} 版本: {{ .name }}</div>
+        <div class="second">战斗次数: {{ .battles }}</div>
+      </div>
+    </div>
+    {{ with .boss }}
+    <div class="{{ if .hell }}detail-hellitem{{ else }}detail-normalitem{{ end }}">
+      <div class="boss-content">
+        <div class="boss-title">{{ if .hell }}将杀王棋•绝境通关战绩{{ else }}将杀王棋通关战绩{{ end }}</div>
+        <div class="boss-node">
+          <div class="boss-info">
+            <div> {{ .name }} </div>
+            {{ if .cleared }}{{ template "cleared" . }}{{ else }}<div class="detail-boss-not-defeated-text">未通关</div>{{ end }}
+          </div>
+          {{ if .cleared }}
+          <div class="boss-record">
+            <div class="count boss-time">{{ .time }}</div>
+            {{ template "team" .avatars }}
+            <div class="detail-buff">
+              {{ with .buff }}
+              <div class="detail-buff-border">
+                <div class="buff-col"><div class="buff-icon-container"><img class="buff-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div></div>
+                <div class="description-col"><div class="buff-description">{{ .name }}：<span>{{ .desc }}</span></div></div>
+              </div>
+              {{ end }}
+            </div>
+          </div>
+          {{ end }}
+          <div class="boss-image"><img class="boss"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        </div>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+  <div class="summar">
+    <div class="boss-title">骑士关卡战绩</div>
+    <div class="detail-list">
+      {{ range .mobs }}
+      <div class="detail-item">
+        <div class="boss-content">
+          <div class="boss-title"> {{ .title }}</div>
+          <div class="boss-node">
+            {{ if .fast }}
+            <div class="boss-info"><div class="detail-boss-defeated-text">快速通关</div></div>
+            {{ else }}
+            <div class="boss-info">
+              {{ if .cleared }}{{ template "cleared" . }}{{ else }}<div class="detail-boss-not-defeated-text">未通关</div>{{ end }}
+            </div>
+            {{ if .cleared }}
+            <div class="boss-record">
+              <div class="count boss-time">{{ .time }}</div>
+              {{ template "team" .avatars }}
+            </div>
+            {{ end }}
+            {{ end }}
+            <div class="boss-image"><img class="boss"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+</div>
+{{ end }}
