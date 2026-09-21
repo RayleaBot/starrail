@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "season_level", "weekly_score", "weekly_score_max", "rank_level", "rank_icon", "rank_title", "title", "run", "time", "level", "lineup", "persona", "hex_miracles", "formulas", "buffs", "buff_count", "miracles", "rooms"],
+  "properties": {
+    "uid": { "type": "string" },
+    "season_level": { "type": "string" },
+    "weekly_score": { "type": "string" },
+    "weekly_score_max": { "type": "string" },
+    "rank_level": { "type": "string" },
+    "rank_icon": { "type": "string" },
+    "rank_title": { "type": "string" },
+    "title": { "type": "string" },
+    "weekly": { "type": "object" },
+    "run": { "type": "string" },
+    "time": { "type": "string" },
+    "level": { "type": "string" },
+    "lineup": { "type": "array" },
+    "persona": { "type": "object" },
+    "hex_miracles": { "type": "array" },
+    "formulas": { "type": "array" },
+    "buffs": { "type": "array" },
+    "buff_count": { "type": "integer" },
+    "miracles": { "type": "array" },
+    "rooms": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

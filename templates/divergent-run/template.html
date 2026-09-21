@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+<div class="header">
+  <div class="header-title">{{ .title }}</div>
+  <div class="header-uid">uid {{ .uid }}</div>
+  <div class="header-content">
+    <div class="header-content-block"><div class="header-content-block-value">{{ .season_level }}</div><div class="header-content-block-title">拟合等级</div></div>
+    <div class="header-content-block"><div class="header-content-block-value">{{ .weekly_score }}/{{ .weekly_score_max }}</div><div class="header-content-block-title">本期额外拟合值</div></div>
+    <div class="header-content-block">
+      <div class="header-content-block-value">
+        <span class="star">X<sub>{{ .rank_level }}</sub></span>
+        <img class="icon"{{ with .rank_icon }} data-render-resource="{{ . }}"{{ end }} alt="{{ .rank_title }}">
+        <span class="title">{{ .rank_title }}</span>
+      </div>
+      <div class="header-content-block-title">当前星阶</div>
+    </div>
+  </div>
+</div>
+{{ with .weekly }}
+<div class="section weekly-info">
+  <div class="weekly-name">{{ .name }}</div>
+  <div class="weekly-buffs">
+    {{ range .effects }}<div class="weekly-buff-item"><div class="weekly-buff-icon"></div><div class="weekly-buff-desc">{{ safeHTML . }}</div></div>{{ end }}
+  </div>
+</div>
+{{ end }}
+<div class="section">
+  <div class="section-header-title">挑战记录 {{ .run }}</div>
+  <div class="section-header"><div class="section-title">探索队伍</div></div>
+  <div class="section-content">
+    <div class="latest-team">
+      <div class="latest-team-header">
+        <div class="latest-team-info"><div class="latest-team-time">挑战时间：{{ .time }}</div></div>
+        <div class="latest-team-stars">X<sub>{{ .level }}</sub></div>
+      </div>
+      <div class="latest-team-avatars">
+      {{ range .lineup }}
+      <div class="avatar-box">
+        <div class="avatar rarity{{ .rarity }}">
+          <span class="life life{{ .rank }}">{{ .rank }}魂</span>
+          <div><img class="avatar-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+          <div class="avatar-inner"></div>
+          <div class="avatar-banner">等级 {{ .level }}</div>
+          <div class="avatar-element" style="border-color: var(--borderColor-{{ .element_name }});"><img{{ with .element }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        </div>
+      </div>
+      {{ end }}
+      </div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-header"><div class="section-title">面具</div></div>
+  <div class="section-content">
+    {{ with .persona }}
+    <div class="persona-content">
+      <img class="persona-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+      <div class="persona-info">
+        <div class="persona-title">{{ .title }} Lv.{{ .level }}</div>
+        <div class="persona-desc">{{ safeHTML .desc }}</div>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ if .hex_miracles }}
+<div class="section">
+  <div class="section-header"><div class="section-title">加权奇物</div></div>
+  <div class="section-content">
+    <div class="item-grid-8">
+      {{ range .hex_miracles }}<div class="curio-item curio-rank-hex"><img class="curio-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} title="{{ .name }}" alt=""></div>{{ end }}
+    </div>
+  </div>
+</div>
+{{ end }}
+{{ if .formulas }}
+<div class="section">
+  <div class="section-header"><div class="section-title">已展开方程</div></div>
+  <div class="section-content">
+    <div class="formula-list">
+      {{ range .formulas }}
+      <div class="formula-item formula-cat-{{ .category }}">
+        <div class="formula-icons{{ if not .sub_icon }} no-sub{{ end }}">
+          <img class="formula-icon-main"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+          {{ with .sub_icon }}<img class="formula-icon-sub" data-render-resource="{{ . }}" alt="">{{ end }}
+        </div>
+        <div class="formula-name">{{ .name }}</div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+</div>
+{{ end }}
+<div class="section">
+  <div class="section-header"><div class="section-title">获得祝福</div><div class="section-value">{{ .buff_count }}</div></div>
+  <div class="section-content">
+    <div class="buff-list">
+      {{ range .buffs }}<div class="buff-item"><img class="buff-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""><div class="buff-count">{{ .count }}</div></div>{{ end }}
+    </div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-header"><div class="section-title">获得奇物</div></div>
+  <div class="section-content">
+    <div class="item-grid-8">
+      {{ range .miracles }}<div class="curio-item curio-rank-{{ .rank }}"><img class="curio-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} title="{{ .name }}" alt=""></div>{{ end }}
+    </div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-header"><div class="section-title">沿途站点</div></div>
+  <div class="section-content">
+    <div class="item-grid-8">
+      {{ range .rooms }}
+      <div class="room-item bg-color-{{ .color }}">
+        <img class="room-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+        <div class="room-name">{{ .name }}</div>
+        <div class="room-level">{{ .level }}</div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+</div>
+<div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>

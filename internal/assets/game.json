@@ -107,6 +107,18 @@
       "input": "none"
     },
     {
+      "name": "starrail.divergent_normal",
+      "label": "差分宇宙常规演算",
+      "command": "常规演算",
+      "input": "none"
+    },
+    {
+      "name": "starrail.divergent_week",
+      "label": "差分宇宙周期演算",
+      "command": "本期演算",
+      "input": "none"
+    },
+    {
       "name": "starrail.currency_wars",
       "label": "货币战争",
       "command": "货币战争",

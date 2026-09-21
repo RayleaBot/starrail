@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+<div class="header">
+  <div class="header-title">差分宇宙·乐园漫记</div>
+  <div class="header-uid">uid {{ .uid }}</div>
+  <div class="header-content">
+    <div class="header-content-block"><div class="header-content-block-value">{{ .season_level }}</div><div class="header-content-block-title">拟合等级</div></div>
+    <div class="header-content-block"><div class="header-content-block-value">{{ .weekly_score }}/{{ .weekly_score_max }}</div><div class="header-content-block-title">本期额外拟合值</div></div>
+    <div class="header-content-block">
+      <div class="header-content-block-value">
+        <span class="star">X<sub>{{ .rank_level }}</sub></span>
+        <img class="icon"{{ with .rank_icon }} data-render-resource="{{ . }}"{{ end }} alt="{{ .rank_title }}">
+        <span class="title">{{ .rank_title }}</span>
+      </div>
+      <div class="header-content-block-title">当前星阶</div>
+    </div>
+  </div>
+</div>
+<div class="reward-section">
+  <div class="reward-title">奖励领取情况</div>
+  <div class="reward-content">
+    <div class="reward-item"><div class="reward-item-name">可能性画廊奖励</div><div class="reward-item-value">{{ .gallery }}</div></div>
+    <div class="reward-item"><div class="reward-item-name">稳态数组奖励</div><div class="reward-item-value">{{ .tasks }}</div></div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-header"><div class="section-title">常规演算</div></div>
+  <div class="section-content">
+    {{ with .latest }}
+    <div class="latest-team">
+      <div class="latest-team-header">
+        <div class="latest-team-info">
+          <div class="latest-team-title">最新通关队伍</div>
+          <div class="latest-team-time">挑战时间：{{ .time }}</div>
+        </div>
+        <div class="latest-team-stars">X<sub>{{ .level }}</sub></div>
+      </div>
+      <div class="latest-team-avatars">
+      {{ range .lineup }}
+      <div class="avatar-box">
+        <div class="avatar rarity{{ .rarity }}">
+          <span class="life life{{ .rank }}">{{ .rank }}魂</span>
+          <div><img class="avatar-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+          <div class="avatar-inner"></div>
+          <div class="avatar-banner">等级 {{ .level }}</div>
+          <div class="avatar-element" style="border-color: var(--borderColor-lightning);"><img{{ with .element }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        </div>
+      </div>
+      {{ end }}
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+<div class="section">
+  <div class="section-header"><div class="section-title">周期演算</div></div>
+  <div class="section-content">
+    <div class="weekly-content">
+      <div class="weekly-reward">
+        <div class="weekly-reward-title">本期首通奖励</div>
+        <div class="weekly-reward-status">{{ if .weekly_finished }}已领取{{ else }}未领取{{ end }}</div>
+      </div>
+      <div class="weekly-difficulty">
+        <div class="weekly-difficulty-title">本期最新通关难度</div>
+        {{ if .weekly_title }}<div class="weekly-difficulty-stars">{{ .weekly_title }}</div>{{ else }}<div class="weekly-difficulty-value">暂无战绩</div>{{ end }}
+      </div>
+    </div>
+  </div>
+</div>
+<div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>

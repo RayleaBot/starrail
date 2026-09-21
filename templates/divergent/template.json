@@ -1,0 +1,11 @@
+{
+  "id": "divergent",
+  "name": "星铁差分宇宙",
+  "description": "差分宇宙命令的图片，布局参照 StarRail-plugin rogueTourn",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1098,
+  "height": 4000
+}

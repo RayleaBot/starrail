@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "season_level", "weekly_score", "weekly_score_max", "rank_level", "rank_icon", "rank_title", "gallery", "tasks", "weekly_finished", "weekly_title"],
+  "properties": {
+    "uid": { "type": "string" },
+    "season_level": { "type": "string" },
+    "weekly_score": { "type": "string" },
+    "weekly_score_max": { "type": "string" },
+    "rank_level": { "type": "string" },
+    "rank_icon": { "type": "string" },
+    "rank_title": { "type": "string" },
+    "gallery": { "type": "string" },
+    "tasks": { "type": "string" },
+    "latest": { "type": "object" },
+    "weekly_finished": { "type": "boolean" },
+    "weekly_title": { "type": "string" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

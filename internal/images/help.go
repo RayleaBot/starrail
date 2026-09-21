@@ -12,7 +12,7 @@ import (
 var helpIcons = map[string]int{
 	"select": 78, "showcase": 63, "character": 66, "monthly": 98, "monthly-history": 98, "note": 95, "profile": 75,
 	"gacha": 97, "gacha-summary": 97, "gacha-background": 97,
-	"rogue": 107, "divergent": 107, "currency_wars": 107, "swarm": 107,
+	"rogue": 107, "divergent": 107, "divergent-normal": 107, "divergent-week": 107, "currency_wars": 107, "swarm": 107,
 	"challenge": 110, "story": 110, "boss": 110, "peak": 110, "abyss": 110, "abyss-latest": 110,
 	"guides": 106, "simulation": 100, "codes": 96, "artwork": 85,
 }

@@ -16,7 +16,8 @@ func Builders() map[string]gamekit.ImageBuilder {
 	return map[string]gamekit.ImageBuilder{"starrail.note": Note, "starrail.challenge": challengeImage(memoryOfChaos),
 		"starrail.story": challengeImage(pureFiction), "starrail.boss": challengeImage(apocalypticShadow), "starrail.peak": Peak,
 		"starrail.abyss": allChallengesImage, "starrail.abyss_latest": latestChallengeImage,
-		"starrail.characters": Characters, "starrail.training": Training, "starrail.monthly": Month, "starrail.rogue": Rogue, "starrail.swarm": Swarm}
+		"starrail.characters": Characters, "starrail.training": Training, "starrail.monthly": Month, "starrail.rogue": Rogue, "starrail.swarm": Swarm,
+		"starrail.divergent": Divergent, "starrail.divergent_normal": DivergentNormal, "starrail.divergent_week": DivergentWeek}
 }
 
 // Queries lists the commands that run another operation's query.
@@ -24,6 +25,10 @@ func Queries() map[string]func(time.Time) string {
 	queries := challengeQueries()
 	// 练度统计 draws on the character list.
 	queries["starrail.training"] = func(time.Time) string { return "starrail.characters" }
+	// A single Divergent Universe run is read from the whole record.
+	for _, name := range []string{"starrail.divergent_normal", "starrail.divergent_week"} {
+		queries[name] = func(time.Time) string { return "starrail.divergent" }
+	}
 	return queries
 }
 

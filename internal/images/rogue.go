@@ -63,14 +63,6 @@ func (r *challengeResources) pathIcon(name string) string {
 // rogueRun is what the Simulated Universe pages show of any run: its clear
 // time, final lineup, Path resonances, Blessings by Path and Curios.
 func (r *challengeResources) rogueRun(run map[string]any) map[string]any {
-	lineup := []any{}
-	avatars, _ := run["final_lineup"].([]any)
-	for _, rawAvatar := range avatars {
-		avatar, _ := rawAvatar.(map[string]any)
-		element := gamekit.Text(avatar["element"])
-		lineup = append(lineup, map[string]any{"rarity": gamekit.Int(avatar["rarity"]), "rank": gamekit.Int(avatar["rank"]), "level": gamekit.Text(avatar["level"]),
-			"icon": r.official(avatar["icon"]), "element": r.local("element-"+element, "resources/common/element/"+element+".png")})
-	}
 	bases := []any{}
 	baseList, _ := run["base_type_list"].([]any)
 	for _, rawBase := range baseList {
@@ -101,7 +93,22 @@ func (r *challengeResources) rogueRun(run map[string]any) map[string]any {
 	finish, _ := run["finish_time"].(map[string]any)
 	time := gamekit.Text(finish["year"]) + "." + gamekit.Text(finish["month"]) + "." + gamekit.Text(finish["day"]) + " " +
 		gamekit.Text(finish["hour"]) + ":" + gamekit.Text(finish["minute"]) + ":" + gamekit.Text(finish["second"])
-	return map[string]any{"time": time, "lineup": lineup, "bases": bases, "buffs": buffs, "miracles": miracles}
+	return map[string]any{"time": time, "lineup": r.lineup(run), "bases": bases, "buffs": buffs, "miracles": miracles}
+}
+
+// lineup is a run's final lineup as the Simulated Universe pages' avatar
+// cards show it; element_name picks the border colour on the pages that
+// colour it.
+func (r *challengeResources) lineup(run map[string]any) []any {
+	lineup := []any{}
+	avatars, _ := run["final_lineup"].([]any)
+	for _, raw := range avatars {
+		avatar, _ := raw.(map[string]any)
+		element := gamekit.Text(avatar["element"])
+		lineup = append(lineup, map[string]any{"rarity": gamekit.Int(avatar["rarity"]), "rank": gamekit.Int(avatar["rank"]), "level": gamekit.Text(avatar["level"]),
+			"icon": r.official(avatar["icon"]), "element": r.local("element-"+element, "resources/common/element/"+element+".png"), "element_name": element})
+	}
+	return lineup
 }
 
 // rogueDate writes a period date the way the pages do, unpadded.

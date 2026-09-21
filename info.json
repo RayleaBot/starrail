@@ -1012,6 +1012,28 @@
       }
     },
     {
+      "id": "divergent-normal",
+      "name": "常规演算",
+      "description": "差分宇宙常规演算最近第一至三次的挑战记录",
+      "usage": "#常规演算[一|二|三] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^常规(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?$"
+      }
+    },
+    {
+      "id": "divergent-week",
+      "name": "周期演算",
+      "description": "差分宇宙周期演算本期或上期第一至三次的挑战记录",
+      "usage": "#[本期|上期]演算[一|二|三] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:本期|上期|本周|上周)(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?$"
+      }
+    },
+    {
       "id": "score",
       "name": "遗器",
       "description": "按角色专属权重计算装备评分",
@@ -1167,6 +1189,8 @@
         "gears",
         "unknowable",
         "divergent",
+        "divergent-normal",
+        "divergent-week",
         "currency_wars"
       ]
     },
