@@ -1,7 +1,7 @@
 /* Each element's own resource only; a missing one must not show its parent's. */
 @property --render-resource { syntax: "*"; inherits: false; }
 * { box-sizing: border-box; padding: 0; margin: 0; }
-body { zoom: 1.6; width: 600px; font-size: 18px; font-family: "Microsoft YaHei UI", "Noto Sans SC", sans-serif; }
+body { zoom: 1.6; width: 600px; font-size: 18px; font-family: "SR", "Microsoft YaHei UI", "Noto Sans SC", sans-serif; }
 .container { width: 600px; padding: 20px 15px 10px; background: #2b2b33 var(--render-resource, none) center / contain; }
 article { position: relative; height: 780px; padding: 23px 75px 0; background: #f3f3f3 var(--render-resource, none) no-repeat center / cover; }
 article span.grey { color: #767676; }

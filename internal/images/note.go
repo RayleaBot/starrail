@@ -43,8 +43,9 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 	}
 
 	resources := []rayleabot.RenderImageResource{}
-	for _, background := range [][3]string{{"container-bg", "resources/common/cont/bkg2.jpg"}, {"article-bg", "resources/note/resources/background.png"}} {
-		if resource, ok := context.ArtworkResource(background[0], "starrail-plugin", background[1]); ok {
+	// The two backgrounds, and the SR font upstream sets the page in.
+	for _, file := range [][2]string{{"container-bg", "resources/common/cont/bkg2.jpg"}, {"article-bg", "resources/note/resources/background.png"}, {"SR", "resources/common/font/SR.ttf"}} {
+		if resource, ok := context.ArtworkResource(file[0], "starrail-plugin", file[1]); ok {
 			resources = append(resources, resource)
 		}
 	}
