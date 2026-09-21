@@ -235,19 +235,6 @@
       }
     },
     {
-      "id": "periodic",
-      "name": "周期活动",
-      "description": "周期活动",
-      "usage": "#周期活动 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "周期活动"
-        ]
-      }
-    },
-    {
       "id": "gacha-summary",
       "name": "跃迁摘要",
       "description": "官方五星记录与卡池统计，不是完整逐抽历史",
@@ -298,32 +285,6 @@
         "type": "exact",
         "names": [
           "群设置"
-        ]
-      }
-    },
-    {
-      "id": "rank-submit",
-      "name": "提交排行",
-      "description": "主动向当前群公开自己的UID和装备评分",
-      "usage": "#提交排行 角色 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "提交排行"
-        ]
-      }
-    },
-    {
-      "id": "rank-withdraw",
-      "name": "退出排行",
-      "description": "移除自己在当前群的参评记录",
-      "usage": "#退出排行 [角色]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "退出排行"
         ]
       }
     },
@@ -473,19 +434,6 @@
         "type": "exact",
         "names": [
           "停止同步"
-        ]
-      }
-    },
-    {
-      "id": "team-build",
-      "name": "队伍计算",
-      "description": "应用保存的模拟队伍与条件方案",
-      "usage": "#队伍计算 方案名 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "队伍计算"
         ]
       }
     },
@@ -1133,7 +1081,6 @@
         "showcase",
         "score",
         "build",
-        "team-build",
         "public-profile",
         "cloud-private-panel",
         "cloud-verify",
@@ -1153,8 +1100,7 @@
         "gears",
         "unknowable",
         "divergent",
-        "currency_wars",
-        "periodic"
+        "currency_wars"
       ]
     },
     {
@@ -1231,9 +1177,7 @@
       "id": "rank",
       "title": "排名",
       "commands": [
-        "rank-submit",
         "rank",
-        "rank-withdraw",
         "challenge-submit",
         "challenge-rank",
         "challenge-withdraw",

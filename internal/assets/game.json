@@ -95,12 +95,6 @@
       "input": "none"
     },
     {
-      "name": "starrail.periodic",
-      "label": "周期活动",
-      "command": "周期活动",
-      "input": "none"
-    },
-    {
       "name": "starrail.gacha_summary",
       "label": "跃迁摘要",
       "command": "跃迁摘要",
