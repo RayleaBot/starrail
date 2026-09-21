@@ -96,6 +96,24 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 	for _, item := range calendarArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
+	// The banners, icons and warp pictures download together on the first
+	// draw.
+	urls := []any{}
+	for _, url := range gacha {
+		urls = append(urls, url)
+	}
+	groups := slices.Clone(announcements.Groups)
+	for _, raw := range announcements.PictureGroups {
+		group, _ := raw.(map[string]any)
+		types, _ := group["type_list"].([]any)
+		groups = append(groups, types...)
+	}
+	for _, group := range groups {
+		for _, ann := range calendarGroup(group) {
+			urls = append(urls, ann["banner"], ann["tag_icon"])
+		}
+	}
+	resources.Prefetch("mihoyo", urls...)
 	place := func(ann map[string]any, target *[]calendarItem, kind string) {
 		id, title := gamekit.Text(ann["ann_id"]), gamekit.Text(ann["title"])
 		if title == "" || slices.Contains(calendarIgnoreIDs, id) || calendarIgnore.MatchString(title) {
