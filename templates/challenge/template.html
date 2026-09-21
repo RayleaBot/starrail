@@ -5,6 +5,13 @@
 <div class="container {{ .kind }}">
   <h2 class="head">UID: {{ .uid }} 的{{ .title }}数据 <span class="tag">{{ .period }}</span></h2>
   <div class="body">
+    {{ template "record" . }}
+  </div>
+  <div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>
+{{ define "record" }}
     <div class="time-container">
       {{ if eq .badge "new" }}
       <div class="count">统计周期: {{ .begin }}-{{ .end }} <img class="golden-clock" data-render-resource="golden-clock" alt=""></div>
@@ -101,8 +108,4 @@
       </div>
       {{ end }}
     </div>
-  </div>
-  <div class="logo">{{ .render_footer }}</div>
-</div>
-</body>
-</html>
+{{ end }}

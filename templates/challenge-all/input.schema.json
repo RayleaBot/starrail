@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "period", "records"],
+  "properties": {
+    "uid": { "type": "string" },
+    "period": { "type": "string" },
+    "records": { "type": "array", "minItems": 3, "maxItems": 3 },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

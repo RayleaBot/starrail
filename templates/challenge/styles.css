@@ -1,7 +1,6 @@
 /* Converted from StarRail-plugin challenge/index.css, index_story.css and
-   index_boss.css; the three differ only where a .story or .boss rule says so.
-   Each element's own resource only; a missing one must not show its parent's. */
-@property --render-resource { syntax: "*"; inherits: false; }
+   index_boss.css; the three differ only where a .chaos, .fiction or .shadow
+   rule says so. */
 * { box-sizing: border-box; padding: 0; margin: 0; }
 body { width: 800px; font-family: "SR", sans-serif; font-size: 18px; }
 
@@ -9,7 +8,7 @@ body { width: 800px; font-family: "SR", sans-serif; font-size: 18px; }
   padding: 40px 40px 0 40px;
   width: 800px;
   overflow: hidden;
-  background: #1b1d2a var(--render-resource-bg, none) center no-repeat;
+  background: #1b1d2a none center no-repeat;
   background-size: cover;
   color: #f0eaca;
   font-family: 'SR', sans-serif;
@@ -25,7 +24,7 @@ img.golden-clock, img.red-clock { width: 35px; height: 35px; }
 
 .body { margin-top: 20px; }
 .body .time-container { display: flex; justify-content: space-between; }
-.story .body .time-container, .boss .body .time-container { padding: 10px; }
+.fiction .time-container, .shadow .time-container { padding: 10px; }
 .body div.golden { color: #f3ca87; font-style: italic; font-size: 35px; }
 .body div.red { color: #fc3c49; font-style: italic; font-size: 35px; }
 .count { color: #aaa; }
@@ -34,7 +33,7 @@ img.golden-clock, img.red-clock { width: 35px; height: 35px; }
   margin-top: 10px;
   border-radius: 12px;
   padding: 30px 30px;
-  background: var(--render-resource-top-bg, none) no-repeat;
+  background-repeat: no-repeat;
   background-size: cover;
 }
 .summar h2 { text-align: center; color: #f3ca87; }
@@ -58,7 +57,7 @@ img.boss { width: 75px; height: 75px; transform: translate(10px, -10px); }
   margin-top: 20px;
   border-top-right-radius: 36px;
   padding: 4px;
-  background: var(--render-resource-floor-bg, none) no-repeat;
+  background-repeat: no-repeat;
   background-size: cover;
 }
 .detail-border { border: 2px #ddd solid; border-top-right-radius: 36px; }
@@ -69,10 +68,10 @@ img.boss { width: 75px; height: 75px; transform: translate(10px, -10px); }
   padding: 20px 30px;
   background-color: rgba(0, 0, 0, .4);
 }
-.challenge .detail-title, .story .detail-title { color: #f0eaca; font-size: 24px; }
-.boss .detail-title-no-round { color: #f0eaca; font-size: 32px; margin-top: 10px; }
+.chaos .detail-title, .fiction .detail-title { color: #f0eaca; font-size: 24px; }
+.shadow .detail-title-no-round { color: #f0eaca; font-size: 32px; margin-top: 10px; }
 .detail-title p:last-of-type { margin-top: 8px; font-size: 18px; opacity: .85; }
-.story .detail-score, .boss .detail-score { font-size: 18px; opacity: .85; }
+.fiction .detail-score, .shadow .detail-score { font-size: 18px; opacity: .85; }
 
 .detail-body { padding: 20px 30px; color: #f0eaca; }
 .detail-bar { display: flex; justify-content: space-between; }
@@ -126,7 +125,7 @@ img.node3-crown { width: 28px; height: 28px; margin-right: 4px; vertical-align: 
 .buff-icon-container { width: 60px; height: 60px; margin: 0 auto; overflow: hidden; }
 img.buff-icon { width: 100%; height: 100%; }
 .description-col { flex-grow: 1; }
-.story .buff-description, .boss .buff-description { margin: 10px; }
+.fiction .buff-description, .shadow .buff-description { margin: 10px; }
 
 .logo {
   font-size: 24px;
@@ -135,3 +134,14 @@ img.buff-icon { width: 100%; height: 100%; }
   margin-top: 30px;
   padding-bottom: 30px;
 }
+
+/* Each record's own art. */
+.container.chaos { background-image: var(--render-resource-bg-chaos, none); }
+.container.fiction { background-image: var(--render-resource-bg-fiction, none); }
+.container.shadow { background-image: var(--render-resource-bg-shadow, none); }
+.chaos .summar { background-image: var(--render-resource-top-bg-chaos, none); }
+.fiction .summar { background-image: var(--render-resource-top-bg-fiction, none); }
+.shadow .summar { background-image: var(--render-resource-top-bg-shadow, none); }
+.chaos .detail-item { background-image: var(--render-resource-floor-bg-chaos, none); }
+.fiction .detail-item { background-image: var(--render-resource-floor-bg-fiction, none); }
+.shadow .detail-item { background-image: var(--render-resource-floor-bg-shadow, none); }

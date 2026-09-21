@@ -13,9 +13,13 @@ import (
 
 // Builders lists the image builders by the operation they draw.
 func Builders() map[string]gamekit.ImageBuilder {
-	return map[string]gamekit.ImageBuilder{"starrail.note": Note, "starrail.challenge": challengeImage(challengeRecord),
-		"starrail.story": challengeImage(storyRecord), "starrail.boss": challengeImage(bossRecord), "starrail.peak": Peak}
+	return map[string]gamekit.ImageBuilder{"starrail.note": Note, "starrail.challenge": challengeImage(memoryOfChaos),
+		"starrail.story": challengeImage(pureFiction), "starrail.boss": challengeImage(apocalypticShadow), "starrail.peak": Peak,
+		"starrail.abyss": allChallengesImage, "starrail.abyss_latest": latestChallengeImage}
 }
+
+// Queries lists the commands that run another operation's query.
+func Queries() map[string]func(time.Time) string { return challengeQueries() }
 
 var weekdays = [...]string{"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"}
 

@@ -2,7 +2,9 @@ package images
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,7 +36,7 @@ func TestChallengeFollowsStarRailPlugin(t *testing.T) {
 		},
 	}
 	context := gamekit.ImageContext{Now: time.Date(2026, 9, 12, 12, 0, 0, 0, chinaTime), Input: map[string]any{"schedule_type": 1}}
-	image, ok := challengeImage(bossRecord)(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	image, ok := challengeImage(apocalypticShadow)(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
 	if !ok {
 		t.Fatal("boss record")
 	}
@@ -62,7 +64,7 @@ func TestChallengeFollowsStarRailPlugin(t *testing.T) {
 
 	// The last period keeps the ended group and carries no mark.
 	context.Input = map[string]any{"schedule_type": 2}
-	image, _ = challengeImage(storyRecord)(context, gamekit.QueryResult{Data: data})
+	image, _ = challengeImage(pureFiction)(context, gamekit.QueryResult{Data: data})
 	if image.Data["begin"] != "2026.07.27" || image.Data["badge"] != "" || image.Data["period"] != "上期" {
 		t.Errorf("last period = %v %v %v", image.Data["begin"], image.Data["badge"], image.Data["period"])
 	}
@@ -70,8 +72,58 @@ func TestChallengeFollowsStarRailPlugin(t *testing.T) {
 	// Memory of Chaos reads its own period and totals no score.
 	data["begin_time"], data["end_time"] = clock(2026, 8, 10), clock(2026, 9, 21)
 	context.Input = nil
-	image, _ = challengeImage(challengeRecord)(context, gamekit.QueryResult{Data: data})
+	image, _ = challengeImage(memoryOfChaos)(context, gamekit.QueryResult{Data: data})
 	if image.Data["begin"] != "2026.08.10" || image.Data["badge"] != "expiring" || image.Data["floors"].([]any)[0].(map[string]any)["score"] != "" {
 		t.Errorf("memory of chaos = %v", image.Data)
+	}
+}
+
+func TestChallengeRoutesFollowStarRailPlugin(t *testing.T) {
+	// Upstream counts 14-day turns from Apocalyptic Shadow on 2024-06-24 04:00.
+	for at, want := range map[time.Time]string{
+		time.Date(2024, 6, 24, 4, 0, 0, 0, chinaTime): "starrail.boss",
+		time.Date(2024, 7, 8, 3, 59, 0, 0, chinaTime): "starrail.boss",
+		time.Date(2024, 7, 8, 4, 0, 0, 0, chinaTime):  "starrail.story",
+		time.Date(2024, 7, 22, 4, 0, 0, 0, chinaTime): "starrail.challenge",
+		time.Date(2024, 8, 5, 4, 0, 0, 0, chinaTime):  "starrail.boss",
+	} {
+		if got := challengeQueries()["starrail.abyss_latest"](at); got != want {
+			t.Errorf("%v = %s, want %s", at, got, want)
+		}
+	}
+	if got := challengeQueries()["starrail.abyss"](time.Now()); got != "starrail.challenge" {
+		t.Errorf("深渊 starts from %s", got)
+	}
+
+	period := map[string]any{"begin_time": clock(2026, 9, 1), "end_time": clock(2026, 10, 13)}
+	record := map[string]any{"star_num": json.Number("12"), "groups": []any{period}, "all_floor_detail": []any{}}
+	context := gamekit.ImageContext{Now: time.Date(2026, 9, 21, 12, 0, 0, 0, chinaTime)}
+	image, ok := latestChallengeImage(context, gamekit.QueryResult{Operation: "starrail.story", Data: record})
+	if !ok || image.Data["kind"] != "fiction" {
+		t.Errorf("latest = %v", image.Data)
+	}
+
+	// 深渊 adds the other two records of the same period.
+	asked := []string{}
+	context.Input = map[string]any{"schedule_type": 2}
+	context.Query = func(operation string, input map[string]any) (gamekit.QueryResult, error) {
+		asked = append(asked, operation+"/"+gamekit.Text(input["schedule_type"]))
+		return gamekit.QueryResult{Data: record}, nil
+	}
+	image, ok = allChallengesImage(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: record})
+	records, _ := image.Data["records"].([]any)
+	if !ok || image.Template != "challenge-all" || len(records) != 3 || image.Data["period"] != "上期" || strings.Join(asked, ",") != "starrail.boss/2,starrail.story/2" {
+		t.Fatalf("all = %v %v", image.Data, asked)
+	}
+	for index, kind := range []string{"chaos", "shadow", "fiction"} {
+		if records[index].(map[string]any)["kind"] != kind {
+			t.Errorf("column %d = %v", index, records[index])
+		}
+	}
+	context.Query = func(string, map[string]any) (gamekit.QueryResult, error) {
+		return gamekit.QueryResult{}, errors.New("captcha")
+	}
+	if _, ok := allChallengesImage(context, gamekit.QueryResult{Data: record}); ok {
+		t.Error("a failed record leaves the reply in text")
 	}
 }

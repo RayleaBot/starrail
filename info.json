@@ -924,6 +924,28 @@
       }
     },
     {
+      "id": "abyss",
+      "name": "全部深渊",
+      "description": "混沌回忆、末日幻影与虚构叙事并排",
+      "usage": "#[上期]深渊 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<period>本期|上期)?(?:简易)?深渊$"
+      }
+    },
+    {
+      "id": "abyss-latest",
+      "name": "最新深渊",
+      "description": "最近开启的一种深渊",
+      "usage": "#最新深渊 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:最新|当期)(?:简易)?深渊$"
+      }
+    },
+    {
       "id": "challenge",
       "name": "忘却之庭",
       "description": "混沌回忆",
@@ -1122,6 +1144,8 @@
       "id": "records",
       "title": "战绩",
       "commands": [
+        "abyss",
+        "abyss-latest",
         "challenge",
         "story",
         "boss",

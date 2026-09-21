@@ -4,7 +4,7 @@
   "required": ["uid", "kind", "title", "period", "badge", "begin", "end", "star_num", "extra_star_num", "max_floor", "battle_num", "bosses", "floors"],
   "properties": {
     "uid": { "type": "string" },
-    "kind": { "enum": ["challenge", "story", "boss"] },
+    "kind": { "enum": ["chaos", "fiction", "shadow"] },
     "title": { "type": "string" },
     "period": { "type": "string" },
     "badge": { "enum": ["", "new", "expiring"] },

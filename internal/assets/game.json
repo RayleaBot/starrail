@@ -29,6 +29,18 @@
       "input": "characters_optional"
     },
     {
+      "name": "starrail.abyss",
+      "label": "全部深渊",
+      "command": "深渊",
+      "input": "period"
+    },
+    {
+      "name": "starrail.abyss_latest",
+      "label": "最新深渊",
+      "command": "最新深渊",
+      "input": "none"
+    },
+    {
       "name": "starrail.challenge",
       "label": "混沌回忆",
       "command": "混沌",
