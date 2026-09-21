@@ -1,0 +1,11 @@
+{
+  "id": "rogue",
+  "name": "星铁模拟宇宙",
+  "description": "模拟宇宙命令的图片，布局参照 StarRail-plugin rogue",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 840,
+  "height": 4000
+}

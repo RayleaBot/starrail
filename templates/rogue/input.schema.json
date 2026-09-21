@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "nickname", "level", "skill_points", "miracles", "buffs", "begin", "end", "finished", "runs"],
+  "properties": {
+    "uid": { "type": "string" },
+    "nickname": { "type": "string" },
+    "level": { "type": "string" },
+    "skill_points": { "type": "string" },
+    "miracles": { "type": "string" },
+    "buffs": { "type": "string" },
+    "begin": { "type": "string" },
+    "end": { "type": "string" },
+    "finished": { "type": "string" },
+    "runs": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

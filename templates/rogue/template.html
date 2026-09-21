@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+<div class="header">
+  <div class="header-title">模拟宇宙数据总览</div>
+  <div class="header-uid">uid {{ .uid }} {{ .nickname }} {{ .level }}级</div>
+  <div class="header-content">
+    <div class="header-content-block"><div class="header-content-block-value">{{ .skill_points }}</div><div class="header-content-block-title">技能树已激活</div></div>
+    <div class="header-content-block"><div class="header-content-block-value">{{ .miracles }}</div><div class="header-content-block-title">已解锁奇物</div></div>
+    <div class="header-content-block"><div class="header-content-block-value">{{ .buffs }}</div><div class="header-content-block-title">已解锁祝福</div></div>
+  </div>
+</div>
+<div class="statistics-before">统计周期：{{ .begin }} - {{ .end }}</div>
+<div class="records-header">
+  <div class="circle-1"></div>
+  <div class="circle-2"></div>
+  <div class="records-header-title">本期通关次数：</div>
+  <div class="records-header-value">{{ .finished }}</div>
+</div>
+{{ range .runs }}
+<div class="record">
+  <div class="record-world">
+    <img class="record-world-icon" data-render-resource="rogue-ball" alt="">
+    <div>{{ .name }} {{ .difficulty }}</div>
+    <div class="high-score"><div class="high-score-title">当前最高积分</div><div class="high-score-value">{{ .score }}</div></div>
+  </div>
+  <div class="record-time">挑战时间： {{ .time }}</div>
+  <div class="divider"></div>
+  <div class="record-characters">
+    <div class="record-characters-title">通关使用角色</div>
+    <div class="record-characters-list">
+      {{ range .lineup }}
+      <div class="avatar-box">
+        <div class="avatar rarity{{ .rarity }}">
+          <span class="life life{{ .rank }}">{{ .rank }}魂</span>
+          <div><img class="avatar-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+          <div class="avatar-inner"></div>
+          <div class="avatar-banner">等级 {{ .level }}</div>
+          <div class="avatar-element"><img{{ with .element }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="record-wish">
+    {{ range .bases }}<div class="record-wish-icon"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div><div class="circle-3">{{ .count }}</div>{{ end }}
+  </div>
+  <div class="record-wish-detail">
+    <div class="record-wish-detail-header"><span>获得祝福</span></div>
+    {{ range .buffs }}
+    <div class="record-wish-detail-content">
+      <div class="record-wish-detail-content-left">
+        <div class="record-wish-icon"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        <div class="record-wish-detail-content-left-title">{{ .name }} ：</div>
+      </div>
+      <div class="record-wish-detail-content-right">
+        {{ range .items }}
+        <div class="record-wish-detail-content-items-{{ .rank }}">
+          <div class="record-wish-detail-content-items-content"> {{ .name }} </div>
+          {{ if .evolved }}<div class="record-wish-detail-content-items-content-badge">已升级</div>{{ end }}
+        </div>
+        {{ end }}
+      </div>
+    </div>
+    {{ end }}
+  </div>
+  <div class="record-wish-detail">
+    <div class="record-wish-detail-header"><span>获得奇物</span></div>
+    <div class="record-wish-detail-content">{{ range .miracles }}<div class="qiwu"><img{{ with . }} data-render-resource="{{ . }}"{{ end }} alt=""></div>{{ end }}</div>
+  </div>
+</div>
+{{ end }}
+<div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>

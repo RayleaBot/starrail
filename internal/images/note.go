@@ -16,7 +16,7 @@ func Builders() map[string]gamekit.ImageBuilder {
 	return map[string]gamekit.ImageBuilder{"starrail.note": Note, "starrail.challenge": challengeImage(memoryOfChaos),
 		"starrail.story": challengeImage(pureFiction), "starrail.boss": challengeImage(apocalypticShadow), "starrail.peak": Peak,
 		"starrail.abyss": allChallengesImage, "starrail.abyss_latest": latestChallengeImage,
-		"starrail.characters": Characters, "starrail.training": Training, "starrail.monthly": Month}
+		"starrail.characters": Characters, "starrail.training": Training, "starrail.monthly": Month, "starrail.rogue": Rogue}
 }
 
 // Queries lists the commands that run another operation's query.
