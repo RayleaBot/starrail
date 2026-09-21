@@ -91,6 +91,17 @@
       }
     },
     {
+      "id": "talent-wiki",
+      "name": "角色天赋",
+      "description": "角色的技能、行迹与星魂资料",
+      "usage": "#希儿天赋 / #希儿星魂",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.+?)(?:天赋|技能|行迹|星魂)$"
+      }
+    },
+    {
       "id": "monthly-history",
       "name": "星琼统计",
       "description": "保存官方仍提供的月份后，统计最近十二个月或指定年份的星琼与专票、通票",
@@ -1226,6 +1237,7 @@
       "title": "图鉴与养成",
       "commands": [
         "catalog",
+        "talent-wiki",
         "growth",
         "materials",
         "guides",
