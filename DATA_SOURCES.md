@@ -14,13 +14,9 @@
 
 原神、星铁采用 miao 提交 `7f6f1c84c89102bc6b1c58c8e1b06c61f4642161` 的基础权重；角色专属 `artis.js` 已由受限语法转换器编译为 Go，并与原始纯函数进行固定输入对照。绝区零采用 dev 提交 `fb66219cec0294e1834bacdf0033b2d43a9ccaf4` 的十个显式预设；动态模式已原生适配三份角色覆盖函数和条件预设选择，不在插件运行期执行 JS。评分不等于伤害计算或队伍收益。
 
-## 伤害试算
+## 自动参考计算
 
-通用乘区来自上述固定 miao `models/dmg/DmgCalc.js` 和 ZZZ dev `src/model/damage/Calculator.ts`，已原生实现并保留原许可。`import-damage-data.py` 导入等级基数及角色技能数值，运行期不执行参考脚本；参考引擎仅用于合成输入的离线差分验证。每次结果附公式版本。全角色条件、自动换装与部分特殊伤害机制尚未覆盖。
-
-## 自动参考计算依赖
-
-编译期库增加固定 miao 角色/武器/套装规则，向原神和星铁提供自动计算；强化花火、强化黑天鹅另由本项目基于固定资料补充。绝区零接入同一固定 dev 快照的 BuffManager、Calculator 与 44 份角色、67 份原音擎、21 份套装规则；本项目另按完整描述补充 33 份音擎，14004 无效果描述。Goja `v0.0.0-20260917113740-793a2a65c13b` 在游戏程序内部执行打包规则，Lodash 固定为 4.17.21；不启动 Node 或 Yunzai。相关 Go 依赖及 Lodash 的完整许可见 `LICENSES/`，固定参考兼容修正见对应源码包中的 `game-plugin-kit/reference/PATCHES.md`。原有通用试算和评分继续使用 Go 实现。
+`internal/assets/calc/` 保存本游戏的角色脚本（`characters/<ID>-<角色名>.js`）、光锥与遗器效果（`game.js`）和计算资料（`catalog.json`），由相邻库的 `scripts/bundle-reference-calculation.mjs` 从 miao 固定快照生成；共用的 miao 运行时在相邻库 `reference/miao/`，打包修正见其中的 `PATCHES.md`。数值对照向量在 `internal/assets/testdata/calc-vectors.json`。
 
 ## 模拟与固定资料
 
@@ -35,3 +31,11 @@ GPL-3.0 和 Apache-2.0 许可分别保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt` 
 
 
 原魔属性使用 [Atlas 固定提交](https://github.com/Nwflower/atlas/tree/016e49357666e0823791abdf28fbb3b2efe68225) 的文字数值资料：556 项条目、200 级曲线、102 项修饰因子，仅在原神界面开放。保留 `LICENSES/Atlas-GPL-3.0.txt`，转换器为编译期库的 `scripts/import-enemy-data.py`；未引入其外部图鉴图片仓库。攻略合集编号来自上述固定 Yunzai/StarRail/ZZZ 参考，运行时匿名读取官方文字与原图链接，不打包攻略图。
+
+## 补充的强化公式
+
+规则源文件在 `scripts/calc-supplements/`，打包后写入 `internal/assets/calc/characters/`。
+
+固定快照只有强化花火（2306）和强化黑天鹅（2307）的资料，未提供计算脚本。`scripts/calc-supplements/` 根据同快照的技能、星魂和行迹描述补充规则，作者为本项目，不冒称原始脚本。强化花火按四层天赋、谜诡和战技目标为队友的情境计算；强化黑天鹅提供已减防、揭露与各奥迹层数情境。
+
+强化黑天鹅终结技数值表的两行名称与参数位置颠倒：描述中的第一个参数对应直接伤害、第二个对应易伤。补充规则按描述位置解释，独立测试验证 120% 攻击倍率与 25% 易伤不会混用，并验证奥迹的 20% 无视防御。强化行迹优先关联资料中实际存在的 ID（包括额外的 `1` 前缀），不只依赖字符串替换。
