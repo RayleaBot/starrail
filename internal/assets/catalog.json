@@ -5,7 +5,14 @@
     {
       "id": "1001",
       "name": "三月七",
-      "aliases": [],
+      "aliases": [
+        "三月",
+        "相遇之缘",
+        "37",
+        "3月7",
+        "三七",
+        "粉霞天女"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "冰",
@@ -57,7 +64,13 @@
     {
       "id": "1002",
       "name": "丹恒",
-      "aliases": [],
+      "aliases": [
+        "单恒",
+        "单桓",
+        "冷面",
+        "小青龙",
+        "冷面小青龙"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "风",
@@ -109,7 +122,10 @@
     {
       "id": "1003",
       "name": "姬子",
-      "aliases": [],
+      "aliases": [
+        "机子",
+        "寄子"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -161,7 +177,14 @@
     {
       "id": "1004",
       "name": "瓦尔特",
-      "aliases": [],
+      "aliases": [
+        "老杨",
+        "杨叔",
+        "瓦尔特杨",
+        "第一律者",
+        "手搓黑洞",
+        "牢杨"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -213,7 +236,10 @@
     {
       "id": "1005",
       "name": "卡芙卡",
-      "aliases": [],
+      "aliases": [
+        "亲妈",
+        "卡夫卡"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "雷",
@@ -265,7 +291,17 @@
     {
       "id": "1006",
       "name": "银狼",
-      "aliases": [],
+      "aliases": [
+        "小鸭鸭",
+        "小板鸭",
+        "黑客",
+        "骇客",
+        "骇兔",
+        "憨色鸭",
+        "憨鸭",
+        "牢狼pro",
+        "老狼pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -317,7 +353,11 @@
     {
       "id": "1008",
       "name": "阿兰",
-      "aliases": [],
+      "aliases": [
+        "痛苦万分",
+        "牢兰",
+        "老兰"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "雷",
@@ -369,7 +409,10 @@
     {
       "id": "1009",
       "name": "艾丝妲",
-      "aliases": [],
+      "aliases": [
+        "宇宙级富婆",
+        "知名不具"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "火",
@@ -421,7 +464,10 @@
     {
       "id": "1013",
       "name": "黑塔",
-      "aliases": [],
+      "aliases": [
+        "转圈圈",
+        "小黑塔"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "冰",
@@ -473,7 +519,25 @@
     {
       "id": "1014",
       "name": "Saber",
-      "aliases": [],
+      "aliases": [
+        "SABER",
+        "Sb",
+        "SB",
+        "吾王",
+        "军刀",
+        "亚瑟",
+        "亚瑟王",
+        "金毛",
+        "黄毛",
+        "呆毛",
+        "呆毛王",
+        "蓝呆",
+        "剑之骑士",
+        "剑士",
+        "骑士王",
+        "棉被王",
+        "咖喱棒"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -531,7 +595,16 @@
     {
       "id": "1015",
       "name": "Archer",
-      "aliases": [],
+      "aliases": [
+        "红A",
+        "红a",
+        "ARCHER",
+        "拉矢人",
+        "卫宫",
+        "士郎",
+        "背影帝",
+        "卫宫士郎"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -583,7 +656,18 @@
     {
       "id": "1101",
       "name": "布洛妮娅",
-      "aliases": [],
+      "aliases": [
+        "大鸭鸭",
+        "鸭鸭",
+        "板鸭",
+        "布洛尼亚",
+        "布洛妮亚",
+        "布洛尼娅",
+        "甘蔗鸭",
+        "大守护者",
+        "牢鸭",
+        "老鸭"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -635,7 +719,18 @@
     {
       "id": "1102",
       "name": "希儿",
-      "aliases": [],
+      "aliases": [
+        "希尔",
+        "蝴蝶",
+        "云天明",
+        "地下城女王",
+        "希儿•没有姓",
+        "电焊师傅",
+        "火箭头槌",
+        "头部发射器",
+        "牢希",
+        "老希"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -687,7 +782,10 @@
     {
       "id": "1103",
       "name": "希露瓦",
-      "aliases": [],
+      "aliases": [
+        "希璐瓦",
+        "希瓦露"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "雷",
@@ -739,7 +837,11 @@
     {
       "id": "1104",
       "name": "杰帕德",
-      "aliases": [],
+      "aliases": [
+        "杰哥",
+        "牢杰",
+        "老杰"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "冰",
@@ -791,7 +893,10 @@
     {
       "id": "1105",
       "name": "娜塔莎",
-      "aliases": [],
+      "aliases": [
+        "纳塔莎",
+        "纳塔沙"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "物理",
@@ -843,7 +948,10 @@
     {
       "id": "1106",
       "name": "佩拉",
-      "aliases": [],
+      "aliases": [
+        "佩菈",
+        "佩拉姐姐"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "冰",
@@ -895,7 +1003,10 @@
     {
       "id": "1107",
       "name": "克拉拉",
-      "aliases": [],
+      "aliases": [
+        "可拉拉",
+        "史瓦罗"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -947,7 +1058,15 @@
     {
       "id": "1108",
       "name": "桑博",
-      "aliases": [],
+      "aliases": [
+        "桑柏",
+        "桑伯",
+        "老桑博",
+        "寒腿叔叔",
+        "牢桑",
+        "牢桑博",
+        "老桑"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "风",
@@ -999,7 +1118,14 @@
     {
       "id": "1109",
       "name": "虎克",
-      "aliases": [],
+      "aliases": [
+        "胡可",
+        "虎克大人",
+        "漆黑的虎克",
+        "漆黑的虎克大人",
+        "鼹鼠党",
+        "鼹鼠党老大"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "火",
@@ -1057,7 +1183,9 @@
     {
       "id": "1110",
       "name": "玲可",
-      "aliases": [],
+      "aliases": [
+        "玲宝"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "量子",
@@ -1167,7 +1295,16 @@
     {
       "id": "1112",
       "name": "托帕&账账",
-      "aliases": [],
+      "aliases": [
+        "托帕",
+        "账账",
+        "总监",
+        "胀胀",
+        "帐帐",
+        "叶琳娜",
+        "牢托",
+        "老托"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -1219,7 +1356,12 @@
     {
       "id": "1201",
       "name": "青雀",
-      "aliases": [],
+      "aliases": [
+        "赌神",
+        "赌圣",
+        "青鹊",
+        "摸鱼"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "量子",
@@ -1277,7 +1419,10 @@
     {
       "id": "1202",
       "name": "停云",
-      "aliases": [],
+      "aliases": [
+        "幻胧",
+        "停厶||"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "雷",
@@ -1329,7 +1474,15 @@
     {
       "id": "1203",
       "name": "罗刹",
-      "aliases": [],
+      "aliases": [
+        "罗沙",
+        "罗杀",
+        "白花盛放",
+        "打点仙人",
+        "小加拉赫",
+        "牢罗",
+        "老罗"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -1381,7 +1534,15 @@
     {
       "id": "1204",
       "name": "景元",
-      "aliases": [],
+      "aliases": [
+        "景原",
+        "景源",
+        "神君发射器",
+        "景元元",
+        "神策将军",
+        "牢景",
+        "老景"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "雷",
@@ -1433,7 +1594,13 @@
     {
       "id": "1205",
       "name": "刃",
-      "aliases": [],
+      "aliases": [
+        "刃刃",
+        "应星",
+        "彼岸葬送",
+        "牢刃",
+        "老刃"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -1491,7 +1658,11 @@
     {
       "id": "1206",
       "name": "素裳",
-      "aliases": [],
+      "aliases": [
+        "李大枕头",
+        "大枕头",
+        "李素裳"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "物理",
@@ -1543,7 +1714,9 @@
     {
       "id": "1207",
       "name": "驭空",
-      "aliases": [],
+      "aliases": [
+        "御空"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "虚数",
@@ -1595,7 +1768,16 @@
     {
       "id": "1208",
       "name": "符玄",
-      "aliases": [],
+      "aliases": [
+        "type-c",
+        "typec",
+        "符卿",
+        "粉毛小矮子",
+        "牢符",
+        "牢玄",
+        "老符",
+        "老玄"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -1647,7 +1829,14 @@
     {
       "id": "1209",
       "name": "彦卿",
-      "aliases": [],
+      "aliases": [
+        "延卿",
+        "闫卿",
+        "彦清",
+        "彦青",
+        "牢彦",
+        "老彦"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "冰",
@@ -1699,7 +1888,15 @@
     {
       "id": "1210",
       "name": "桂乃芬",
-      "aliases": [],
+      "aliases": [
+        "小桂子",
+        "桂师傅",
+        "网红",
+        "格尼薇儿",
+        "格妮薇儿",
+        "桂奶粉",
+        "奶粉"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "火",
@@ -1751,7 +1948,14 @@
     {
       "id": "1211",
       "name": "白露",
-      "aliases": [],
+      "aliases": [
+        "小龙人",
+        "小龙女",
+        "白鹭",
+        "白鹿",
+        "牢白",
+        "老白"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "雷",
@@ -1803,7 +2007,12 @@
     {
       "id": "1212",
       "name": "镜流",
-      "aliases": [],
+      "aliases": [
+        "照彻万川",
+        "无罅飞光",
+        "牢镜",
+        "老镜"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "冰",
@@ -1861,7 +2070,17 @@
     {
       "id": "1213",
       "name": "丹恒•饮月",
-      "aliases": [],
+      "aliases": [
+        "丹恒·饮月",
+        "饮月君",
+        "饮月",
+        "丹恒饮月",
+        "龙尊",
+        "苍龙濯世",
+        "天河奔涌",
+        "牢龙",
+        "老龙"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -1925,7 +2144,9 @@
     {
       "id": "1214",
       "name": "雪衣",
-      "aliases": [],
+      "aliases": [
+        "下雪大衣"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "量子",
@@ -1977,7 +2198,9 @@
     {
       "id": "1215",
       "name": "寒鸦",
-      "aliases": [],
+      "aliases": [
+        "寒冷乌鸦"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "物理",
@@ -2029,7 +2252,18 @@
     {
       "id": "1217",
       "name": "藿藿",
-      "aliases": [],
+      "aliases": [
+        "尾巴",
+        "藿香",
+        "藿去病",
+        "霍去病",
+        "尾巴小跟班",
+        "小怂包",
+        "霍霍",
+        "嚯嚯",
+        "牢藿",
+        "老藿"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -2081,7 +2315,15 @@
     {
       "id": "1218",
       "name": "椒丘",
-      "aliases": [],
+      "aliases": [
+        "椒大夫",
+        "椒师傅",
+        "眯眯眼",
+        "椒叔",
+        "木叔叔",
+        "牢椒",
+        "老椒"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -2133,7 +2375,19 @@
     {
       "id": "1220",
       "name": "飞霄",
-      "aliases": [],
+      "aliases": [
+        "飞宵",
+        "飞魈",
+        "大捷将军",
+        "大捷",
+        "大杰",
+        "大姐",
+        "三无将军",
+        "三无",
+        "天击将军",
+        "天击",
+        "无敌"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -2189,7 +2443,10 @@
     {
       "id": "1221",
       "name": "云璃",
-      "aliases": [],
+      "aliases": [
+        "云离",
+        "云里"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -2241,7 +2498,11 @@
     {
       "id": "1222",
       "name": "灵砂",
-      "aliases": [],
+      "aliases": [
+        "菱纱",
+        "菱砂",
+        "区"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -2293,7 +2554,13 @@
     {
       "id": "1223",
       "name": "貊泽",
-      "aliases": [],
+      "aliases": [
+        "莫泽",
+        "貘泽",
+        "墨泽",
+        "默泽",
+        "陌泽"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "雷",
@@ -2345,7 +2612,13 @@
     {
       "id": "1224",
       "name": "三月七·巡猎",
-      "aliases": [],
+      "aliases": [
+        "仙舟三月七",
+        "巡猎三月七",
+        "虚数三月七",
+        "三月七巡猎",
+        "三月七虚数"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "虚数",
@@ -2403,7 +2676,17 @@
     {
       "id": "1225",
       "name": "忘归人",
-      "aliases": [],
+      "aliases": [
+        "fugue",
+        "大停云",
+        "大狐狸",
+        "王贵仁",
+        "王贵人",
+        "王富贵",
+        "富贵",
+        "富贵儿",
+        "富哥"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -2461,7 +2744,9 @@
     {
       "id": "1301",
       "name": "加拉赫",
-      "aliases": [],
+      "aliases": [
+        "老狗"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "火",
@@ -2519,7 +2804,16 @@
     {
       "id": "1302",
       "name": "银枝",
-      "aliases": [],
+      "aliases": [
+        "纯美骑士",
+        "捍卫银河中的美",
+        "捍武帝",
+        "汉武帝",
+        "牢银",
+        "牢枝",
+        "老银",
+        "老枝"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -2577,7 +2871,15 @@
     {
       "id": "1303",
       "name": "阮•梅",
-      "aliases": [],
+      "aliases": [
+        "阮梅",
+        "软妹",
+        "软梅",
+        "软媒",
+        "朊梅",
+        "牢梅",
+        "老梅"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "冰",
@@ -2629,7 +2931,12 @@
     {
       "id": "1304",
       "name": "砂金",
-      "aliases": [],
+      "aliases": [
+        "卡卡瓦夏",
+        "沙金",
+        "牢砂",
+        "老砂"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -2681,7 +2988,15 @@
     {
       "id": "1305",
       "name": "真理医生",
-      "aliases": [],
+      "aliases": [
+        "义父",
+        "拉帝奥",
+        "拉吊",
+        "教授",
+        "真理",
+        "牢真",
+        "老真"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -2733,7 +3048,13 @@
     {
       "id": "1306",
       "name": "花火",
-      "aliases": [],
+      "aliases": [
+        "花导",
+        "花火大人",
+        "sparkle",
+        "牢花",
+        "老花"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -2785,7 +3106,14 @@
     {
       "id": "1307",
       "name": "黑天鹅",
-      "aliases": [],
+      "aliases": [
+        "天鹅",
+        "blackswan",
+        "我出手了",
+        "牢鹅",
+        "老鹅",
+        "出手姐"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -2837,7 +3165,13 @@
     {
       "id": "1308",
       "name": "黄泉",
-      "aliases": [],
+      "aliases": [
+        "芽衣",
+        "雷电芽衣",
+        "忘川守",
+        "牢泉",
+        "老泉"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "雷",
@@ -2893,7 +3227,11 @@
     {
       "id": "1309",
       "name": "知更鸟",
-      "aliases": [],
+      "aliases": [
+        "鸟妹",
+        "牢鸟",
+        "老鸟"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -2945,7 +3283,17 @@
     {
       "id": "1310",
       "name": "流萤",
-      "aliases": [],
+      "aliases": [
+        "小女友",
+        "萨姆",
+        "sam",
+        "SAM",
+        "萨缪尔",
+        "流莹",
+        "流荧",
+        "牢萤",
+        "老萤"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -3009,7 +3357,10 @@
     {
       "id": "1312",
       "name": "米沙",
-      "aliases": [],
+      "aliases": [
+        "米莎",
+        "米哈伊尔"
+      ],
       "kind": "character",
       "rarity": 4,
       "element": "冰",
@@ -3061,7 +3412,23 @@
     {
       "id": "1313",
       "name": "星期日",
-      "aliases": [],
+      "aliases": [
+        "sunday",
+        "周日哥",
+        "周天哥",
+        "周天子",
+        "七休哥",
+        "孙答应",
+        "星期天",
+        "周末哥",
+        "鸡翅膀男孩",
+        "小鸡仔",
+        "翅膀头",
+        "鸡翅膀",
+        "工作日",
+        "牢日",
+        "老日"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -3113,7 +3480,9 @@
     {
       "id": "1314",
       "name": "翡翠",
-      "aliases": [],
+      "aliases": [
+        "慈玉"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -3165,7 +3534,13 @@
     {
       "id": "1315",
       "name": "波提欧",
-      "aliases": [],
+      "aliases": [
+        "bto",
+        "BTO",
+        "波提欧大人",
+        "牢波",
+        "老波"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -3223,7 +3598,14 @@
     {
       "id": "1317",
       "name": "乱破",
-      "aliases": [],
+      "aliases": [
+        "忍者",
+        "AKA3",
+        "缭乱忍侠",
+        "忍侠",
+        "牢乱",
+        "老乱"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -3285,7 +3667,11 @@
     {
       "id": "1321",
       "name": "大丽花",
-      "aliases": [],
+      "aliases": [
+        "dahlia",
+        "大力花",
+        "丽花"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -3395,7 +3781,24 @@
     {
       "id": "1402",
       "name": "阿格莱雅",
-      "aliases": [],
+      "aliases": [
+        "阿格来雅",
+        "阿格莱亚",
+        "阿格莱娅",
+        "织者",
+        "阿宝",
+        "阿雅",
+        "金织爵",
+        "裁缝女",
+        "KaLos618",
+        "浪漫",
+        "浪漫半神",
+        "浪漫泰坦",
+        "agly",
+        "ag",
+        "AG",
+        "双鞋电风扇"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "雷",
@@ -3477,7 +3880,21 @@
     {
       "id": "1403",
       "name": "缇宝",
-      "aliases": [],
+      "aliases": [
+        "提宝",
+        "啼宝",
+        "缇安",
+        "缇宁",
+        "提安",
+        "提宁",
+        "三缇人",
+        "缇里西庇俄丝",
+        "命运爵",
+        "HapLotes405",
+        "门径",
+        "门径半神",
+        "门径泰坦"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -3529,7 +3946,30 @@
     {
       "id": "1404",
       "name": "万敌",
-      "aliases": [],
+      "aliases": [
+        "万迪",
+        "万帝",
+        "小敌",
+        "不死的迈德漠斯",
+        "迈德漠斯",
+        "歌耳戈之子",
+        "歌耳戈",
+        "荡平万邦",
+        "以一人敌万人",
+        "天谴之矛",
+        "亡国的王储",
+        "蜜果羹",
+        "PoleMos600",
+        "背芒灵官",
+        "背芒金刚",
+        "纷争",
+        "纷争半神",
+        "纷争泰坦",
+        "牢万",
+        "牢敌",
+        "老万",
+        "老敌"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -3587,7 +4027,24 @@
     {
       "id": "1405",
       "name": "那刻夏",
-      "aliases": [],
+      "aliases": [
+        "小夏",
+        "阿那克萨戈拉斯",
+        "那克夏",
+        "那可夏",
+        "那科夏",
+        "那客夏",
+        "那刻夏老师",
+        "魔术技巧",
+        "下课呐",
+        "SkeMma720",
+        "努努斯",
+        "树庭居士",
+        "那我问你",
+        "理性",
+        "理性半神",
+        "理性泰坦"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -3639,7 +4096,31 @@
     {
       "id": "1406",
       "name": "赛飞儿",
-      "aliases": [],
+      "aliases": [
+        "贼星",
+        "赛法利娅",
+        "侠盗",
+        "赛菲儿",
+        "赛非儿",
+        "帕朵",
+        "猫猫",
+        "大猫猫",
+        "大猫咪",
+        "赛飞尔",
+        "哈基米",
+        "猫耳小贼",
+        "猫咪怪盗",
+        "猫女",
+        "OreXis945",
+        "猫咪神偷",
+        "捷足爵",
+        "小猫鱼",
+        "诡计",
+        "诡计半神",
+        "诡计泰坦",
+        "牢猫",
+        "老猫"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -3691,7 +4172,26 @@
     {
       "id": "1407",
       "name": "遐蝶",
-      "aliases": [],
+      "aliases": [
+        "蝶",
+        "瑕蝶",
+        "阿蝶",
+        "蝶宝",
+        "小蝶",
+        "夏蝶",
+        "霞蝶",
+        "暇蝶",
+        "紫霞天女",
+        "紫霞",
+        "冥河的女儿",
+        "冥河之女",
+        "死荫的侍女",
+        "你蝶",
+        "EpieiKeia216",
+        "死亡",
+        "死亡半神",
+        "死亡泰坦"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -3785,7 +4285,25 @@
     {
       "id": "1408",
       "name": "白厄",
-      "aliases": [],
+      "aliases": [
+        "卡厄斯兰那",
+        "黑厄",
+        "救世主",
+        "房主",
+        "小白",
+        "Neikos496",
+        "烈阳哥",
+        "比格椰",
+        "比格燚",
+        "比格夜",
+        "负阳逐火白厄真君",
+        "爱上雷神",
+        "永劫燔阳",
+        "刻法勒",
+        "负世",
+        "负世半神",
+        "负世泰坦"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -3861,7 +4379,30 @@
     {
       "id": "1409",
       "name": "风堇",
-      "aliases": [],
+      "aliases": [
+        "堇宝",
+        "雅辛忒丝",
+        "医师",
+        "风景",
+        "风谨",
+        "风馑",
+        "风瑾",
+        "风锦",
+        "粉芭芭拉",
+        "粉色芭芭拉",
+        "粉毛芭芭拉",
+        "白马",
+        "小白马",
+        "阳光彩虹小白马",
+        "彩虹马",
+        "天马",
+        "小伊卡",
+        "EleOs252",
+        "摇光爵",
+        "天空",
+        "天空半神",
+        "天空泰坦"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -3937,7 +4478,20 @@
     {
       "id": "1410",
       "name": "海瑟音",
-      "aliases": [],
+      "aliases": [
+        "海列屈拉",
+        "大海的女儿",
+        "海色音",
+        "拉琴女子",
+        "拉琴女",
+        "音鲸女子",
+        "音鲸",
+        "剑旗爵",
+        "ApoRia432",
+        "海洋",
+        "海洋半神",
+        "海洋泰坦"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -3989,7 +4543,20 @@
     {
       "id": "1412",
       "name": "刻律德菈",
-      "aliases": [],
+      "aliases": [
+        "君主",
+        "刻律德拉",
+        "克律得拉",
+        "刻律",
+        "凯撒",
+        "女皇",
+        "高人",
+        "小皇冠",
+        "HubRis504",
+        "律法",
+        "律法半神",
+        "律法泰坦"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -4041,7 +4608,16 @@
     {
       "id": "1413",
       "name": "长夜月",
-      "aliases": [],
+      "aliases": [
+        "evernight",
+        "长夜",
+        "长野月",
+        "长野原",
+        "黑三月",
+        "岁月",
+        "岁月半神",
+        "岁月泰坦"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "冰",
@@ -4123,7 +4699,26 @@
     {
       "id": "1414",
       "name": "丹恒•腾荒",
-      "aliases": [],
+      "aliases": [
+        "danhengpt",
+        "腾荒",
+        "腾荒君",
+        "腾荒丹恒",
+        "丹恒腾荒",
+        "丹恒·腾荒",
+        "丹恒腾荒君",
+        "丹荒",
+        "蛋黄",
+        "盾丹",
+        "丹腾",
+        "存护丹恒",
+        "炖蛋",
+        "荒笛",
+        "大地",
+        "大地半神",
+        "大地泰坦",
+        "丹宝"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -4175,7 +4770,23 @@
     {
       "id": "1415",
       "name": "昔涟",
-      "aliases": [],
+      "aliases": [
+        "cyrene",
+        "喜莲",
+        "希莲",
+        "希涟",
+        "西莲",
+        "西涟",
+        "昔莲",
+        "艾莉",
+        "爱莉",
+        "迷迷",
+        "德谬歌",
+        "粉色妖精",
+        "PhiLia093",
+        "桃子",
+        "昔米露"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "冰",
@@ -4263,7 +4874,13 @@
     {
       "id": "1501",
       "name": "火花",
-      "aliases": [],
+      "aliases": [
+        "Sparxie",
+        "🔥",
+        "花火sp",
+        "火花花",
+        "🔥🌸"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -4333,7 +4950,22 @@
     {
       "id": "1502",
       "name": "爻光",
-      "aliases": [],
+      "aliases": [
+        "yaoguang",
+        "摇光",
+        "尧光",
+        "瑶光",
+        "耀光",
+        "要逛",
+        "腰光",
+        "姚光",
+        "姚广",
+        "荣涛",
+        "荣涛将军",
+        "戎韬",
+        "戎韬将军",
+        "爻老板"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -4391,7 +5023,11 @@
     {
       "id": "1503",
       "name": "真珠",
-      "aliases": [],
+      "aliases": [
+        "pearl",
+        "珍珠",
+        "真猪"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "冰",
@@ -4461,7 +5097,20 @@
     {
       "id": "1504",
       "name": "不死途",
-      "aliases": [],
+      "aliases": [
+        "ashveil",
+        "侦探",
+        "不死徒",
+        "名侦探",
+        "牢不",
+        "牢不死",
+        "牢途",
+        "老不死",
+        "游侠牢大",
+        "游侠老大",
+        "老不",
+        "老途"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "雷",
@@ -4513,7 +5162,14 @@
     {
       "id": "1505",
       "name": "绯英",
-      "aliases": [],
+      "aliases": [
+        "evanescia",
+        "绯樱",
+        "八重樱",
+        "驴",
+        "樱花妹",
+        "飞鹰"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -4571,7 +5227,24 @@
     {
       "id": "1506",
       "name": "银狼LV.999",
-      "aliases": [],
+      "aliases": [
+        "sw999",
+        "狼尊",
+        "999",
+        "狼9",
+        "9狼",
+        "999狼",
+        "狼99",
+        "狼999",
+        "银狼lv.999",
+        "银狼lv999",
+        "银狼sp",
+        "银狼SP",
+        "银狼999",
+        "sp银狼",
+        "零号",
+        "金狼"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -4641,7 +5314,14 @@
     {
       "id": "1507",
       "name": "千冶•刃",
-      "aliases": [],
+      "aliases": [
+        "mortenaxblade",
+        "SP刃",
+        "刃SP",
+        "sp刃",
+        "刃sp",
+        "千冶刃"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -4705,7 +5385,11 @@
     {
       "id": "1508",
       "name": "远坂凛",
-      "aliases": [],
+      "aliases": [
+        "tohsakarin",
+        "凛",
+        "红色恶魔"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -4769,7 +5453,14 @@
     {
       "id": "1509",
       "name": "吉尔伽美什",
-      "aliases": [],
+      "aliases": [
+        "gilgamesh",
+        "金闪闪",
+        "闪闪",
+        "路灯王",
+        "‌金皮卡‌",
+        "英雄王‌"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "雷",
@@ -4827,7 +5518,16 @@
     {
       "id": "1510",
       "name": "姬子•启行",
-      "aliases": [],
+      "aliases": [
+        "himekonova",
+        "姬子SP",
+        "SP姬子",
+        "姬子sp",
+        "sp姬子",
+        "姬子·启行",
+        "姬子启行",
+        "启行姬子"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -4909,7 +5609,18 @@
     {
       "id": "1512",
       "name": "知更鸟•晴歌",
-      "aliases": [],
+      "aliases": [
+        "知更鸟·晴歌",
+        "晴歌",
+        "知更鸟晴歌",
+        "sp知更鸟",
+        "知更鸟SP",
+        "知更鸟sp",
+        "SP知更鸟",
+        "sp鸟",
+        "SP鸟",
+        "水鸟"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -4985,7 +5696,16 @@
     {
       "id": "1513",
       "name": "砂金•戏浪",
-      "aliases": [],
+      "aliases": [
+        "砂金·戏浪",
+        "戏浪",
+        "砂金戏浪",
+        "sp砂金",
+        "砂金SP",
+        "砂金sp",
+        "SP砂金",
+        "水砂"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -5474,7 +6194,18 @@
     {
       "id": "2004",
       "name": "瓦尔特Pro",
-      "aliases": [],
+      "aliases": [
+        "welt2",
+        "老杨加强",
+        "杨叔加强",
+        "瓦尔特杨Pro",
+        "第一律者Pro",
+        "手搓黑洞Pro",
+        "加强版瓦尔特杨",
+        "加强版老杨",
+        "牢杨pro",
+        "老杨pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -5526,7 +6257,16 @@
     {
       "id": "2005",
       "name": "卡芙卡Pro",
-      "aliases": [],
+      "aliases": [
+        "卡芙卡pro",
+        "亲妈Pro",
+        "卡夫卡Pro",
+        "卡妈Pro",
+        "加强卡芙卡",
+        "加强版卡芙卡",
+        "加强版卡夫卡",
+        "加强版卡妈"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "雷",
@@ -5578,7 +6318,21 @@
     {
       "id": "2006",
       "name": "银狼Pro",
-      "aliases": [],
+      "aliases": [
+        "银狼pro",
+        "小鸭鸭Pro",
+        "小板鸭Pro",
+        "黑客Pro",
+        "骇客Pro",
+        "骇兔Pro",
+        "憨色鸭Pro",
+        "憨鸭Pro",
+        "加强版银狼",
+        "加强银狼",
+        "银狼加强版",
+        "牢狼pro",
+        "老狼pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -5851,7 +6605,9 @@
     {
       "id": "21013",
       "name": "别让世界静下来",
-      "aliases": [],
+      "aliases": [
+        "别让世界静下"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -5885,7 +6641,9 @@
     {
       "id": "21015",
       "name": "决心如汗珠般闪耀",
-      "aliases": [],
+      "aliases": [
+        "汗珠般闪耀"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -5936,7 +6694,9 @@
     {
       "id": "21018",
       "name": "舞！舞！舞！",
-      "aliases": [],
+      "aliases": [
+        "舞舞舞"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -5970,7 +6730,21 @@
     {
       "id": "2102",
       "name": "希儿Pro",
-      "aliases": [],
+      "aliases": [
+        "seele2",
+        "希尔加强",
+        "蝴蝶加强",
+        "云天明",
+        "加强版希尔",
+        "加强版希儿",
+        "地下城女王pro",
+        "希儿•没有姓pro",
+        "电焊师傅pro",
+        "火箭头槌pro",
+        "头部发射器pro",
+        "牢希pro",
+        "老希pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -6124,7 +6898,9 @@
     {
       "id": "21026",
       "name": "汪！散步时间！",
-      "aliases": [],
+      "aliases": [
+        "散步时间"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6260,7 +7036,9 @@
     {
       "id": "21034",
       "name": "今日亦是和平的一日",
-      "aliases": [],
+      "aliases": [
+        "今日亦是和平"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6294,7 +7072,9 @@
     {
       "id": "21036",
       "name": "美梦小镇大冒险",
-      "aliases": [],
+      "aliases": [
+        "美梦小镇"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6396,7 +7176,9 @@
     {
       "id": "21042",
       "name": "铭记于心的约定",
-      "aliases": [],
+      "aliases": [
+        "铭记于心"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6413,7 +7195,9 @@
     {
       "id": "21043",
       "name": "两个人的演唱会",
-      "aliases": [],
+      "aliases": [
+        "两人的演唱会"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6515,7 +7299,9 @@
     {
       "id": "21050",
       "name": "胜利只在朝夕间",
-      "aliases": [],
+      "aliases": [
+        "胜利只在朝夕"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6549,7 +7335,9 @@
     {
       "id": "21052",
       "name": "多流汗，少流泪",
-      "aliases": [],
+      "aliases": [
+        "多流汗少流泪"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6770,7 +7558,9 @@
     {
       "id": "22000",
       "name": "新手任务开始前",
-      "aliases": [],
+      "aliases": [
+        "新手任务"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6804,7 +7594,9 @@
     {
       "id": "22002",
       "name": "为了明日的旅途",
-      "aliases": [],
+      "aliases": [
+        "明日的旅途"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6821,7 +7613,9 @@
     {
       "id": "22003",
       "name": "忍事录•音律狩猎",
-      "aliases": [],
+      "aliases": [
+        "音律狩猎"
+      ],
       "kind": "weapon",
       "rarity": 4,
       "element": "",
@@ -6923,7 +7717,16 @@
     {
       "id": "2205",
       "name": "刃Pro",
-      "aliases": [],
+      "aliases": [
+        "刃pro",
+        "刃刃Pro",
+        "应星Pro",
+        "加强版刃",
+        "加强刃",
+        "刃加强版",
+        "牢刃pro",
+        "老刃pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -6981,7 +7784,16 @@
     {
       "id": "2212",
       "name": "镜流Pro",
-      "aliases": [],
+      "aliases": [
+        "镜流加强版",
+        "镜流pro",
+        "加强版镜流",
+        "加强镜流",
+        "照彻万川pro",
+        "无罅飞光pro",
+        "牢镜pro",
+        "老镜pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "冰",
@@ -7039,7 +7851,20 @@
     {
       "id": "2217",
       "name": "藿藿Pro",
-      "aliases": [],
+      "aliases": [
+        "huohuo2",
+        "尾巴Pro",
+        "藿香Pro",
+        "藿去病Pro",
+        "霍去病Pro",
+        "尾巴小跟班Pro",
+        "小怂包Pro",
+        "霍霍加强",
+        "嚯嚯加强",
+        "加强版霍霍",
+        "牢藿pro",
+        "老藿pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -7125,7 +7950,9 @@
     {
       "id": "23002",
       "name": "无可取代的东西",
-      "aliases": [],
+      "aliases": [
+        "无可取代东西"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7142,7 +7969,9 @@
     {
       "id": "23003",
       "name": "但战斗还未结束",
-      "aliases": [],
+      "aliases": [
+        "战斗还未结束"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7346,7 +8175,9 @@
     {
       "id": "23015",
       "name": "比阳光更明亮的",
-      "aliases": [],
+      "aliases": [
+        "比阳光更明亮"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7363,7 +8194,9 @@
     {
       "id": "23016",
       "name": "烦恼着，幸福着",
-      "aliases": [],
+      "aliases": [
+        "烦恼着幸福着"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7397,7 +8230,9 @@
     {
       "id": "23018",
       "name": "片刻，留在眼底",
-      "aliases": [],
+      "aliases": [
+        "片刻留在眼底"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7431,7 +8266,9 @@
     {
       "id": "23020",
       "name": "纯粹思维的洗礼",
-      "aliases": [],
+      "aliases": [
+        "纯粹思维"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7550,7 +8387,9 @@
     {
       "id": "23027",
       "name": "驶向第二次生命",
-      "aliases": [],
+      "aliases": [
+        "驶向二次生命"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7652,7 +8491,9 @@
     {
       "id": "23033",
       "name": "忍法帖•缭乱破魔",
-      "aliases": [],
+      "aliases": [
+        "缭乱破魔"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7669,7 +8510,9 @@
     {
       "id": "23034",
       "name": "回到大地的飞行",
-      "aliases": [],
+      "aliases": [
+        "回到大地飞行"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7703,7 +8546,9 @@
     {
       "id": "23036",
       "name": "将光阴织成黄金",
-      "aliases": [],
+      "aliases": [
+        "光阴织成黄金"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7771,7 +8616,9 @@
     {
       "id": "23040",
       "name": "让告别，更美一些",
-      "aliases": [],
+      "aliases": [
+        "让告别更美"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7788,7 +8635,9 @@
     {
       "id": "23041",
       "name": "生命当付之一炬",
-      "aliases": [],
+      "aliases": [
+        "生命付之一炬"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7822,7 +8671,9 @@
     {
       "id": "23043",
       "name": "谎言在风中飘扬",
-      "aliases": [],
+      "aliases": [
+        "谎言风中飘扬"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -7839,7 +8690,9 @@
     {
       "id": "23044",
       "name": "黎明恰如此燃烧",
-      "aliases": [],
+      "aliases": [
+        "黎明如此燃烧"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -8060,7 +8913,9 @@
     {
       "id": "23057",
       "name": "欢迎来到银河城",
-      "aliases": [],
+      "aliases": [
+        "银河城"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -8111,7 +8966,14 @@
     {
       "id": "2306",
       "name": "花火Pro",
-      "aliases": [],
+      "aliases": [
+        "sparkle2",
+        "花火pro",
+        "花火加强版",
+        "加强版花火",
+        "牢花pro",
+        "老花pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "量子",
@@ -8248,7 +9110,17 @@
     {
       "id": "2307",
       "name": "黑天鹅Pro",
-      "aliases": [],
+      "aliases": [
+        "blackswan2",
+        "黑天鹅pro",
+        "黑天鹅加强版",
+        "加强版黑天鹅",
+        "我又出手了",
+        "神秘出手女",
+        "出手女子",
+        "牢鹅pro",
+        "老鹅pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "风",
@@ -8300,7 +9172,18 @@
     {
       "id": "2310",
       "name": "流萤Pro",
-      "aliases": [],
+      "aliases": [
+        "firefly2",
+        "sam2",
+        "小女友Pro",
+        "萨姆Pro",
+        "萨缪尔Pro",
+        "流莹加强",
+        "流荧加强",
+        "流萤加强",
+        "牢萤pro",
+        "老萤pro"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -8364,7 +9247,9 @@
     {
       "id": "24000",
       "name": "记一位星神的陨落",
-      "aliases": [],
+      "aliases": [
+        "星神的陨落"
+      ],
       "kind": "weapon",
       "rarity": 5,
       "element": "",
@@ -8483,7 +9368,19 @@
     {
       "id": "8001",
       "name": "穹·毁灭",
-      "aliases": [],
+      "aliases": [
+        "穹毁灭",
+        "毁灭穹",
+        "星毁灭",
+        "毁灭星",
+        "物理主",
+        "物理主角",
+        "毁灭主",
+        "毁灭主角",
+        "毁灭开拓者",
+        "开拓者毁灭",
+        "开拓者·毁灭"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "物理",
@@ -8599,7 +9496,19 @@
     {
       "id": "8003",
       "name": "穹·存护",
-      "aliases": [],
+      "aliases": [
+        "穹存护",
+        "存护穹",
+        "星存护",
+        "存护星",
+        "火主",
+        "火主角",
+        "存护主",
+        "存护主角",
+        "存护开拓者",
+        "开拓者存护",
+        "开拓者·存护"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "火",
@@ -8715,7 +9624,21 @@
     {
       "id": "8005",
       "name": "穹·同谐",
-      "aliases": [],
+      "aliases": [
+        "穹同谐",
+        "同谐穹",
+        "星同谐",
+        "同谐星",
+        "虚数主",
+        "虚数主角",
+        "同谐主",
+        "同谐主角",
+        "同协主",
+        "同协主角",
+        "同谐开拓者",
+        "开拓者同谐",
+        "开拓者·同谐"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "虚数",
@@ -8819,7 +9742,19 @@
     {
       "id": "8007",
       "name": "穹·记忆",
-      "aliases": [],
+      "aliases": [
+        "穹记忆",
+        "记忆穹",
+        "星记忆",
+        "记忆星",
+        "冰主",
+        "冰主角",
+        "记忆主",
+        "记忆主角",
+        "记忆开拓者",
+        "开拓者记忆",
+        "开拓者·记忆"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "冰",
@@ -8995,7 +9930,17 @@
     {
       "id": "8009",
       "name": "穹·欢愉",
-      "aliases": [],
+      "aliases": [
+        "穹欢愉",
+        "欢愉穹",
+        "星欢愉",
+        "欢愉星",
+        "欢愉主",
+        "欢愉主角",
+        "欢愉开拓者",
+        "开拓者欢愉",
+        "开拓者·欢愉"
+      ],
       "kind": "character",
       "rarity": 5,
       "element": "雷",
@@ -9052,7 +9997,7 @@
     },
     {
       "id": "8010",
-      "name": "星·同谐",
+      "name": "星·欢愉",
       "aliases": [],
       "kind": "character",
       "rarity": 5,
