@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "kind", "title", "period", "badge", "begin", "end", "star_num", "extra_star_num", "max_floor", "battle_num", "bosses", "floors"],
+  "properties": {
+    "uid": { "type": "string" },
+    "kind": { "enum": ["challenge", "story", "boss"] },
+    "title": { "type": "string" },
+    "period": { "type": "string" },
+    "badge": { "enum": ["", "new", "expiring"] },
+    "begin": { "type": "string" },
+    "end": { "type": "string" },
+    "star_num": { "type": "integer" },
+    "extra_star_num": { "type": "integer" },
+    "max_floor": { "type": "string" },
+    "battle_num": { "type": "string" },
+    "bosses": { "type": "array" },
+    "floors": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

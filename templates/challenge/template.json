@@ -1,0 +1,11 @@
+{
+  "id": "challenge",
+  "name": "星铁深渊战绩",
+  "description": "混沌回忆、虚构叙事与末日幻影的战绩图片，布局参照 StarRail-plugin",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 800,
+  "height": 2400
+}

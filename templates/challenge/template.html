@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container {{ .kind }}">
+  <h2 class="head">UID: {{ .uid }} 的{{ .title }}数据 <span class="tag">{{ .period }}</span></h2>
+  <div class="body">
+    <div class="time-container">
+      {{ if eq .badge "new" }}
+      <div class="count">统计周期: {{ .begin }}-{{ .end }} <img class="golden-clock" data-render-resource="golden-clock" alt=""></div>
+      <div class="golden">NEW!</div>
+      {{ else if eq .badge "expiring" }}
+      <div class="count">统计周期: {{ .begin }}-{{ .end }} <img class="red-clock" data-render-resource="red-clock" alt=""></div>
+      <div class="red">EXPIRING⚠</div>
+      {{ else }}
+      <div class="count">统计周期: {{ .begin }}-{{ .end }}</div>
+      {{ end }}
+    </div>
+    <div class="summar">
+      <h2>{{ .title }}挑战回顾</h2>
+      <div class="summar-content">
+        <div class="summar-star">
+          <div class="summar-star-row"><img class="rogue-star" data-render-resource="rogue-star" alt="">X {{ .star_num }}</div>
+          {{ if .extra_star_num }}<div class="summar-star-row"><img class="rogue-star" data-render-resource="abyss-star" alt="">X {{ .extra_star_num }}</div>{{ end }}
+        </div>
+        <div class="summar-info">
+          <div>最深抵达: {{ .max_floor }}</div>
+          <div class="battles">战斗次数: {{ .battle_num }}</div>
+        </div>
+      </div>
+      {{ if .bosses }}
+      <div class="summar-content">
+        {{ range .bosses }}
+        <div class="boss-node{{ if .third }} boss-node3{{ end }}">
+          <div class="boss-info"><p>{{ .label }}</p><p>{{ .name }}</p></div>
+          <div class="boss-image"><img class="boss"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        </div>
+        {{ end }}
+      </div>
+      {{ end }}
+    </div>
+    <div class="detail-list">
+      {{ range .floors }}
+      <div class="detail-item">
+        <div class="detail-border">
+          <div class="detail-head">
+            {{ if .has_round }}
+            <div class="detail-title"><p>{{ .name }}</p><p>使用轮: {{ .round }}</p></div>
+            {{ else }}
+            <div class="detail-title-no-round"><p>{{ .name }}</p></div>
+            {{ end }}
+            {{ if .score }}
+            <div class="detail-result">
+              <div class="detail-star-small">{{ range .stars }}<img class="rogue-star-small" data-render-resource="{{ . }}" alt="">{{ end }}</div>
+              <div class="detail-score"><p>总分： <span>{{ .score }}</span></p></div>
+            </div>
+            {{ else }}
+            <div class="detail-star">{{ range .stars }}<img class="rogue-star" data-render-resource="{{ . }}" alt="">{{ end }}</div>
+            {{ end }}
+          </div>
+          <div class="detail-body">
+            {{ range .nodes }}
+            <div class="detail-node{{ if .third }} detail-node3{{ end }}">
+              <div class="detail-bar{{ if .third }} detail-bar-node3{{ end }}">
+                <div class="detail-node-title">
+                  {{ if .third }}<img class="node3-crown" data-render-resource="node3-crown" alt="">{{ end }}
+                  {{ if .boss }}
+                  {{ .label }}
+                  {{ if .defeated }}<span class="detail-boss-defeated-text">已击败首领</span>{{ else }}<span class="detail-boss-not-defeated-text">未击败首领</span>{{ end }}
+                  <p>{{ .time }}</p>
+                  {{ else }}
+                  {{ .label }} <span>{{ .time }}</span>
+                  {{ end }}
+                </div>
+                <div class="detail-node-score">{{ if .score }}<p>积分： <span>{{ .score }}</span></p>{{ end }}</div>
+              </div>
+              <div class="detail-avatars">
+                {{ range .avatars }}
+                <div class="detail-avatar rank{{ .rarity }}">
+                  <div class="detail-avatar-border">
+                    <span class="life life{{ .rank }}">{{ .rank }}魂</span>
+                    <img class="element"{{ with .element }} data-render-resource="{{ . }}"{{ end }} alt="">
+                    <img class="char"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+                    <div class="level">等级 {{ .level }}</div>
+                  </div>
+                </div>
+                {{ end }}
+              </div>
+              <div class="detail-buff">
+                {{ with .buff }}
+                <div class="detail-buff-border">
+                  <div class="buff-col"><div class="buff-icon-container"><img class="buff-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div></div>
+                  <div class="description-col"><div class="buff-description">{{ .name }}：<span>{{ .desc }}</span></div></div>
+                </div>
+                {{ end }}
+              </div>
+            </div>
+            {{ end }}
+          </div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>
