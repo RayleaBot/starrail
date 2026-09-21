@@ -563,6 +563,343 @@ exports.default = {
 
 return exports;})().default;
 const weaponBuffs={};
+const artiMeta=(()=>{const attrs=(()=>{const exports={};
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.attrMap = exports.subAttr = exports.mainAttr = void 0;
+exports.mainAttr = {
+    3: 'atk,def,hp,cpct,cdmg,heal,effPct'.split(','),
+    4: 'atk,def,hp,speed'.split(','),
+    5: 'atk,def,hp,dmg'.split(','),
+    6: 'atk,def,hp,recharge,stance'.split(',')
+};
+exports.subAttr = 'atk,atkPlus,def,defPlus,hp,hpPlus,speed,cpct,cdmg,effPct,effDef,stance'.split(',');
+/**
+ * 圣遗物词条配置
+ * @[]value 副词条单次提升值（最大档位）
+ * @[]valueMin 副词条单次提升最小值
+ * @[]calc 伤害计算时变更的字段type
+ * @[]type 词条的类型 normal:普通字段 plus:小词条
+ * @[]base 词条类型为小词条时，对应的大词条
+ * @[]text 展示文字
+ */
+const attrMap = {
+    atk: { title: '大攻击', format: 'pct', calc: 'pct', value: 4.32 },
+    atkPlus: { title: '小攻击', format: 'comma', value: 127 / 6 },
+    def: { title: '大防御', format: 'pct', calc: 'pct', value: 5.4 },
+    defPlus: { title: '小防御', format: 'comma', value: 127 / 6 },
+    hp: { title: '大生命', format: 'pct', calc: 'pct', value: 4.32 },
+    hpPlus: { title: '小生命', format: 'comma', value: 254 / 6 },
+    speed: { title: '速度', format: 'comma', calc: 'plus', value: 2.6 },
+    cpct: { title: '暴击率', format: 'pct', calc: 'plus', value: 3.24 },
+    cdmg: { title: '暴击伤害', format: 'pct', calc: 'plus', value: 6.48 },
+    recharge: { title: '充能效率', format: 'pct', calc: 'plus', value: 3.11 },
+    dmg: { title: '伤害加成', format: 'pct', value: 6.22 },
+    heal: { title: '治疗加成', format: 'pct', calc: 'pct', value: 5.53 },
+    stance: { title: '击破特攻', format: 'pct', value: 6.48, calc: 'pct' },
+    effPct: { title: '效果命中', format: 'pct', value: 4.32, calc: 'pct' },
+    effDef: { title: '效果抵抗', format: 'pct', value: 4.32, calc: 'pct' }
+};
+exports.attrMap = attrMap;
+lodash.forEach(attrMap, (attr, key) => {
+    // 设置value
+    if (!attr.value) {
+        return true;
+    }
+    // 设置type
+    attr.base = { hpPlus: 'hp', atkPlus: 'atk', defPlus: 'def' }[key];
+    attr.type = attr.base ? 'plus' : 'normal';
+    // 设置展示文字
+    attr.text = Format[attr.format](attr.value, 2);
+});
+
+return exports;})();const alias=(()=>{const exports={};
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.aliasCfg = exports.artiSetAbbr = exports.artiAbbr = void 0;
+exports.artiAbbr = {
+    快枪手的野穗毡帽: '快枪手的毡帽',
+    快枪手的粗革手套: '快枪手的手套',
+    快枪手的猎风披肩: '快枪手的披肩',
+    快枪手的铆钉马靴: '快枪手的铆钉靴',
+    废土客的呼吸面罩: '废土客的面罩',
+    废土客的荒漠终端: '废土客的终端',
+    废土客的修士长袍: '废土客的长袍',
+    废土客的动力腿甲: '废土客的腿甲',
+    '「黑塔」的空间站点': '黑塔的空间站点',
+    '「黑塔」的漫历轨迹': '黑塔的漫历轨迹',
+    罗浮仙舟的天外楼船: '罗浮仙舟的楼船',
+    罗浮仙舟的建木枝蔓: '罗浮仙舟的建木',
+    贝洛伯格的存护堡垒: '贝洛伯格的堡垒',
+    贝洛伯格的铁卫防线: '贝洛伯格的防线',
+    螺丝星的机械烈阳: '螺丝星的烈阳',
+    螺丝星的环星孔带: '螺丝星的孔带',
+    萨尔索图的移动城市: '萨尔索图的城市',
+    萨尔索图的晨昏界线: '萨尔索图的界线',
+    塔利亚的钉壳小镇: '塔利亚的小镇',
+    塔利亚的裸皮电线: '塔利亚的电线',
+    翁瓦克的诞生之岛: '翁瓦克的诞生岛',
+    翁瓦克的环岛海岸: '翁瓦克的海岸',
+    泰科铵的镭射球场: '泰科铵的球场',
+    泰科铵的弧光赛道: '泰科铵的赛道',
+    伊须磨洲的残船鲸落: '伊须磨洲的鲸落',
+    伊须磨洲的坼裂缆索: '伊须磨洲的缆索',
+    格拉默的铁骑兵团: '格拉默的兵团',
+    格拉默的寂静坟碑: '格拉默的坟碑',
+    匹诺康尼的堂皇酒店: '匹诺康尼的酒店',
+    匹诺康尼的逐梦轨道: '匹诺康尼的轨道',
+    钟表匠的极目透镜: '钟表匠的透镜',
+    钟表匠的交运腕表: '钟表匠的腕表',
+    钟表匠的空幻礼服: '钟表匠的礼服',
+    钟表匠的隐梦革履: '钟表匠的革履',
+    铸炼宫的莲华灯芯: '铸炼宫的灯芯',
+    铸炼宫的焰轮天绸: '铸炼宫的天绸'
+};
+exports.artiSetAbbr = {
+    盗匪荒漠的废土客: '虚数套',
+    繁星璀璨的天才: '量子套',
+    激奏雷电的乐队: '雷套',
+    熔岩锻铸的火匠: '火套',
+    晨昏交界的翔鹰: '风套',
+    野穗伴行的快枪手: '快枪手',
+    密林卧雪的猎人: '冰套',
+    流星追迹的怪盗: '怪盗',
+    街头出身的拳王: '拳王',
+    云无留迹的过客: '过客',
+    戍卫风雪的铁卫: '铁卫',
+    净庭教宗的圣骑士: '圣骑士',
+    筑城者的贝洛伯格: '筑城者',
+    星体差分机: '差分机',
+    停转的萨尔索图: '停转',
+    不老者的仙舟: '仙舟',
+    盗贼公国塔利亚: '盗贼',
+    泛银河商业公司: '泛银河',
+    太空封印站: '太空',
+    生命的翁瓦克: '翁瓦克',
+    繁星竞技场: '竞技场',
+    折断的龙骨: '龙骨',
+    宝命长存的莳者: '莳者',
+    骇域漫游的信使: '信使',
+    毁烬焚骨的大公: '大公',
+    幽锁深牢的系囚: '系囚',
+    苍穹战线格拉默: '苍穹',
+    梦想之地匹诺康尼: '梦想',
+    死水深潜的先驱: '死水',
+    机心戏梦的钟表匠: '机心',
+    无主荒星茨冈尼亚: '荒星',
+    出云显世与高天神国: '出云',
+    荡除蠹灾的铁骑: '铁骑',
+    风举云飞的勇烈: '勇烈',
+    奔狼的都蓝王朝: '奔狼',
+    劫火莲灯铸炼宫: '劫火',
+    奇想蕉乐园: '蕉乐园',
+    沉陆海域露莎卡: '露莎卡',
+    重循苦旅的司铎: '司铎',
+    识海迷坠的学者: '学者',
+    凯歌祝捷的英豪: '英豪',
+    哀歌覆国的诗人: '诗人',
+    谧宁拾骨地: '拾骨',
+    渊思寂虑的巨树: '巨树',
+    烈阳惊雷的女武神: '女武神',
+    恶海逐波的船长: '船长',
+    沉欢醉饮的海隅: '海隅',
+    妖精织梦的乐园: '乐园',
+    再创天地的救世主: '救世主',
+    自匿星芒的隐士: '隐士',
+    '天国@直播间': '天国',
+    永恒之地翁法罗斯: '翁法罗斯',
+    应天涉远的卜者: '卜者',
+    闪耀功勋的魔法少女: '少女',
+    零号关卡朋克洛德: '零号',
+    千星荟萃之城: '荟萃之城',
+    叩问天工的名冶: '名冶',
+    星如我见的领航员: '领航员',
+    坠星启航地: '坠星,启航',
+    寰宇生研院: '寰宇,生研院'
+};
+exports.aliasCfg = {
+    盗匪荒漠的废土客: '虚数套,废土',
+    繁星璀璨的天才: '量子套',
+    激奏雷电的乐队: '雷套,雷电',
+    熔岩锻铸的火匠: '火套',
+    晨昏交界的翔鹰: '风套',
+    野穗伴行的快枪手: '快枪手,快枪',
+    密林卧雪的猎人: '冰套',
+    流星追迹的怪盗: '怪盗',
+    街头出身的拳王: '拳王,物理套',
+    云无留迹的过客: '过客,云无留迹',
+    戍卫风雪的铁卫: '铁卫,风雪',
+    净庭教宗的圣骑士: '圣骑士,圣骑士',
+    筑城者的贝洛伯格: '筑城者,贝洛伯格,筑城',
+    星体差分机: '差分机,星体',
+    停转的萨尔索图: '停转,萨尔索图,萨尔',
+    不老者的仙舟: '仙舟,不老者,不老',
+    盗贼公国塔利亚: '盗贼,塔利亚',
+    泛银河商业公司: '泛银河,银河,商业',
+    太空封印站: '太空,封印站',
+    生命的翁瓦克: '翁瓦克,生命',
+    繁星竞技场: '繁星,竞技场',
+    折断的龙骨: '龙骨',
+    宝命长存的莳者: '莳者,时者',
+    骇域漫游的信使: '信使,信使套',
+    毁烬焚骨的大公: '毁烬,焚骨,毁烬焚骨,追加套,追加攻击套,追伤套',
+    幽锁深牢的系囚: '幽锁,深牢,幽锁深牢,持续伤害套',
+    苍穹战线格拉默: '苍穹,战线,苍穹战线,格拉默',
+    梦想之地匹诺康尼: '梦想,梦想之地,匹诺康尼',
+    死水深潜的先驱: '死水,深潜,死水深潜,死水套,深潜套',
+    机心戏梦的钟表匠: '机心,钟表匠,机心套,钟表套',
+    无主荒星茨冈尼亚: '荒星,无主荒星,茨冈尼亚',
+    出云显世与高天神国: '出云,出云显世,高天神国',
+    荡除蠹灾的铁骑: '铁骑,铁骑套,超击破套',
+    风举云飞的勇烈: '风举云飞,勇烈,勇烈套,终追套',
+    奔狼的都蓝王朝: '都蓝王朝,都蓝,都蓝套,奔狼套',
+    劫火莲灯铸炼宫: '劫火莲灯,铸炼宫,劫火,劫火套',
+    奇想蕉乐园: '奇想,蕉乐园,蕉蕉,乐园,奇想套,蕉乐园套,蕉蕉套,乐园套',
+    沉陆海域露莎卡: '沉陆,海域,露莎卡,沉陆套,海域套,露莎卡套',
+    重循苦旅的司铎: '司铎,司铎套',
+    识海迷坠的学者: '学者,学者套',
+    凯歌祝捷的英豪: '凯歌,英豪,凯歌套,英豪套',
+    哀歌覆国的诗人: '诗人,诗人套',
+    谧宁拾骨地: '拾骨,骨地,拾骨套,骨地套',
+    渊思寂虑的巨树: '巨树,巨树套',
+    烈阳惊雷的女武神: '女武神,女武神套',
+    恶海逐波的船长: '船长,船长套',
+    妖精织梦的乐园: '妖精,织梦,乐园,妖精乐园',
+    沉欢醉饮的海隅: '沉欢醉饮的海偶,沉欢醉饮,海隅,海偶',
+    再创天地的救世主: '救世主',
+    自匿星芒的隐士: '隐士',
+    '天国@直播间': '天国直播间,天国,直播间',
+    永恒之地翁法罗斯: '翁法罗斯,永恒之地,永恒',
+    应天涉远的卜者: '应天涉远,卜者',
+    闪耀功勋的魔法少女: '闪耀功勋,魔法少女',
+    零号关卡朋克洛德: '零号关卡,朋克洛德',
+    千星荟萃之城: '千星,荟萃之城',
+    叩问天工的名冶: '天工,名冶',
+    星如我见的领航员: '领航员,我见',
+    坠星启航地: '坠星,启航',
+    寰宇生研院: '寰宇,生研院'
+};
+
+return exports;})();const mark=(()=>{const exports={};
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.usefulAttr = void 0;
+/**
+ * 角色的默认评分规则
+ * 如character/${name}/artis.js下有角色自定义规则优先使用自定义
+ */
+exports.usefulAttr = {
+    真珠: { hp: 0, atk: 0, def: 100, speed: 75, cpct: 0, cdmg: 0, stance: 0, heal: 100, recharge: 100, effPct: 0, effDef: 100, dmg: 0 },
+    '知更鸟•晴歌': { hp: 100, atk: 0, def: 0, speed: 100, cpct: 50, cdmg: 50, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 0 },
+    '砂金•戏浪': { hp: 100, atk: 0, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 0, dmg: 0 },
+    远坂凛: { hp: 0, atk: 100, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    吉尔伽美什: { hp: 0, atk: 100, def: 0, speed: 0, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 0, dmg: 100 },
+    '姬子•启行': { hp: 0, atk: 100, def: 0, speed: 0, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    '千冶•刃': { hp: 100, atk: 0, def: 0, speed: 50, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 50 },
+    绯英: { hp: 0, atk: 100, def: 0, speed: 50, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    '银狼LV.999': { hp: 10, atk: 0, def: 10, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 0, dmg: 0 },
+    不死途: { hp: 0, atk: 100, def: 0, speed: 50, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 0, dmg: 100 },
+    火花: { hp: 0, atk: 75, def: 0, speed: 50, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 0 },
+    爻光: { hp: 75, atk: 0, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 0 },
+    大丽花: { hp: 20, atk: 100, def: 20, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 0, recharge: 30, effPct: 0, effDef: 30, dmg: 0 },
+    昔涟: { hp: 100, atk: 0, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    '丹恒•腾荒': { hp: 0, atk: 100, def: 0, speed: 100, cpct: 50, cdmg: 50, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 50 },
+    长夜月: { hp: 100, atk: 0, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    海瑟音: { hp: 0, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 0, effPct: 100, effDef: 0, dmg: 100 },
+    刻律德菈: { hp: 0, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    白厄: { hp: 0, atk: 75, def: 0, speed: 0, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 0, dmg: 100 },
+    赛飞儿: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 75, effDef: 0, dmg: 100 },
+    风堇: { hp: 100, atk: 0, def: 0, speed: 100, cpct: 0, cdmg: 75, stance: 0, heal: 100, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    那刻夏: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    遐蝶: { hp: 100, atk: 0, def: 0, speed: 0, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 30, dmg: 100 },
+    万敌: { hp: 100, atk: 0, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    缇宝: { hp: 100, atk: 0, def: 0, speed: 0, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    阿格莱雅: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 0, dmg: 100 },
+    大黑塔: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 0, dmg: 100 },
+    忘归人: { hp: 50, atk: 0, def: 50, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 0, recharge: 100, effPct: 100, effDef: 0, dmg: 0 },
+    星期日: { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    乱破: { hp: 30, atk: 100, def: 30, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 0, recharge: 0, effPct: 0, effDef: 30, dmg: 0 },
+    灵砂: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 100, recharge: 100, effPct: 0, effDef: 0, dmg: 0 },
+    飞霄: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    云璃: { hp: 0, atk: 75, def: 0, speed: 0, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    貊泽: { hp: 0, atk: 75, def: 0, speed: 50, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    椒丘: { hp: 75, atk: 50, def: 75, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 0, effPct: 100, effDef: 50, dmg: 0 },
+    翡翠: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    流萤: { hp: 30, atk: 100, def: 30, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 0, recharge: 0, effPct: 0, effDef: 30, dmg: 0 },
+    流萤Pro: { hp: 10, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 0, recharge: 0, effPct: 0, effDef: 30, dmg: 0 },
+    波提欧: { hp: 50, atk: 50, def: 50, speed: 100, cpct: 50, cdmg: 50, stance: 100, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 50 },
+    知更鸟: { hp: 75, atk: 100, def: 75, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    砂金: { hp: 0, atk: 0, def: 100, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 75, effPct: 0, effDef: 50, dmg: 100 },
+    加拉赫: { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 100, recharge: 75, effPct: 0, effDef: 50, dmg: 0 },
+    黄泉: { hp: 0, atk: 100, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 0, dmg: 100 },
+    米沙: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 75, effPct: 0, effDef: 0, dmg: 100 },
+    花火: { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    花火Pro: { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    黑天鹅: { hp: 0, atk: 100, def: 0, speed: 75, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 50, effPct: 100, effDef: 0, dmg: 100 },
+    黑天鹅Pro: { hp: 0, atk: 100, def: 0, speed: 75, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 50, effPct: 100, effDef: 0, dmg: 100 },
+    真理医生: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    '阮•梅': { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 0, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    雪衣: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 100, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    寒鸦: { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    银枝: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 75, effPct: 0, effDef: 0, dmg: 100 },
+    藿藿: { hp: 100, atk: 0, def: 50, speed: 75, cpct: 0, cdmg: 0, stance: 0, heal: 100, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    藿藿Pro: { hp: 100, atk: 0, def: 50, speed: 75, cpct: 0, cdmg: 0, stance: 0, heal: 100, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    桂乃芬: { hp: 0, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 0, stance: 50, heal: 0, recharge: 50, effPct: 75, effDef: 0, dmg: 100 },
+    '托帕&账账': { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    镜流: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    镜流Pro: { hp: 100, atk: 0, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    玲可: { hp: 100, atk: 0, def: 50, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 100, recharge: 75, effPct: 0, effDef: 50, dmg: 0 },
+    符玄: { hp: 100, atk: 0, def: 50, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 50, dmg: 100 },
+    驭空: { hp: 50, atk: 75, def: 50, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 50, dmg: 100 },
+    '丹恒•饮月': { hp: 0, atk: 75, def: 0, speed: 50, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    卢卡: { hp: 0, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 0, stance: 75, heal: 0, recharge: 50, effPct: 75, effDef: 0, dmg: 100 },
+    卡芙卡: { hp: 0, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 0, stance: 50, heal: 0, recharge: 50, effPct: 75, effDef: 0, dmg: 100 },
+    卡芙卡Pro: { hp: 0, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 0, stance: 50, heal: 0, recharge: 50, effPct: 75, effDef: 0, dmg: 100 },
+    刃: { hp: 100, atk: 50, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    刃Pro: { hp: 100, atk: 0, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    罗刹: { hp: 0, atk: 100, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 100, recharge: 100, effPct: 0, effDef: 50, dmg: 100 },
+    银狼: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 75, effPct: 100, effDef: 0, dmg: 100 },
+    银狼Pro: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 75, effPct: 100, effDef: 0, dmg: 100 },
+    景元: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    希儿: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    希儿Pro: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    布洛妮娅: { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 100, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    杰帕德: { hp: 50, atk: 0, def: 100, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 100, effPct: 50, effDef: 50, dmg: 0 },
+    姬子: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 50, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    瓦尔特: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 100, effDef: 0, dmg: 100 },
+    瓦尔特Pro: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 100, effDef: 0, dmg: 100 },
+    彦卿: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 75, effPct: 0, effDef: 0, dmg: 100 },
+    白露: { hp: 100, atk: 0, def: 50, speed: 75, cpct: 0, cdmg: 0, stance: 0, heal: 100, recharge: 100, effPct: 0, effDef: 50, dmg: 0 },
+    克拉拉: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    三月七: { hp: 50, atk: 0, def: 100, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 100, effPct: 50, effDef: 50, dmg: 0 },
+    丹恒: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    阿兰: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    艾丝妲: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 75, cdmg: 75, stance: 100, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 100 },
+    黑塔: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    希露瓦: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    娜塔莎: { hp: 100, atk: 0, def: 50, speed: 75, cpct: 0, cdmg: 0, stance: 0, heal: 100, recharge: 75, effPct: 0, effDef: 50, dmg: 0 },
+    佩拉: { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 100, effPct: 100, effDef: 50, dmg: 0 },
+    桑博: { hp: 0, atk: 75, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 100, effDef: 0, dmg: 100 },
+    虎克: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    青雀: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    停云: { hp: 50, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 0 },
+    素裳: { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 50, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    '三月七·巡猎': { hp: 0, atk: 100, def: 0, speed: 100, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 0, effPct: 0, effDef: 0, dmg: 100 },
+    // 主角
+    '穹·同谐': { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 0, recharge: 75, effPct: 0, effDef: 0, dmg: 0 },
+    '星·同谐': { hp: 75, atk: 0, def: 75, speed: 100, cpct: 0, cdmg: 0, stance: 100, heal: 0, recharge: 75, effPct: 0, effDef: 0, dmg: 0 },
+    '穹·存护': { hp: 50, atk: 0, def: 100, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 0, effPct: 100, effDef: 50, dmg: 0 },
+    '星·存护': { hp: 50, atk: 0, def: 100, speed: 100, cpct: 0, cdmg: 0, stance: 0, heal: 0, recharge: 0, effPct: 100, effDef: 50, dmg: 0 },
+    '穹·毁灭': { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    '星·毁灭': { hp: 0, atk: 75, def: 0, speed: 75, cpct: 100, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 100 },
+    '穹·记忆': { hp: 0, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 0 },
+    '星·记忆': { hp: 0, atk: 100, def: 0, speed: 100, cpct: 0, cdmg: 100, stance: 0, heal: 0, recharge: 50, effPct: 0, effDef: 0, dmg: 0 },
+    '穹·欢愉': { hp: 0, atk: 100, def: 0, speed: 100, cpct: 75, cdmg: 75, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 0 },
+    '星·欢愉': { hp: 0, atk: 100, def: 0, speed: 100, cpct: 75, cdmg: 75, stance: 0, heal: 0, recharge: 100, effPct: 0, effDef: 0, dmg: 0 }
+};
+
+return exports;})();return {mainAttr:attrs.mainAttr,subAttr:attrs.subAttr,attrMap:attrs.attrMap,usefulAttr:mark.usefulAttr,setAbbr:alias.artiSetAbbr}})();
+const usefulAttr=artiMeta.usefulAttr;
 Object.assign(weaponBuffs,loadWeaponDefinitions((()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
