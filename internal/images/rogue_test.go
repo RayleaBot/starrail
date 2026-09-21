@@ -30,3 +30,32 @@ func TestRogueFollowsStarRailPlugin(t *testing.T) {
 		t.Error("no record answers in text")
 	}
 }
+
+func TestSwarmFollowsStarRailPlugin(t *testing.T) {
+	data := decodeJSON(t, `{"role":{"nickname":"开拓者","level":70},
+		"basic":{"cnt":{"narrow":7,"miracle":90,"event":60},"destiny":[{"level":1},{"level":2},{"level":3},{"level":4},{"level":5},{"level":6},{"level":7}]},
+		"detail":{"records":[
+			{"difficulty":5,"finish_time":{"year":2026,"month":9,"day":5,"hour":20,"minute":3,"second":9},"fury":{"type":0,"point":"12"},
+			 "worm_weak":["弱化"],"cached_avatars":[{"icon":"http://insecure.example/a.png","level":80}],"blocks":[{"name":"战斗•虫群","num":3},{"name":"事件","num":2}]},
+			{"difficulty":4,"fury":{"type":1,"point":"3"},"blocks":[{"name":"事件","num":1}]}]}}`)
+	image, ok := images.Swarm(gamekit.ImageContext{}, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	if !ok || image.Data["narrow"] != "7" || image.Data["event"] != "60" {
+		t.Fatalf("image = %v", image.Data)
+	}
+	// Upstream reads the destiny list by index: 存护, 记忆, 虚无, 丰饶, 巡猎, 毁灭, 欢愉.
+	radar := image.Data["radar"].(map[string]any)
+	if radar["preservation"].(map[string]any)["level"] != "1" || radar["abundance"].(map[string]any)["level"] != "4" || radar["elation"].(map[string]any)["level"] != "7" {
+		t.Errorf("radar = %v", radar)
+	}
+	runs := image.Data["runs"].([]any)
+	first, second := runs[0].(map[string]any), runs[1].(map[string]any)
+	if first["countdown"] != true || first["fury"] != "12" || second["countdown"] != false || second["fury"] != "3" {
+		t.Errorf("fury = %v / %v", first, second)
+	}
+	if block := first["blocks"].([]any)[0].(map[string]any); block["name"] != "战斗•虫群" || block["num"] != "3" {
+		t.Errorf("blocks = %v", first["blocks"])
+	}
+	if _, ok := images.Swarm(gamekit.ImageContext{}, gamekit.QueryResult{Data: map[string]any{}}); ok {
+		t.Error("no record answers in text")
+	}
+}

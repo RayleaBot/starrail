@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+<div class="header">
+  <div class="header-title">模拟宇宙寰宇蝗灾数据总览</div>
+  <div class="header-uid">uid {{ .uid }} {{ .nickname }} {{ .level }}级</div>
+  <div class="header-content">
+    <div class="header-content-block"><div class="header-content-block-value">{{ .narrow }}</div><div class="header-content-block-title">行者之道</div></div>
+    <div class="header-content-block"><div class="header-content-block-value">{{ .miracle }}</div><div class="header-content-block-title">已解锁奇物</div></div>
+    <div class="header-content-block"><div class="header-content-block-value">{{ .event }}</div><div class="header-content-block-title">已解锁事件</div></div>
+  </div>
+</div>
+<div class="radar">
+  <div class="radar-block">
+    <div><img class="radar-bg" data-render-resource="swarm-radar" alt=""></div>
+    <div class="radar-icon" style="top: 133px; left: 260px">
+      <div style="margin-top: -40px;margin-bottom: 8px"><div style="text-align: center">丰饶</div><div class="radar-num">{{ .radar.abundance.level }}</div></div>
+      <img{{ with .radar.abundance.icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+    </div>
+    <div class="radar-icon" style="top: 317px; left: 183px">
+      <div style="margin-top: -40px;margin-bottom: 8px;display: flex;position: absolute;left: -52px;top: 65px"><div style="text-align: center">存护</div><div class="radar-num">{{ .radar.preservation.level }}</div></div>
+      <img{{ with .radar.preservation.icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+    </div>
+    <div class="radar-icon" style="top: 168px; left: 335px">
+      <div style="margin-top: -40px;margin-bottom: 8px;display: flex;position: absolute;left: 25px;top: 20px;width: 50px;"><div class="radar-num">{{ .radar.hunt.level }}</div><div style="text-align: center">巡猎</div></div>
+      <img{{ with .radar.hunt.icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+    </div>
+    <div class="radar-icon" style="top: 317px; left: 335px">
+      <div style="margin-top: -40px;margin-bottom: 8px;display: flex;position: absolute;left: 32px;top: 65px;width: 50px;"><div class="radar-num">{{ .radar.elation.level }}</div><div style="text-align: center">欢愉</div></div>
+      <img{{ with .radar.elation.icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+    </div>
+    <div class="radar-icon" style="top: 240px; left: 370px">
+      <div style="margin-top: -40px;margin-bottom: 8px;display: flex;position: absolute;left: 34px;top: 45px;width: 50px;"><div class="radar-num">{{ .radar.destruction.level }}</div><div style="text-align: center">毁灭</div></div>
+      <img{{ with .radar.destruction.icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+    </div>
+    <div class="radar-icon" style="top: 168px; left: 183px">
+      <div style="margin-top: -40px;margin-bottom: 8px;display: flex;position: absolute;left: -50px;top: 20px;width: 50px;"><div style="text-align: center">虚无</div><div class="radar-num">{{ .radar.nihility.level }}</div></div>
+      <img{{ with .radar.nihility.icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+    </div>
+    <div class="radar-icon" style="top: 240px; left: 150px">
+      <div style="margin-top: -40px;margin-bottom: 8px;display: flex;position: absolute;left: -56px;top: 45px;width: 50px;"><div style="text-align: center">记忆</div><div class="radar-num">{{ .radar.remembrance.level }}</div></div>
+      <img{{ with .radar.remembrance.icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+    </div>
+  </div>
+</div>
+<div class="records-header">
+  <div class="circle-1"></div>
+  <div class="circle-2"></div>
+  <div class="records-header-title">仅展示最近3次的通关数据</div>
+</div>
+{{ range .runs }}
+<div class="record">
+  <div class="record-world">
+    <img class="record-world-icon" data-render-resource="swarm-icon" alt="">
+    <div>模拟宇宙：寰宇蝗灾 难度{{ .difficulty }}</div>
+  </div>
+  <div class="record-time">挑战时间： {{ .time }}</div>
+  <div class="divider"></div>
+  <div class="record-characters">
+    <div class="record-characters-title">通关出战角色</div>
+    <div class="record-characters-list">
+      {{ range .lineup }}
+      <div class="avatar-box">
+        <div class="avatar rarity{{ .rarity }}">
+          <span class="life life{{ .rank }}">{{ .rank }}魂</span>
+          <div><img class="avatar-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+          <div class="avatar-inner"></div>
+          <div class="avatar-banner">等级 {{ .level }}</div>
+          <div class="avatar-element"><img{{ with .element }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="record-wish">
+    {{ range .bases }}<div class="record-wish-icon"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div><div class="circle-3">{{ .count }}</div>{{ end }}
+  </div>
+  <div class="record-clock">{{ if .countdown }}位面紊乱倒计时{{ else }}扰动等级{{ end }}：{{ .fury }}</div>
+  <div class="record-weakness">
+    <div class="record-weakness-header"><span>弱化效果</span></div>
+    {{ range .weak }}<div class="record-weakness-content"><div class="record-weakness-content-item">{{ . }}</div></div>{{ end }}
+  </div>
+  <div class="record-weakness">
+    <div class="record-weakness-header"><span>已缓存角色</span></div>
+    <div class="record-weakness-content">
+      {{ range .cached }}<div class="record-cache-role"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""><div style="text-align: center">等级{{ .level }}</div></div>{{ end }}
+    </div>
+  </div>
+  <div class="record-wish-detail">
+    <div class="record-weakness-header"><span>获得祝福</span></div>
+    {{ range .buffs }}
+    <div class="record-weakness-content" style="flex-wrap: unset">
+      <div class="record-wish-detail-content-left">
+        <div class="record-wish-icon"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        <div class="record-wish-detail-content-left-title">{{ .name }} ：</div>
+      </div>
+      <div class="record-wish-detail-content-right">
+        {{ range .items }}
+        <div class="record-wish-detail-content-items-{{ .rank }}">
+          <div class="record-wish-detail-content-items-content"> {{ .name }} </div>
+          {{ if .evolved }}<div class="record-wish-detail-content-items-content-badge">已升级</div>{{ end }}
+        </div>
+        {{ end }}
+      </div>
+    </div>
+    {{ end }}
+  </div>
+  <div class="record-wish-detail">
+    <div class="record-weakness-header"><span>获得奇物</span></div>
+    <div class="record-weakness-content">{{ range .miracles }}<div class="qiwu"><img{{ with . }} data-render-resource="{{ . }}"{{ end }} alt=""></div>{{ end }}</div>
+  </div>
+  <div class="record-wish-detail">
+    <div class="record-weakness-header"><span>通过区域类型</span></div>
+    <div class="record-weakness-content">
+      {{ range .blocks }}<div class="record-pass-area-block"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">{{ .name }} x{{ .num }}</div>{{ end }}
+    </div>
+  </div>
+</div>
+{{ end }}
+<div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>

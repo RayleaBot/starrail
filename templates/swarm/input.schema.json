@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "nickname", "level", "narrow", "miracle", "event", "radar", "runs"],
+  "properties": {
+    "uid": { "type": "string" },
+    "nickname": { "type": "string" },
+    "level": { "type": "string" },
+    "narrow": { "type": "string" },
+    "miracle": { "type": "string" },
+    "event": { "type": "string" },
+    "radar": { "type": "object" },
+    "runs": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}
