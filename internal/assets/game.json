@@ -131,6 +131,9 @@
       "input": "starrail_pool"
     }
   ],
+  "hints": {
+    "divergent-cycle": "请查询【本期】或【上期】的【差分宇宙·周期演算】，如发送命令【{prefix}本期演算】"
+  },
   "artwork": [
     {
       "id": "miao-plugin",

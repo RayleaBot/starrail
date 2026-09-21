@@ -1034,6 +1034,17 @@
       }
     },
     {
+      "id": "divergent-cycle",
+      "name": "周期演算说明",
+      "description": "提示按本期或上期查询周期演算",
+      "usage": "#周期演算",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^周期(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?$"
+      }
+    },
+    {
       "id": "score",
       "name": "遗器",
       "description": "按角色专属权重计算装备评分",
@@ -1191,6 +1202,7 @@
         "divergent",
         "divergent-normal",
         "divergent-week",
+        "divergent-cycle",
         "currency_wars"
       ]
     },
