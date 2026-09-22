@@ -58,7 +58,7 @@ var (
 var chinaTime = time.FixedZone("UTC+8", 8*3600)
 
 // panelSources are miao's names for the services a panel came from.
-var panelSources = map[string]string{"mihoyo": "mysPanelHSR", "enka": "enka", "mihomo": "homo", "change": "面板变换"}
+var panelSources = map[string]string{"mihoyo": "mysPanelHSR", "enka": "enka", "mihomo": "homo", "change": "面板变换", "share": "share"}
 
 // Panel draws a single character the way miao's profile-detail does for Star
 // Rail: the splash with level, eidolons and attributes, eidolon icons,
