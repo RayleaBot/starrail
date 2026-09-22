@@ -1359,6 +1359,73 @@
       }
     },
     {
+      "id": "income-curve",
+      "name": "收益曲线",
+      "description": "属性收益曲线图",
+      "usage": "#收益曲线",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "收益曲线"
+        ]
+      }
+    },
+    {
+      "id": "tier-list",
+      "name": "强度榜",
+      "description": "1.0 版本的角色强度榜",
+      "usage": "#强度榜",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "强度榜",
+          "全角色强度榜"
+        ]
+      }
+    },
+    {
+      "id": "path-guides",
+      "name": "全角色攻略",
+      "description": "1.1 下半各命途的全角色攻略图",
+      "usage": "#攻略",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "攻略"
+        ]
+      }
+    },
+    {
+      "id": "abyss-guide",
+      "name": "深渊攻略",
+      "description": "忘却之庭的攻略图与推荐配队",
+      "usage": "#深渊攻略",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "深渊攻略",
+          "忘却之庭攻略"
+        ]
+      }
+    },
+    {
+      "id": "lc-recommend",
+      "name": "商店光锥推荐",
+      "description": "商店光锥的兑换推荐图",
+      "usage": "#商店光锥推荐",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "商店光锥推荐"
+        ]
+      }
+    },
+    {
       "id": "guides",
       "name": "攻略",
       "description": "发送米游社攻略合集中该角色的攻略图，可接来源序号，all 为前几个来源",
@@ -1378,6 +1445,48 @@
       "trigger": {
         "type": "pattern",
         "pattern": "^(?P<name>.*?)(?:图鉴|资料)$"
+      }
+    },
+    {
+      "id": "ref-panel-help",
+      "name": "参考面板帮助",
+      "description": "参考面板的说明图",
+      "usage": "#参考面板帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "参考面板帮助"
+        ]
+      }
+    },
+    {
+      "id": "ref-panel",
+      "name": "参考面板",
+      "description": "角色的参考面板图",
+      "usage": "#<角色>参考面板",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.+?)参考面板$"
+      }
+    },
+    {
+      "id": "panel-help",
+      "name": "面板帮助",
+      "description": "面板、伤害与换装命令的说明图",
+      "usage": "#面板帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "面板帮助",
+          "面版帮助",
+          "角色面板帮助",
+          "角色面版帮助",
+          "换面板帮助",
+          "更换面板帮助"
+        ]
       }
     },
     {
@@ -1433,7 +1542,8 @@
         "panel-refresh-account",
         "panel-list",
         "panel-delete",
-        "original-image"
+        "original-image",
+        "panel-help"
       ]
     },
     {
@@ -1519,7 +1629,14 @@
         "growth",
         "guides",
         "guide-help",
-        "guide-default"
+        "guide-default",
+        "ref-panel-help",
+        "ref-panel",
+        "income-curve",
+        "tier-list",
+        "path-guides",
+        "abyss-guide",
+        "lc-recommend"
       ]
     },
     {

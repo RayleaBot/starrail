@@ -39,3 +39,5 @@ GPL-3.0 和 Apache-2.0 许可分别保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt` 
 `templates/uid-list/` 按 Miao-Yunzai 原神插件的 html/user/uid-list 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），页面框架与样式沿用 miao-plugin 的 common/layout/elem 与 common/common.css（MIT，见 `LICENSES/miao-plugin-MIT.txt`），同 miao 的 1.4 倍缩放；图片地址改为宿主渲染资源。玩家的头像与名片按 miao 的 faceImgs 取该 UID 已保存面板中编号最小的角色，没有时用 miao 的通用头像与名片。
 
 `templates/rank-stats/` 按 ark-plugin 的 graph/stats 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），页面框架沿用 miao-plugin 的 common/layout/default 与 common/common.css，同 ark 的 1.4 倍缩放。上游在浏览器中用 ECharts 绘制折线，这里由共享库按 ECharts 的刻度与平滑算法输出相同的 SVG，不随插件分发该库；背景图由“ark 插件图片”素材来源下载，只下载 `resources/graph/`。
+
+参考面板、收益曲线、强度榜、攻略、深渊攻略与商店光锥推荐同 StarRail-plugin 的 apps/srxx.js，直接发送该仓库 `resources/srsr/` 中的米游社作者整理图（Apache-2.0，见 `LICENSES/StarRail-plugin-Apache-2.0.txt`；上游在文件头注明各图作者），多图命令与上游一样以合并转发发送，平台不支持合并转发时改为一条消息。图片内容停在上游收录时的 1.x 版本，不随插件分发，由“星铁插件图片”素材来源在运行时下载；参考面板按角色的各个名字查找上游文件名，例如本插件的“穹·存护”对应上游的“开拓者•存护”。面板帮助同 miao-plugin 对“星铁面板帮助”的回复，发送该仓库的 `resources/character/imgs/help.jpg`（MIT），由 miao 素材来源在运行时下载。
