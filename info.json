@@ -190,6 +190,35 @@
       }
     },
     {
+      "id": "gacha-help",
+      "name": "抽卡帮助",
+      "description": "跃迁记录的获取与查看方法",
+      "usage": "#抽卡帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "抽卡帮助",
+          "记录帮助",
+          "跃迁帮助"
+        ]
+      }
+    },
+    {
+      "id": "gacha-link",
+      "name": "抽卡链接",
+      "description": "说明抽卡链接改在管理页导入",
+      "usage": "#抽卡链接",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "抽卡链接",
+          "抽卡链接绑定"
+        ]
+      }
+    },
+    {
       "id": "gacha",
       "name": "跃迁记录",
       "description": "分析已导入的抽卡记录",
@@ -958,6 +987,19 @@
       }
     },
     {
+      "id": "pool-help",
+      "name": "卡池帮助",
+      "description": "卡池查询的写法",
+      "usage": "#卡池帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "卡池帮助"
+        ]
+      }
+    },
+    {
       "id": "calendar",
       "name": "卡池",
       "description": "当前或指定版本的 UP 卡池",
@@ -1510,7 +1552,9 @@
         "gacha-schedule",
         "gacha-progress",
         "gacha-stop",
-        "gacha-versions"
+        "gacha-versions",
+        "gacha-help",
+        "gacha-link"
       ]
     },
     {
@@ -1521,7 +1565,8 @@
         "banner-history",
         "simulation",
         "simulation-history",
-        "simulation-reset"
+        "simulation-reset",
+        "pool-help"
       ]
     },
     {
