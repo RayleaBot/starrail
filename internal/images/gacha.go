@@ -14,7 +14,7 @@ import (
 
 // gachaWords are stripped from the command word before picking the pool, as
 // StarRail-plugin's gatcha command does.
-var gachaWords = regexp.MustCompile(`#|\*|＊|星铁|星轨|崩铁|星穹铁道|穹批|跃迁|抽卡|记录|分析`)
+var gachaWords = regexp.MustCompile(`#|\*|＊|星铁|星轨|崩铁|星穹铁道|穹批|喵喵|跃迁|抽卡|抽奖|记录|分析|统计|祈愿|池`)
 
 // gachaPools are the warp pools upstream reports, in its order.
 var gachaPools = []struct{ id, name string }{{"1", "群星跃迁"}, {"2", "新手跃迁"}, {"11", "限定跃迁"}, {"12", "光锥跃迁"}}

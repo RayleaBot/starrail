@@ -91,6 +91,17 @@
       }
     },
     {
+      "id": "panel-refresh-account",
+      "name": "米游社更新面板",
+      "description": "从已绑定账号的米游社数据更新全部角色面板并保存",
+      "usage": "#米游社更新面板",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:(?:米游社|mys)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?|(?:强制)?(?:刷新|更新)(?:所有|角色)*(?:行迹|技能|天赋))$"
+      }
+    },
+    {
       "id": "talent-wiki",
       "name": "角色天赋",
       "description": "角色的技能、行迹与星魂资料",
@@ -146,17 +157,6 @@
       }
     },
     {
-      "id": "panel-refresh-account",
-      "name": "米游社更新面板",
-      "description": "从已绑定账号的米游社数据更新全部角色面板并保存",
-      "usage": "#米游社更新面板",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?:米游社|mys)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?$"
-      }
-    },
-    {
       "id": "panel-list",
       "name": "面板列表",
       "description": "已保存面板的角色列表",
@@ -196,15 +196,8 @@
       "usage": "#跃迁记录 [UID]",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "跃迁记录",
-          "跃迁分析",
-          "跃迁统计",
-          "抽卡记录",
-          "抽卡分析",
-          "抽卡统计"
-        ]
+        "type": "pattern",
+        "pattern": "^(?:(?:喵喵)?(?:抽卡|抽奖|跃迁|角色|武器|光锥|常驻|新手|集录|up|角色联动|光锥联动)*池?(?:记录|祈愿|分析)|(?:角色|光锥|武器|常驻|新手)?(?:跃迁|抽卡)?统计|全部(?:抽卡|跃迁)?记录)$"
       }
     },
     {
@@ -866,7 +859,11 @@
           "下载素材",
           "素材下载",
           "图鉴升级",
-          "图鉴更新"
+          "图鉴更新",
+          "更新图像",
+          "图像更新",
+          "强制更新图像",
+          "强制图像更新"
         ]
       }
     },
@@ -891,7 +888,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^绑定(?i:uid)?[s+]*(?P<uid>[0-9]*)$"
+        "pattern": "^绑定(?i:uid)?\\+*(?P<uid>[0-9]*)$"
       }
     },
     {
@@ -902,7 +899,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?i:(?:删除|解绑)uid)[s+]*(?P<index>[0-9]{1,2})?$"
+        "pattern": "^(?i:(?:删除|解绑)uid)\\+*(?P<index>[0-9]{1,2})?$"
       }
     },
     {
@@ -1115,14 +1112,29 @@
       }
     },
     {
+      "id": "growth-help",
+      "name": "角色养成",
+      "description": "养成计算的写法与参数说明",
+      "usage": "#角色养成",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "角色养成",
+          "角色计算",
+          "角色养成计算"
+        ]
+      }
+    },
+    {
       "id": "growth",
       "name": "养成",
-      "description": "计算升至上限的材料需求",
-      "usage": "#<角色>养成 [UID]",
+      "description": "计算升到目标等级的材料，不写目标时算到上限",
+      "usage": "#<角色>养成[目标等级…] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<character>.*?)(?:养成|计算)$"
+        "pattern": "^(?P<character>.*?)(?:养成|计算)(?P<levels>[0-9,，]*)$"
       }
     },
     {
@@ -1461,6 +1473,7 @@
         "catalog",
         "talent-wiki",
         "materials",
+        "growth-help",
         "growth",
         "guides",
         "guide-help",
