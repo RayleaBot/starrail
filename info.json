@@ -373,6 +373,72 @@
       }
     },
     {
+      "id": "alias-help",
+      "name": "别名帮助",
+      "description": "自定义别名命令的说明",
+      "usage": "#喵喵别名帮助",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^喵喵别名(?:帮助)?$"
+      }
+    },
+    {
+      "id": "alias-set",
+      "name": "设置别名",
+      "description": "给角色添加对所有群生效的自定义别名",
+      "usage": "#喵喵别名设置 角色名 别名",
+      "permission": "super_admin",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^喵喵别名(?:[崩星]铁)?设置$"
+      }
+    },
+    {
+      "id": "alias-remove",
+      "name": "删除别名",
+      "description": "删除自定义别名，预设别名不能删除",
+      "usage": "#喵喵别名删除 别名 / #删除别名 别名",
+      "permission": "super_admin",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:喵喵别名(?:[崩星]铁)?删除|删除(?:别名|昵称)(?P<alias>.+))$"
+      }
+    },
+    {
+      "id": "alias-list",
+      "name": "别名列表",
+      "description": "查看星铁全部自定义别名",
+      "usage": "#喵喵别名列表",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^喵喵别名(?:[崩星]铁)?列表$"
+      }
+    },
+    {
+      "id": "alias-add",
+      "name": "添加别名",
+      "description": "给角色添加别名，随后发送别名，多个用空格隔开",
+      "usage": "#设置希儿别名",
+      "permission": "super_admin",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:设置|配置|添加)(?P<character>.+)(?:别名|昵称)$"
+      }
+    },
+    {
+      "id": "aliases",
+      "name": "角色别名",
+      "description": "查看角色的全部别名",
+      "usage": "#希儿别名",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.+?)(?:别名|昵称)$"
+      }
+    },
+    {
       "id": "simulation-history",
       "name": "模拟记录",
       "description": "查看本人的模拟抽卡记录",
@@ -1747,7 +1813,13 @@
         "version",
         "group-settings",
         "artwork",
-        "artwork-status"
+        "artwork-status",
+        "alias-help",
+        "alias-set",
+        "alias-remove",
+        "alias-list",
+        "alias-add",
+        "aliases"
       ]
     }
   ],
