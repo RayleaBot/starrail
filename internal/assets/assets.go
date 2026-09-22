@@ -5,10 +5,10 @@ import (
 	"embed"
 	"io/fs"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/reference/miao"
 	plugin "github.com/RayleaBot/plugin-starrail"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 	"github.com/RayleaBot/plugin-starrail/internal/images"
+	"github.com/RayleaBot/plugin-starrail/internal/reference/miao"
 	"github.com/RayleaBot/plugin-starrail/internal/showcase"
 )
 

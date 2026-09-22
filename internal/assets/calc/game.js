@@ -981,7 +981,7 @@ function default_1(staticIdx, keyIdx) {
     };
 }
 
-return exports;})().default,"sr"));
+return exports;})().default));
 Object.assign(weaponBuffs,loadWeaponDefinitions((()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1066,7 +1066,7 @@ function default_1(staticIdx, keyIdx) {
     };
 }
 
-return exports;})().default,"sr"));
+return exports;})().default));
 Object.assign(weaponBuffs,loadWeaponDefinitions((()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1162,7 +1162,7 @@ function default_1(staticIdx, keyIdx) {
     };
 }
 
-return exports;})().default,"sr"));
+return exports;})().default));
 Object.assign(weaponBuffs,loadWeaponDefinitions((()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1329,7 +1329,7 @@ function default_1(staticIdx, keyIdx) {
     };
 }
 
-return exports;})().default,"sr"));
+return exports;})().default));
 Object.assign(weaponBuffs,loadWeaponDefinitions((()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1485,7 +1485,7 @@ function default_1(staticIdx, keyIdx) {
     };
 }
 
-return exports;})().default,"sr"));
+return exports;})().default));
 Object.assign(weaponBuffs,loadWeaponDefinitions((()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1561,7 +1561,7 @@ function default_1(staticIdx, keyIdx) {
     };
 }
 
-return exports;})().default,"sr"));
+return exports;})().default));
 Object.assign(weaponBuffs,loadWeaponDefinitions((()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1731,7 +1731,7 @@ function default_1(staticIdx, keyIdx) {
     };
 }
 
-return exports;})().default,"sr"));
+return exports;})().default));
 Object.assign(weaponBuffs,loadWeaponDefinitions((()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1902,7 +1902,7 @@ function default_1(staticIdx, keyIdx) {
     };
 }
 
-return exports;})().default,"sr"));
+return exports;})().default));
 Object.assign(weaponBuffs,loadWeaponDefinitions((()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -2024,4 +2024,4 @@ function default_1(staticIdx, keyIdx) {
     };
 }
 
-return exports;})().default,"sr"));
+return exports;})().default));

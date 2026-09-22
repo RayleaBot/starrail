@@ -91,7 +91,7 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	case "欢愉":
 		talentKeys = append(talentKeys, [2]string{"xe", "欢愉技"})
 	}
-	levels := app.PanelTalents("starrail", panel, record)
+	levels := app.PanelTalents(panel, record)
 	talents := []any{}
 	for _, talent := range talentKeys {
 		level := levels[talent[0]]
@@ -146,7 +146,7 @@ func traces(panel app.CharacterPanel, record reference.Character, images string,
 	lit := map[string]bool{}
 	for _, skill := range panel.Skills {
 		if skill.Active && skill.PointType != 2 && skill.ID != "" {
-			if match := treeSuffix.FindStringSubmatch(app.RecordSkillID("starrail", panel, record, skill)); match != nil {
+			if match := treeSuffix.FindStringSubmatch(app.RecordSkillID(panel, record, skill)); match != nil {
 				lit[match[1]] = true
 			}
 		}

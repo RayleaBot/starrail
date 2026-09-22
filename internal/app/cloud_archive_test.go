@@ -28,8 +28,8 @@ func (c *detailCaller) CallService(_ context.Context, req rayleabot.ServiceCallR
 }
 
 func TestCloudArchiveSanitizesAndPreservesMiaoBusinessFields(t *testing.T) {
-	raw := cloudObject(t, `{"uid":"100000001","cookie":"discard-root","avatars":{"10000046":{"id":10000046,"name":"胡桃","cons":0,"_time":"2026-09-01 12:00:00","_source":"mys","stoken":"discard-avatar","weapon":{"name":"护摩之杖","level":90,"affix":1,"cookie_token":"discard-weapon"},"talent":{"a":10,"e":{"level":10,"cookie":"discard-talent"}},"artis":{"1":{"name":"角斗士的留恋","level":20,"mainId":13001,"star":5,"attrIds":[501204],"cookie":"discard-gear"}}}}}`)
-	clean, err := cleanCloudPlayer("genshin", "100000001", raw)
+	raw := cloudObject(t, `{"uid":"100000001","cookie":"discard-root","avatars":{"1102":{"id":1102,"name":"希儿","cons":0,"_time":"2026-09-01 12:00:00","_source":"mys","stoken":"discard-avatar","weapon":{"name":"于夜色中","level":80,"affix":1,"cookie_token":"discard-weapon"},"talent":{"a":6,"e":{"level":10,"cookie":"discard-talent"}},"artis":{"1":{"id":61011,"level":15,"mainId":1,"attrIds":["1,2,2"],"cookie":"discard-gear"}}}}}`)
+	clean, err := cleanCloudPlayer("100000001", raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,19 +37,19 @@ func TestCloudArchiveSanitizesAndPreservesMiaoBusinessFields(t *testing.T) {
 	if strings.Contains(string(encoded), "discard-") || !strings.Contains(string(encoded), `"_source":"share"`) || !strings.Contains(string(encoded), `"cons":0`) {
 		t.Fatal("credential metadata retained or zero lost")
 	}
-	if _, err = cleanCloudPlayer("starrail", "100000001", raw); err == nil {
+	if _, err = cleanCloudPlayer("100000001", cloudObject(t, `{"uid":"100000001","avatars":{"10000046":{"id":10000046}}}`)); err == nil {
 		t.Fatal("wrong game accepted")
 	}
-	if _, err = cleanCloudPlayer("genshin", "100000002", raw); err == nil {
+	if _, err = cleanCloudPlayer("100000002", raw); err == nil {
 		t.Fatal("wrong UID accepted")
 	}
 }
 func TestCloudTransferAtomicMergeReplayExportAndRevocation(t *testing.T) {
-	a := App{Game: testGame(t, "genshin"), CloudArchive: &CloudArchiveStore{Directory: filepath.Join(t.TempDir(), "exchange")}}
+	a := App{Game: testGame(t), CloudArchive: &CloudArchiveStore{Directory: filepath.Join(t.TempDir(), "exchange")}}
 	defer a.Close()
-	role := Role{Ref: "role", Game: "genshin", UID: "100000001", Region: "cn_gf01"}
+	role := Role{Ref: "role", Game: "starrail", UID: "100000001", Region: "prod_gf_cn"}
 	caller := &detailCaller{role: role}
-	client := AccountsClient{Caller: caller, Provider: "provider", Game: "genshin"}
+	client := AccountsClient{Caller: caller, Provider: "provider", Game: "starrail"}
 	choice := Selection{"account", "role"}
 	input := map[string]any{"account_ref": "account", "role_ref": "role", "uid": role.UID, "count": 2}
 	start, err := a.cloudTransferAction(t.Context(), client, "cloud.archive.import.start", input)
@@ -57,7 +57,7 @@ func TestCloudTransferAtomicMergeReplayExportAndRevocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	ref := start["ref"]
-	avatar := map[string]any{"id": 10000046, "level": 90, "cookie": "not-saved"}
+	avatar := map[string]any{"id": 1102, "level": 80, "cookie": "not-saved"}
 	appendInput := map[string]any{"ref": ref, "offset": 0, "avatar": avatar}
 	if _, err = a.cloudTransferAction(t.Context(), client, "cloud.archive.import.append", appendInput); err != nil {
 		t.Fatal(err)
@@ -72,7 +72,7 @@ func TestCloudTransferAtomicMergeReplayExportAndRevocation(t *testing.T) {
 		t.Fatal("partial import changed archive")
 	}
 	appendInput["offset"] = 1
-	appendInput["avatar"] = map[string]any{"id": 10000016, "level": 80}
+	appendInput["avatar"] = map[string]any{"id": 1101, "level": 70}
 	if _, err = a.cloudTransferAction(t.Context(), client, "cloud.archive.import.append", appendInput); err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestCloudTransferAtomicMergeReplayExportAndRevocation(t *testing.T) {
 }
 func TestCloudExchangeDownloadKeepsRawDataOutOfResultAndUploadConsent(t *testing.T) {
 	q := CloudInput{Mode: "exchange_download", UID: "100000001", Consent: true}
-	result, err := projectCloud(testGame(t, "genshin"), q, cloudObject(t, `{"retcode":100,"data":{"uid":"100000001","avatars":{"10000046":{"id":10000046,"level":90,"cookie":"not-kept"}}}}`))
+	result, err := projectCloud(testGame(t), q, cloudObject(t, `{"retcode":100,"data":{"uid":"100000001","avatars":{"1102":{"id":1102,"level":80,"cookie":"not-kept"}}}}`))
 	if err != nil || result.Exchange.Characters != 1 || len(result.exchange) == 0 {
 		t.Fatal(result, err)
 	}
@@ -119,15 +119,15 @@ func TestCloudExchangeDownloadKeepsRawDataOutOfResultAndUploadConsent(t *testing
 		t.Fatal("raw exchange leaked in public result")
 	}
 	q.Mode = "exchange_upload"
-	if _, _, err = cloudRequest("genshin", q); err == nil {
+	if _, _, err = cloudRequest(q); err == nil {
 		t.Fatal("arbitrary caller upload accepted without owned archive")
 	}
 	q.exchangeData = string(result.exchange)
-	if route, body, err := cloudRequest("genshin", q); err != nil || route != "panel/upload" || body["type"] != "gs" {
+	if route, body, err := cloudRequest(q); err != nil || route != "panel/upload" || body["type"] != "sr" {
 		t.Fatal(body, err)
 	}
 	q.Consent = false
-	if _, _, err = cloudRequest("genshin", q); err == nil {
+	if _, _, err = cloudRequest(q); err == nil {
 		t.Fatal("upload without consent")
 	}
 }

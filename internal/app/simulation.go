@@ -9,8 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/localdata"
 	"math/rand/v2"
 	"path/filepath"
 	"slices"
@@ -18,6 +16,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
+	"github.com/RayleaBot/plugin-starrail/internal/localdata"
 )
 
 type SimulationBanner struct {
@@ -35,18 +36,15 @@ type SimulationDeck struct {
 }
 
 type SimulationSelection struct {
-	Kind       string `json:"kind"`
-	BannerID   string `json:"banner_id"`
-	Featured   string `json:"featured"`
-	FateTarget string `json:"fate_target"`
-	FateLimit  int    `json:"fate_limit"`
+	Kind     string `json:"kind"`
+	BannerID string `json:"banner_id"`
+	Featured string `json:"featured"`
 }
 type SimulationPity struct {
 	Five   int  `json:"five"`
 	Four   int  `json:"four"`
 	UpFive bool `json:"up_five"`
 	UpFour bool `json:"up_four"`
-	Fate   int  `json:"fate"`
 }
 type SimulationDraw struct {
 	Model  string `json:"model"`
@@ -58,7 +56,6 @@ type SimulationDraw struct {
 	Item       string `json:"item"`
 	Featured   bool   `json:"featured"`
 	Guaranteed bool   `json:"guaranteed"`
-	Fate       bool   `json:"fate"`
 	Interval   int    `json:"interval"`
 	Index      int64  `json:"index"`
 	TimeMS     int64  `json:"time_ms"`
@@ -102,8 +99,6 @@ func newSimulationState(deck SimulationDeck) SimulationState {
 				selection.Featured = b.Characters5[0]
 			} else {
 				selection.Featured = b.Weapons5[0]
-				selection.FateTarget = b.Weapons5[0]
-				selection.FateLimit = 2
 			}
 		}
 		s.Selections[kind] = selection
@@ -163,20 +158,10 @@ func (s *SimulationStore) limit() (int, error) {
 	}
 	return config.DailyLimit, nil
 }
-func simulationProbability(game, kind string, five, weekly int) int {
+func simulationProbability(kind string, five int) int {
 	base := 60
 	if kind == "weapon" {
-		base = 70
-		if game == "starrail" {
-			base = 80
-		}
-	}
-	if game == "genshin" && weekly == 1 {
-		if kind == "weapon" {
-			base *= 3
-		} else {
-			base *= 2
-		}
+		base = 80
 	}
 	if kind != "weapon" {
 		if five >= 90 {
@@ -196,10 +181,7 @@ func simulationProbability(game, kind string, five, weekly int) int {
 	if five >= 62 {
 		return min(10000, base+(five-61)*700)
 	}
-	start := 45
-	if game == "starrail" {
-		start = 50
-	}
+	start := 50
 	if five >= start {
 		return min(10000, base+(five-start)*60)
 	}
@@ -208,9 +190,9 @@ func simulationProbability(game, kind string, five, weekly int) int {
 	}
 	return base
 }
-func simulationFourProbability(game, kind string, four int) int {
+func simulationFourProbability(kind string, four int) int {
 	base := 510
-	if game == "starrail" && kind == "weapon" {
+	if kind == "weapon" {
 		base = 660
 	}
 	if four >= 9 {
@@ -243,20 +225,8 @@ func (s *SimulationStore) selectPool(state *SimulationState, selection Simulatio
 	if selection.Kind == "character" && len(banner.Characters4) == 0 || selection.Kind == "weapon" && len(banner.Weapons4) == 0 {
 		return gameError("simulation_data_missing", "此参考期缺少四星池资料，请选择其他期次。")
 	}
-	if selection.Kind == "character" && !slices.Contains(banner.Characters5, selection.Featured) || selection.Kind == "weapon" && s.Game == "starrail" && !slices.Contains(banner.Weapons5, selection.Featured) {
+	if selection.Kind == "character" && !slices.Contains(banner.Characters5, selection.Featured) || selection.Kind == "weapon" && !slices.Contains(banner.Weapons5, selection.Featured) {
 		return gameError("input_invalid", "所选目标不在参考卡池内。")
-	}
-	if selection.Kind == "weapon" && s.Game == "genshin" {
-		if selection.FateTarget != "" && (!slices.Contains(banner.Weapons5, selection.FateTarget) || selection.FateLimit < 1 || selection.FateLimit > 2) {
-			return gameError("input_invalid", "请选择有效定轨目标及 1/2 点模型。")
-		}
-		old := state.Selections["weapon"]
-		if old.BannerID != selection.BannerID || old.FateTarget != selection.FateTarget || old.FateLimit != selection.FateLimit {
-			state.Pools["weapon"].Fate = 0
-		}
-	} else {
-		selection.FateTarget = ""
-		selection.FateLimit = 0
 	}
 	state.Active = selection.Kind
 	state.Selections[selection.Kind] = selection
@@ -277,14 +247,14 @@ func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSe
 	out := SimulationDraw{Model: s.Deck.Version, Kind: selection.Kind, Item: "weapon", TimeMS: now.UnixMilli(), Index: state.Total + 1}
 	state.Total++
 	state.Used++
-	if chance(simulationProbability(s.Game, selection.Kind, pity.Five, state.WeeklyTop)) {
+	if chance(simulationProbability(selection.Kind, pity.Five)) {
 		out.Rarity = 5
 		out.Interval = pity.Five + 1
 		pity.Five = 0
 		pity.Four++
 		state.WeeklyTop++
 		up := 5000
-		if selection.Kind == "weapon" && s.Game == "starrail" {
+		if selection.Kind == "weapon" {
 			up = 7500
 		}
 		if pity.UpFive {
@@ -293,23 +263,15 @@ func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSe
 		if selection.Kind == "standard" {
 			up = 0
 		}
-		if selection.Kind == "weapon" && s.Game == "genshin" && selection.FateTarget != "" && pity.Fate >= selection.FateLimit {
-			out.Name = selection.FateTarget
-			out.Featured = true
-			out.Fate = true
-			pity.UpFive = false
-		} else if chance(up) {
+		if chance(up) {
 			out.Featured = true
 			out.Guaranteed = pity.UpFive
 			pity.UpFive = false
-			if selection.Kind == "weapon" && s.Game == "genshin" {
-				out.Name = pick(banner.Weapons5)
-			} else {
-				out.Name = selection.Featured
-				if selection.Kind == "character" {
-					out.Item = "character"
-				}
+			out.Name = selection.Featured
+			if selection.Kind == "character" {
+				out.Item = "character"
 			}
+
 		} else {
 			if selection.Kind != "standard" {
 				pity.UpFive = true
@@ -321,23 +283,13 @@ func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSe
 				out.Item = "character"
 			}
 		}
-		if selection.Kind == "weapon" && s.Game == "genshin" && selection.FateTarget != "" {
-			if out.Name == selection.FateTarget {
-				pity.Fate = 0
-			} else {
-				pity.Fate++
-			}
-		}
 	} else {
 		pity.Five++
-		if chance(simulationFourProbability(s.Game, selection.Kind, pity.Four)) {
+		if chance(simulationFourProbability(selection.Kind, pity.Four)) {
 			out.Rarity = 4
 			out.Interval = pity.Four + 1
 			pity.Four = 0
 			up := 5000
-			if selection.Kind == "weapon" && s.Game == "genshin" {
-				up = 7500
-			}
 			if pity.UpFour {
 				up = 10000
 			}
@@ -356,7 +308,7 @@ func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSe
 				}
 			} else {
 				pity.UpFour = selection.Kind != "standard"
-				if (s.Game == "genshin" || selection.Kind == "character") && random(2) == 0 {
+				if (selection.Kind == "character") && random(2) == 0 {
 					out.Name = pick(deck.FourCharacters)
 					out.Item = "character"
 				} else {
@@ -495,9 +447,6 @@ func simulationView(game Game, result map[string]any) View {
 			if d.Featured {
 				tag = " · 目标池"
 			}
-			if d.Fate {
-				tag += " · 定轨"
-			}
 			v.Rows = append(v.Rows, Row{Label: d.Name, Value: fmt.Sprintf("%d 星%s", d.Rarity, tag)})
 		}
 	} else {
@@ -525,66 +474,23 @@ func (a *App) simulationCommand(ctx context.Context, event *rayleabot.EventConte
 		}
 		return event.SendText("模拟历史与保底已重置，当天已用次数保留。")
 	}
-	if command == "simulation-fate" {
-		selection := status["selections"].(map[string]SimulationSelection)["weapon"]
-		banner, _ := simulationBanner(*a.Game.Data.Simulation, selection)
-		target := strings.Join(args, " ")
-		switch target {
-		case "":
-			target = simulationNextFate(banner.Weapons5, selection.FateTarget)
-		case "取消":
-			target = ""
-		default:
-			if entry, ok := a.Catalog.Resolve(target, "weapon", a.aliasMap(event)); ok {
-				target = entry.Name
-			}
-		}
-		selection.FateTarget = target
-		selection.FateLimit = 2
-		_, err = a.simulationAction(event, "simulation.select", asMap(selection))
-		if err != nil {
-			return event.SendText(friendlyError(err))
-		}
-		if target == "" {
-			return event.SendText("定轨已取消")
-		}
-		lines := []string{"定轨成功"}
-		for _, weapon := range banner.Weapons5 {
-			mark := "[  ] "
-			if weapon == target {
-				mark = "[√] "
-			}
-			lines = append(lines, mark+weapon)
-		}
-		return event.SendText(strings.Join(lines, "\n"))
-	}
 	if command == "simulation" {
 		// As upstream, the word picks the pool: the character pool unless it
-		// names 武器/光锥 or 常驻, and its second featured character on 十连2.
+		// names 光锥 or 常驻.
 		word := event.Event.Command()
 		kind := "character"
-		if strings.Contains(word, "武器") || strings.Contains(word, "光锥") {
+		if strings.Contains(word, "光锥") {
 			kind = "weapon"
 		} else if strings.Contains(word, "常驻") {
 			kind = "standard"
 		}
 		selection := status["selections"].(map[string]SimulationSelection)[kind]
-		if kind == "character" {
-			banner, _ := simulationBanner(*a.Game.Data.Simulation, selection)
-			pick := 0
-			if strings.Contains(word, "2") {
-				pick = 1
-			}
-			if pick < len(banner.Characters5) {
-				selection.Featured = banner.Characters5[pick]
-			}
-		}
 		if _, err = a.simulationAction(event, "simulation.select", asMap(selection)); err != nil {
 			return event.SendText(friendlyError(err))
 		}
 		drawn, err := a.simulationAction(event, "simulation.draw", map[string]any{"count": 10, "request_ref": event.Event.EventID})
 		if PublicError(err).Code == "plugin.game_simulation_quota" {
-			return event.SendText(simulationLimitText(a.Game.ID, event.Event.Actor.Nickname, kind, status, time.Now()))
+			return event.SendText(simulationLimitText(kind, status, time.Now()))
 		}
 		if err != nil {
 			return event.SendText(friendlyError(err))
@@ -602,60 +508,25 @@ func (a *App) simulationCommand(ctx context.Context, event *rayleabot.EventConte
 	return a.sendView(ctx, event, simulationView(a.Game, status))
 }
 
-// simulationNextFate is Yunzai's 定轨 step: each use moves to the pool's
-// next five-star weapon, and past the last one cancels.
-func simulationNextFate(weapons []string, current string) string {
-	if next := slices.Index(weapons, current) + 1; next < len(weapons) {
-		return weapons[next]
-	}
-	return ""
-}
-
-// simulationLimitText is the upstream reply once the day's draws are spent.
-// Yunzai lists the day's five-stars with their pulls, or counts them past
-// three, and the week's when more than one; StarRail-plugin counts the pool's
-// draws and five-stars today.
-func simulationLimitText(game, name, kind string, status map[string]any, now time.Time) string {
+// simulationLimitText is the upstream reply once the day's draws are spent:
+// StarRail-plugin counts the pool's draws and five-stars today.
+func simulationLimitText(kind string, status map[string]any, now time.Time) string {
 	today := simulationDay(now).Format("2006-01-02")
-	count, stars := 0, []string{}
+	count, stars := 0, 0
 	for _, draw := range status["history"].([]SimulationDraw) {
-		if simulationDay(time.UnixMilli(draw.TimeMS)).Format("2006-01-02") != today {
+		if draw.Kind != kind || simulationDay(time.UnixMilli(draw.TimeMS)).Format("2006-01-02") != today {
 			continue
 		}
-		pool := draw.Kind == kind
-		if game == "genshin" {
-			// Yunzai counts the weapon pool apart from the other two.
-			pool = (draw.Kind == "weapon") == (kind == "weapon")
-		}
-		if pool {
-			count++
-		}
-		if draw.Rarity == 5 && (pool || game == "genshin") {
-			stars = append(stars, draw.Name+"("+strconv.Itoa(draw.Interval)+")")
+		count++
+		if draw.Rarity == 5 {
+			stars++
 		}
 	}
-	if game != "genshin" {
-		five := "没有五星"
-		if len(stars) > 0 {
-			five = "其中" + strconv.Itoa(len(stars)) + "个五星"
-		}
-		return "今日抽已抽" + strconv.Itoa(count) + "抽，" + five + "，明日再来吧"
+	five := "没有五星"
+	if stars > 0 {
+		five = "其中" + strconv.Itoa(stars) + "个五星"
 	}
-	// lodash.truncate keeps eight characters, "..." included.
-	if runes := []rune(name); len(runes) > 8 {
-		name = string(runes[:5]) + "..."
-	}
-	if len(stars) == 0 {
-		return strings.Trim(name+"\n今日已抽，累计"+strconv.Itoa(count)+"抽无五星", "\n")
-	}
-	text := "今日五星：" + strings.Join(stars, "\n")
-	if len(stars) >= 4 {
-		text = "今日五星：" + strconv.Itoa(len(stars)) + "个"
-	}
-	if week, _ := status["weekly_top"].(int); week >= 2 {
-		text += "\n本周：" + strconv.Itoa(week) + "个五星"
-	}
-	return strings.Trim(name+"\n"+text, "\n")
+	return "今日抽已抽" + strconv.Itoa(count) + "抽，" + five + "，明日再来吧"
 }
 func asMap(value any) map[string]any {
 	out := map[string]any{}

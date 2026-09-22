@@ -37,7 +37,7 @@ func buildRoster(context app.ImageContext, resources *app.ImageResources, list [
 	panels := map[string]app.CharacterPanel{}
 	if context.Query != nil {
 		if result, err := context.Query("starrail.character", nil); err == nil {
-			for _, panel := range app.NormalizePanels("starrail", result, context.Catalog) {
+			for _, panel := range app.NormalizePanels(result, context.Catalog) {
 				panels[panel.ID] = panel
 			}
 		}
@@ -61,7 +61,7 @@ func buildRoster(context app.ImageContext, resources *app.ImageResources, list [
 		if panel, ok := panels[id]; ok {
 			item.panel = &panel
 			card["level"], card["cons"] = panel.Level, panel.Rank
-			levels := app.PanelTalents("starrail", panel, record)
+			levels := app.PanelTalents(panel, record)
 			talents := []any{}
 			item.aeq = 0
 			for _, key := range []string{"a", "e", "q", "t"} {

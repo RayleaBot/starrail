@@ -10,7 +10,7 @@ import (
 
 func extendedBusinessView(v *View, game Game, operation Operation, data map[string]any, catalog Catalog) bool {
 	if operation.Name == "starrail.gacha_summary" {
-		v.Subtitle += " · " + poolName("starrail", asText(data["gacha_type"]))
+		v.Subtitle += " · " + poolName(asText(data["gacha_type"]))
 		rows := []Row{}
 		for _, raw := range asList(asObject(data["pool"])["cards"]) {
 			item := asObject(raw)
@@ -48,73 +48,14 @@ func extendedBusinessView(v *View, game Game, operation Operation, data map[stri
 		return true
 	}
 	if strings.HasSuffix(operation.Name, ".monthly") {
-		monthlyView(v, game, data)
+		monthlyView(v, data)
 		return true
 	}
 	name := strings.TrimPrefix(operation.Name, game.ID+".")
-	switch game.ID {
-	case "genshin":
-		switch name {
-		case "theater", "hard_challenge":
-			for i, raw := range asList(data["data"]) {
-				item := asObject(raw)
-				schedule := asObject(item["schedule"])
-				title := firstText(schedule, "name", "schedule_id")
-				if title == "" {
-					title = strconv.Itoa(i + 1)
-				}
-				rows := []Row{}
-				if start := calendarTime(schedule["start_time"]); start != "" {
-					rows = append(rows, Row{Label: "开始时间（UTC+8）", Value: start})
-				}
-				if has, ok := item["has_data"].(bool); ok && !has {
-					rows = append(rows, Row{Label: "状态", Value: "暂无挑战记录"})
-				}
-				v.Sections = append(v.Sections, Section{Title: "第 " + title + " 期", Rows: rows})
-				walkMetrics(v, item, "第 "+title+" 期", catalog, 0)
-			}
-			if len(asList(data["data"])) == 0 {
-				v.Note = "暂无可用期次记录。"
-			}
-		case "tcg":
-			addScalar(v, "牌手等级", data["level"])
-			addRatio(v, "角色牌", data, "avatar_card_num_gained", "avatar_card_num_total")
-			addRatio(v, "行动牌", data, "action_card_num_gained", "action_card_num_total")
-			walkMetrics(v, asObject(data["challenge_basic"]), "牌手挑战", catalog, 0)
-		case "tcg_cards", "tcg_decks":
-			key := "card_list"
-			if name == "tcg_decks" {
-				key = "deck_list"
-			}
-			list := asList(data[key])
-			v.Rows = append(v.Rows, Row{Label: "数量", Value: strconv.Itoa(len(list))})
-			for i, raw := range list {
-				item := asObject(raw)
-				label := firstText(item, "name", "deck_name", "card_name")
-				if label == "" {
-					label = fmt.Sprintf("第 %d 项", i+1)
-				}
-				walkMetrics(v, item, label, catalog, 0)
-			}
-			if len(list) == 0 {
-				v.Note = "尚无可展示的牌库或牌组记录。"
-			}
-		default:
-			return false
-		}
-	case "starrail":
-		if !slices.Contains([]string{"peak", "rogue", "swarm", "gears", "unknowable", "divergent", "currency_wars"}, name) {
-			return false
-		}
-		walkMetrics(v, data, operation.Label, catalog, 0)
-	case "zzz":
-		if !slices.Contains([]string{"deadly", "holo_boss", "tower", "void_front", "hollow_zero", "hollow_zero_detail", "lost_void", "zenkov", "zenkov_detail", "exploration"}, name) {
-			return false
-		}
-		walkMetrics(v, data, operation.Label, catalog, 0)
-	default:
+	if !slices.Contains([]string{"peak", "rogue", "swarm", "gears", "unknowable", "divergent", "currency_wars"}, name) {
 		return false
 	}
+	walkMetrics(v, data, operation.Label, catalog, 0)
 	if len(v.Rows) == 0 && len(v.Sections) == 0 {
 		v.Note = "暂无可展示的记录。"
 	}
@@ -153,32 +94,13 @@ func calendarTime(value any) string {
 	return ""
 }
 
-func monthlyView(v *View, game Game, data map[string]any) {
+func monthlyView(v *View, data map[string]any) {
 	month := asObject(data["month_data"])
 	addScalar(v, "统计月份", data["data_month"])
-	switch game.ID {
-	case "genshin":
-		addScalar(v, "本月原石", month["current_primogems"])
-		addScalar(v, "本月摩拉", month["current_mora"])
-		addScalar(v, "上月原石", month["last_primogems"])
-		addScalar(v, "上月摩拉", month["last_mora"])
-	case "starrail":
-		addScalar(v, "本月星琼", month["current_hcoin"])
-		addScalar(v, "本月专票", month["current_rails_pass"])
-		addScalar(v, "上月星琼", month["last_hcoin"])
-		addScalar(v, "上月专票", month["last_rails_pass"])
-	case "zzz":
-		for _, raw := range asList(month["list"]) {
-			item := asObject(raw)
-			label := asText(item["data_name"])
-			if label == "" {
-				label = map[string]string{"PolychromesData": "菲林", "MatserTapeData": "母带", "BooponsData": "邦布券"}[asText(item["data_type"])]
-			}
-			if label != "" {
-				addScalar(v, label, item["count"])
-			}
-		}
-	}
+	addScalar(v, "本月星琼", month["current_hcoin"])
+	addScalar(v, "本月专票", month["current_rails_pass"])
+	addScalar(v, "上月星琼", month["last_hcoin"])
+	addScalar(v, "上月专票", month["last_rails_pass"])
 	groups := asList(month["group_by"])
 	if len(groups) == 0 {
 		groups = asList(month["income_components"])

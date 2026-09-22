@@ -71,9 +71,6 @@ func estimatePlaytime(rows []BillingRow, action string) []PlaytimeDay {
 	return out
 }
 func (a *App) playtimeAction(ctx context.Context, client AccountsClient, input map[string]any) (map[string]any, error) {
-	if a.Game.ID != "starrail" {
-		return nil, gameError("operation_denied", "开拓力时长估算仅适用于星铁。")
-	}
 	choice := Selection{asText(input["account_ref"]), asText(input["role_ref"])}
 	if _, err := authorizeCloudRole(ctx, client, choice); err != nil {
 		return nil, err

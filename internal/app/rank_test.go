@@ -9,7 +9,7 @@ import (
 func TestRankKeepsOneEntryPerUIDAndCharacter(t *testing.T) {
 	store := &GroupStore{Directory: t.TempDir()}
 	scope := GroupScope{Protocol: "onebot11", Adapter: "adapter", BotID: "bot", GroupID: "group"}
-	base := RankEntry{ActorID: "user1", UID: "100000001", CharacterID: "10000046", Score: 100, Panel: &CharacterPanel{ID: "10000046"}, UpdatedAtMS: 5}
+	base := RankEntry{ActorID: "user1", UID: "100000001", CharacterID: "1102", Score: 100, Panel: &CharacterPanel{ID: "1102"}, UpdatedAtMS: 5}
 	var wg sync.WaitGroup
 	for range 6 {
 		wg.Go(func() {
@@ -35,7 +35,7 @@ func TestRankKeepsOneEntryPerUIDAndCharacter(t *testing.T) {
 }
 
 func TestRankEntriesFollowMiao(t *testing.T) {
-	catalog, err := ParseCatalog([]byte(`{"version":"1","entries":[{"id":"10000046","name":"胡桃","kind":"character","rarity":5},{"id":"10000023","name":"香菱","kind":"character","rarity":4}]}`))
+	catalog, err := ParseCatalog([]byte(`{"version":"1","entries":[{"id":"1102","name":"希儿","kind":"character","rarity":5},{"id":"1001","name":"三月七","kind":"character","rarity":4}]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,8 +47,8 @@ func TestRankEntriesFollowMiao(t *testing.T) {
 		}
 		return e
 	}
-	all := []RankEntry{entry("3", "10000046", 180, 50000), entry("1", "10000046", 220, 40000), entry("2", "10000046", 150, 0),
-		entry("1", "10000023", 200, 30000), {UID: "9", CharacterID: "10000046", Score: 999}}
+	all := []RankEntry{entry("3", "1102", 180, 50000), entry("1", "1102", 220, 40000), entry("2", "1102", 150, 0),
+		entry("1", "1001", 200, 30000), {UID: "9", CharacterID: "1102", Score: 999}}
 	uids := func(entries []RankEntry) string {
 		out := []string{}
 		for _, e := range entries {
@@ -58,25 +58,25 @@ func TestRankEntriesFollowMiao(t *testing.T) {
 	}
 	// Damage ranks only panels with a default damage; entries kept without a
 	// panel (from before panels were stored) do not rank.
-	if got := uids(a.rankEntries(all, "10000046", "dmg")); got != "3:10000046,1:10000046" {
+	if got := uids(a.rankEntries(all, "1102", "dmg")); got != "3:1102,1:1102" {
 		t.Errorf("dmg = %s", got)
 	}
-	if got := uids(a.rankEntries(all, "10000046", "mark")); got != "1:10000046,3:10000046,2:10000046" {
+	if got := uids(a.rankEntries(all, "1102", "mark")); got != "1:1102,3:1102,2:1102" {
 		t.Errorf("mark = %s", got)
 	}
 	// Every character's best, by UID then rarity.
-	if got := uids(a.rankEntries(all, "", "mark")); got != "1:10000046,1:10000023" {
+	if got := uids(a.rankEntries(all, "", "mark")); got != "1:1102,1:1001" {
 		t.Errorf("best = %s", got)
 	}
-	if len(a.rankEntries(all, "10000046", "crit")) != 0 {
+	if len(a.rankEntries(all, "1102", "crit")) != 0 {
 		t.Error("crit ranking has no upstream values")
 	}
-	for word, mode := range map[string]string{"胡桃排名": "dmg", "胡桃圣遗物排行": "mark", "最高分胡桃": "mark", "胡桃词条排名": "valid", "胡桃双爆排名": "crit"} {
+	for word, mode := range map[string]string{"希儿排名": "dmg", "希儿遗器排行": "mark", "最高分希儿": "mark", "希儿词条排名": "valid", "希儿双爆排名": "crit"} {
 		if got := rankMode(word); got != mode {
 			t.Errorf("rankMode(%s) = %s, want %s", word, got, mode)
 		}
 	}
-	if name := rankStrip.ReplaceAllString("群内最高分胡桃", ""); name != "胡桃" {
+	if name := rankStrip.ReplaceAllString("群内最高分希儿", ""); name != "希儿" {
 		t.Errorf("name = %s", name)
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/RayleaBot/plugin-starrail/internal/localdata"
 	"math"
 	"path/filepath"
 	"regexp"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/RayleaBot/plugin-starrail/internal/localdata"
 )
 
 var cloudTreePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,32}$`)
@@ -126,10 +127,10 @@ func cleanCloudGear(value any) (map[string]any, error) {
 	}
 	return out, nil
 }
-func cleanCloudAvatar(game string, value any) (string, json.RawMessage, error) {
+func cleanCloudAvatar(value any) (string, json.RawMessage, error) {
 	obj := asObject(value)
 	id, ok := cloudInteger(obj["id"], 1, 1000000000)
-	if !ok || game == "genshin" && id < 10000000 || game == "starrail" && id >= 10000000 {
+	if !ok || id >= 10000000 {
 		return "", nil, gameError("cloud_invalid", "角色编号与所选游戏不匹配。")
 	}
 	out := map[string]any{"id": id, "_source": "share"}
@@ -240,9 +241,6 @@ func cleanCloudAvatar(game string, value any) (string, json.RawMessage, error) {
 			for key, v := range slots {
 				slot, e := strconv.Atoi(strings.TrimPrefix(key, "arti"))
 				limit := 6
-				if game == "genshin" {
-					limit = 5
-				}
 				if e != nil || slot < 1 || slot > limit {
 					return "", nil, gameError("cloud_invalid", "装备部位编号无效。")
 				}
@@ -265,14 +263,14 @@ func cleanCloudAvatar(game string, value any) (string, json.RawMessage, error) {
 	}
 	return strconv.Itoa(id), raw, nil
 }
-func cleanCloudPlayer(game, uid string, value any) (map[string]json.RawMessage, error) {
+func cleanCloudPlayer(uid string, value any) (map[string]json.RawMessage, error) {
 	data := asObject(value)
 	if asText(data["uid"]) != uid || !uidPattern.MatchString(uid) {
 		return nil, gameError("cloud_invalid", "面板文件 UID 与已授权角色不一致。")
 	}
 	avatars := map[string]json.RawMessage{}
 	add := func(v any) error {
-		id, raw, err := cleanCloudAvatar(game, v)
+		id, raw, err := cleanCloudAvatar(v)
 		if err != nil {
 			return err
 		}

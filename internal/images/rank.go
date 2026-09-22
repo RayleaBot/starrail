@@ -86,7 +86,7 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 			keys = []string{"a", "e", "t", "q"}
 		}
 		wide = wide || len(keys) > 4
-		levels := app.PanelTalents("starrail", panel, record)
+		levels := app.PanelTalents(panel, record)
 		talents := []any{}
 		for _, key := range keys {
 			level := levels[key]

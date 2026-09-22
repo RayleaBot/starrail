@@ -6,11 +6,11 @@ import (
 )
 
 func TestUIDListNumbersAccountUIDsBeforeBoundOnes(t *testing.T) {
-	a := &App{Game: Game{ID: "genshin", Name: "原神", Prefix: "#"}}
+	a := &App{Game: Game{ID: "starrail", Name: "星铁", Prefix: "#"}}
 	listed := Accounts{
-		Items:       []Account{{Ref: "a1", Roles: []Role{{Ref: "r1", Game: "genshin", UID: "100000001", Nickname: "旅行者"}, {Ref: "r2", Game: "starrail", UID: "800000001"}}}},
-		Defaults:    map[string]Selection{"genshin": {AccountRef: "a1", RoleRef: "r1"}},
-		UIDBindings: map[string]UIDBinding{"genshin": {UIDs: []string{"100000002", "100000001"}}},
+		Items:       []Account{{Ref: "a1", Roles: []Role{{Ref: "r1", Game: "starrail", UID: "100000001", Nickname: "开拓者"}, {Ref: "r2", Game: "genshin", UID: "800000001"}}}},
+		Defaults:    map[string]Selection{"starrail": {AccountRef: "a1", RoleRef: "r1"}},
+		UIDBindings: map[string]UIDBinding{"starrail": {UIDs: []string{"100000002", "100000001"}}},
 	}
 	list := a.uidList(listed)
 	if len(list) != 2 || list[0].Role == nil || list[1].UID != "100000002" || list[1].Role != nil {
@@ -20,11 +20,11 @@ func TestUIDListNumbersAccountUIDsBeforeBoundOnes(t *testing.T) {
 	if a.currentUID(listed) != "100000001" {
 		t.Fatal("default role not in use")
 	}
-	listed.UIDBindings["genshin"] = UIDBinding{UIDs: []string{"100000002"}, Current: "100000002"}
+	listed.UIDBindings["starrail"] = UIDBinding{UIDs: []string{"100000002"}, Current: "100000002"}
 	// The image shows each UID's player from its saved panels, with the
 	// first saved character's face as miao does.
 	a.Profiles = &PanelStore{Directory: t.TempDir()}
-	if _, err := a.Profiles.Keep("100000001", []CharacterPanel{{ID: "10000089"}, {ID: "10000046"}}, "enka", &ShowcaseProfile{Nickname: "旅行者", Level: 60}); err != nil {
+	if _, err := a.Profiles.Keep("100000001", []CharacterPanel{{ID: "10000089"}, {ID: "10000046"}}, "enka", &ShowcaseProfile{Nickname: "开拓者", Level: 60}); err != nil {
 		t.Fatal(err)
 	}
 	view, image := a.uidView(listed)
@@ -32,7 +32,7 @@ func TestUIDListNumbersAccountUIDsBeforeBoundOnes(t *testing.T) {
 		t.Fatal(view.Text())
 	}
 	first, second := image.Entries[0], image.Entries[1]
-	if !first.Account || first.Active || first.Nickname != "旅行者" || first.Level != 60 || first.Character != "10000046" || second.Account || !second.Active || second.Character != "" {
+	if !first.Account || first.Active || first.Nickname != "开拓者" || first.Level != 60 || first.Character != "10000046" || second.Account || !second.Active || second.Character != "" {
 		t.Fatalf("entries = %+v", image.Entries)
 	}
 }

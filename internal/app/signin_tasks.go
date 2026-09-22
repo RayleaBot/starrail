@@ -5,10 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"slices"
 	"strings"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
@@ -18,12 +19,6 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 	}
 	if strings.HasPrefix(action, "community.task.") {
 		kind, root, operation, label, taskPrefix = "community", "community.task.", a.Game.ID+".community_run", "米游社任务", "game.community."
-	}
-	if strings.HasPrefix(action, "cloudgame.task.") {
-		if a.Game.ID == "starrail" {
-			return nil, gameError("operation_denied", "当前没有星铁云游戏任务。")
-		}
-		kind, root, operation, label, taskPrefix = "cloudgame", "cloudgame.task.", a.Game.ID+".cloud_sign", "云游戏签到", "game.cloudgame."
 	}
 	if action == root+"list" {
 		items, err := a.Reminders.List()
@@ -53,7 +48,7 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 	var account Account
 	var role Role
 	var err error
-	if kind == "community" || kind == "cloudgame" {
+	if kind == "community" {
 		q.RoleRef = ""
 		account, err = client.AuthorizeAccount(ctx, q.AccountRef)
 		role = Role{Game: a.Game.ID, Nickname: account.AccountLabel}
@@ -62,9 +57,6 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 	}
 	if err != nil {
 		return nil, err
-	}
-	if kind == "cloudgame" && !slices.Contains(account.CloudConfigured, a.Game.ID) {
-		return nil, gameError("input_invalid", "请先在账号管理中配置对应云游戏授权。")
 	}
 	sum := sha256.Sum256([]byte(client.Provider + "\x00" + q.AccountRef + "\x00" + q.RoleRef))
 	task := Reminder{Ref: taskPrefix + a.Game.ID + "." + hex.EncodeToString(sum[:]), Selection: q.Selection, Owner: account.Owner, Role: role, Provider: client.Provider, Kind: kind, Once: q.Once, Community: CommunityPlan{Read: q.Read, Like: q.Like, Share: q.Share, Unlike: q.Unlike}, Hour: q.Hour, Minute: q.Minute, Notify: q.Notify}
@@ -94,14 +86,14 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 		task.DelegationRef = grant.Delegation.Ref
 		task.ExpiresAtMS = grant.Delegation.ExpiresAtMS
 		cron := "*/10 * * * *"
-		if kind == "community" || kind == "cloudgame" {
+		if kind == "community" {
 			cron = "* * * * *"
 		}
 		_, err = event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: cron, LogLabel: a.Game.Name + label, Payload: map[string]any{"kind": kind}})
 	}
 	if err == nil {
 		task.Enabled = true
-		if kind == "monthly" || ((kind == "community" || kind == "cloudgame") && !q.Once) {
+		if kind == "monthly" || (kind == "community" && !q.Once) {
 			task.NextCheckMS = nextChallengeCheck(time.Now().UnixMilli(), q.Hour, q.Minute, 0)
 		}
 		err = a.Reminders.edit(task.Ref, func(items *[]Reminder, i int) error {

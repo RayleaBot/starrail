@@ -3,9 +3,10 @@ package app
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"github.com/RayleaBot/plugin-starrail/internal/gacha"
-	"testing"
 )
 
 type overseasSyncCaller struct {

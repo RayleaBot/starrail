@@ -227,11 +227,6 @@ func (a *App) rankCommand(ctx context.Context, event *rayleabot.EventContext, co
 		return a.rankSwitch(event, scope, word)
 	}
 	list, mode := rankListWord.MatchString(word), rankMode(word)
-	if a.Game.ID == "zzz" {
-		// ZZZ-Plugin has no panel ranking; this plugin's 排行 lists
-		// equipment scores.
-		mode = "mark"
-	}
 	name := strings.TrimSpace(rankStrip.ReplaceAllString(word, ""))
 	if name == "" {
 		name = strings.Join(args, " ")

@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/RayleaBot/plugin-starrail/internal/localdata"
 	"io"
 	"net/http"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/RayleaBot/plugin-starrail/internal/localdata"
 )
 
 func TestPublicActivityUsesActualWindowNotAnnouncementDisplayTime(t *testing.T) {
@@ -28,20 +29,20 @@ func TestPublicPostsUseOfficialCursorAndSanitizeContent(t *testing.T) {
 	var last string
 	c := PublicContentClient{HTTP: cloudDoer(func(r *http.Request) (*http.Response, error) {
 		last = r.URL.Query().Get("last_id")
-		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"retcode":0,"data":{"posts":[{"post":{"post_id":"123","game_id":2,"subject":"a"}}],"is_last":true,"last_id":"3"}}`))}, nil
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"retcode":0,"data":{"posts":[{"post":{"post_id":"123","game_id":6,"subject":"a"}}],"is_last":true,"last_id":"3"}}`))}, nil
 	})}
-	result, err := c.posts(t.Context(), "genshin", ContentQuery{Kind: "search", Query: "角色", LastID: "2"})
+	result, err := c.posts(t.Context(), ContentQuery{Kind: "search", Query: "角色", LastID: "2"})
 	if err != nil || last != "2" || len(result["items"].([]PublicPost)) != 1 {
 		t.Fatal(result, err, last)
 	}
-	p, err := normalizePublicPost("genshin", map[string]any{"post": map[string]any{"post_id": "123", "game_id": 0, "subject": "<b>标题</b>", "content": "<script>secret()</script><p>内容</p>", "images": []any{"https://upload-bbs.miyoushe.com/test.png?x-oss-process=foo", "http://other/a.png"}}}, true)
+	p, err := normalizePublicPost(map[string]any{"post": map[string]any{"post_id": "123", "game_id": 0, "subject": "<b>标题</b>", "content": "<script>secret()</script><p>内容</p>", "images": []any{"https://upload-bbs.miyoushe.com/test.png?x-oss-process=foo", "http://other/a.png"}}}, true)
 	if err != nil || p.Title != "标题" || len(p.Parts) != 1 || p.Parts[0] != "内容" || len(p.Images) != 1 || strings.Contains(p.Images[0], "?") {
 		t.Fatal(p, err)
 	}
-	if _, err = publicPostID("starrail", "https://www.miyoushe.com/ys/article/123"); err == nil {
+	if _, err = publicPostID("https://www.miyoushe.com/ys/article/123"); err == nil {
 		t.Fatal("wrong game route accepted")
 	}
-	if _, err = publicPostID("genshin", "https://www.miyoushe.com/ys/article/123?cookie=bad"); err == nil {
+	if _, err = publicPostID("https://www.miyoushe.com/sr/article/123?cookie=bad"); err == nil {
 		t.Fatal("query accepted")
 	}
 }
@@ -94,27 +95,23 @@ func TestPublicLiveAnonymousSources(t *testing.T) {
 	if os.Getenv("RAYLEA_PUBLIC_SMOKE") != "1" {
 		t.Skip("explicit anonymous network smoke")
 	}
-	for _, g := range []string{"genshin", "starrail", "zzz"} {
-		t.Run(g, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(t.Context(), 25*time.Second)
-			defer cancel()
-			client := PublicContentClient{}
-			cal, err := client.calendar(ctx, g)
-			if err != nil {
-				t.Fatal(err)
-			}
-			items := cal["items"].([]PublicActivity)
-			known := 0
-			for _, v := range items {
-				if v.EndMS > 0 {
-					known++
-				}
-			}
-			news, err := client.posts(ctx, g, ContentQuery{Kind: "news", Type: 1})
-			if err != nil {
-				t.Fatal(err)
-			}
-			t.Logf("announcements=%d dated=%d news=%d", len(items), known, len(news["items"].([]PublicPost)))
-		})
+	ctx, cancel := context.WithTimeout(t.Context(), 25*time.Second)
+	defer cancel()
+	client := PublicContentClient{}
+	cal, err := client.calendar(ctx)
+	if err != nil {
+		t.Fatal(err)
 	}
+	items := cal["items"].([]PublicActivity)
+	known := 0
+	for _, v := range items {
+		if v.EndMS > 0 {
+			known++
+		}
+	}
+	news, err := client.posts(ctx, ContentQuery{Kind: "news", Type: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("announcements=%d dated=%d news=%d", len(items), known, len(news["items"].([]PublicPost)))
 }

@@ -3,12 +3,13 @@ package app
 import (
 	"context"
 	"encoding/json"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 func TestPublicCodesFixedSourcesEstimatedExpiryAndNoCredentials(t *testing.T) {
@@ -37,7 +38,7 @@ func TestPublicCodesFixedSourcesEstimatedExpiryAndNoCredentials(t *testing.T) {
 		}
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"retcode":0,"data":` + data + `}`))}, nil
 	})}
-	result, err := c.codes(t.Context(), "genshin")
+	result, err := c.codes(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,11 +85,11 @@ func (c *billingCaller) CallService(_ context.Context, r rayleabot.ServiceCallRe
 	return nil
 }
 func TestBillingCollectAtomicReplayRevocationAndClearConflict(t *testing.T) {
-	a := App{Game: Game{ID: "genshin"}, Billing: &BillingStore{Directory: t.TempDir()}}
+	a := App{Game: Game{ID: "starrail"}, Billing: &BillingStore{Directory: t.TempDir()}}
 	defer a.Close()
-	caller := &billingCaller{role: Role{Ref: "role", Game: "genshin", UID: "100000001", Region: "cn_gf01"}}
-	client := AccountsClient{Caller: caller, Game: "genshin", Provider: "p"}
-	input := map[string]any{"account_ref": "account", "role_ref": "role", "category": "crystal", "direction": "all"}
+	caller := &billingCaller{role: Role{Ref: "role", Game: "starrail", UID: "100000001", Region: "prod_gf_cn"}}
+	client := AccountsClient{Caller: caller, Game: "starrail", Provider: "p"}
+	input := map[string]any{"account_ref": "account", "role_ref": "role", "category": "stellar", "direction": "all"}
 	start, err := a.billingManage(t.Context(), client, "billing.sync.start", input)
 	if err != nil {
 		t.Fatal(err)

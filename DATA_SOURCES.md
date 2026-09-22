@@ -1,28 +1,28 @@
 # 资料来源
 
-本插件的固定资料由 `game-plugin-kit/scripts/import-reference-data.py` 从已下载参考 JSON 转换，源提交记录在 `internal/assets/catalog.json`。转换保留角色、装备名称、属性、技能文字与材料，不包含素材图片；伤害与评分由打包的上游脚本计算，见下文。
+本插件的固定资料由 `scripts/import-reference-data.py` 从已下载参考 JSON 转换，源提交记录在 `internal/assets/catalog.json`。转换保留角色、装备名称、属性、技能文字与材料，不包含素材图片；伤害与评分由打包的上游脚本计算，见下文。
 
-原神与星铁资料来自 miao-plugin，固定提交 7f6f1c84c89102bc6b1c58c8e1b06c61f4642161；保留 LICENSES/miao-plugin-MIT.txt。
+星铁资料来自 miao-plugin，固定提交 7f6f1c84c89102bc6b1c58c8e1b06c61f4642161；保留 LICENSES/miao-plugin-MIT.txt。
 
 没有账号时的面板来自 Mihomo（api.mihomo.me）的 `sr_info_parsed` 中文接口（miao-plugin 星铁的默认面板服务；上游读取未合计的 `sr_info` 后自行合计属性），按五分钟缓存；天赋等级同 miao 的 HomoApi。`templates/panel-list/` 与 `templates/artifact-list/` 按 miao-plugin 的 `character/profile-list` 与 `character/artis-list` 改写（MIT；miao 没有星铁角色的侧脸图，列表不显示头像）。抽卡导入导出遵循 [UIGF](https://uigf.org/en/standards/uigf.html)，尚未申请兼容性认证。
 
-本插件及编译期业务库沿用 RayleaBot SDK 的 AGPL-3.0 许可，安装包管理页提供对应源码下载。上游数据的原许可声明另行保留。
+本插件沿用 RayleaBot SDK 的 AGPL-3.0 许可，安装包管理页提供对应源码下载。上游数据的原许可声明另行保留。
 
 ## 装备评分
 
-评分运行 miao 提交 `7f6f1c84c89102bc6b1c58c8e1b06c61f4642161` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、星魂、武器与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由相邻库的 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。
+评分运行 miao 提交 `7f6f1c84c89102bc6b1c58c8e1b06c61f4642161` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、星魂、光锥与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。
 
 ## 自动参考计算
 
-`internal/assets/calc/` 保存本游戏的角色脚本（`characters/<ID>-<角色名>.js`）、光锥与遗器效果（`game.js`）和计算资料（`catalog.json`），由相邻库的 `scripts/bundle-reference-calculation.mjs` 从 miao 固定快照生成；共用的 miao 运行时在相邻库 `reference/miao/`，打包修正见其中的 `PATCHES.md`。数值对照向量在 `internal/assets/testdata/calc-vectors.json`。
+`internal/assets/calc/` 保存本游戏的角色脚本（`characters/<ID>-<角色名>.js`）、光锥与遗器效果（`game.js`）和计算资料（`catalog.json`），由 `scripts/bundle-reference-calculation.mjs` 从 miao 固定快照生成；miao 运行时的适配在 `internal/reference/miao/`，打包修正见其中的 `PATCHES.md`。数值对照向量在 `internal/assets/testdata/calc-vectors.json`。
 
 ## 模拟与固定资料
 
-材料、卡池与固定生日从同一 miao 固定快照的 material/info 数据转换，不联网补造日程。娱乐模拟的默认曲线来自 [Miao-Yunzai 固定提交](https://github.com/yoimiya-kokomi/Miao-Yunzai/tree/40cc2103efba1fbb279b768e3f5345d45372d357) 和 [StarRail-plugin 固定提交](https://github.com/TsukinaKasumi/StarRail-plugin/tree/090e411cf9be28b1644721fab54eab0ad283668f)，转换为 Go，不在运行时加载原插件。只向原神和星铁开放模拟入口；不声明为当前官方概率。
+材料与卡池从同一 miao 固定快照的 material/info 数据转换，不联网补造日程。娱乐模拟的默认曲线与物品池来自 [StarRail-plugin 固定提交](https://github.com/TsukinaKasumi/StarRail-plugin/tree/090e411cf9be28b1644721fab54eab0ad283668f)，转换为 Go，不在运行时加载原插件；不声明为当前官方概率。
 
-GPL-3.0 和 Apache-2.0 许可分别保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt` 与 `LICENSES/StarRail-plugin-Apache-2.0.txt`，对应的转换器、数据和原生实现随源码分发。转换模拟数据需要已有 Python/PyYAML，正常构建使用已生成数据，无需该再生成步骤。
+Apache-2.0 许可保留在 `LICENSES/StarRail-plugin-Apache-2.0.txt`，对应的转换器、数据和原生实现随源码分发。
 
-云面板装备解释沿用同一固定 miao 快照的 artifact 元数据与 ArtisAttr 公式，包含原神 299、星铁 768 项装备映射。转换脚本为相邻业务库 `scripts/import-cloud-panel-data.mjs`，不加载上游机器人运行时；缺失档位明确显示未覆盖。
+云面板装备解释沿用同一固定 miao 快照的 artifact 元数据与 ArtisAttr 公式，包含 768 项遗器映射。转换脚本为 `scripts/import-cloud-panel-data.mjs`，不加载上游机器人运行时；缺失档位明确显示未覆盖。
 
 ## 补充的强化公式
 
@@ -38,7 +38,7 @@ GPL-3.0 和 Apache-2.0 许可分别保留在 `LICENSES/Miao-Yunzai-GPL-3.0.txt` 
 
 `templates/uid-list/` 按 Miao-Yunzai 原神插件的 html/user/uid-list 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），页面框架与样式沿用 miao-plugin 的 common/layout/elem 与 common/common.css（MIT，见 `LICENSES/miao-plugin-MIT.txt`），同 miao 的 1.4 倍缩放；图片地址改为宿主渲染资源。玩家的头像与名片按 miao 的 faceImgs 取该 UID 已保存面板中编号最小的角色，没有时用 miao 的通用头像与名片。
 
-`templates/rank-stats/` 按 ark-plugin 的 graph/stats 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），页面框架沿用 miao-plugin 的 common/layout/default 与 common/common.css，同 ark 的 1.4 倍缩放。上游在浏览器中用 ECharts 绘制折线，这里由共享库按 ECharts 的刻度与平滑算法输出相同的 SVG，不随插件分发该库；背景图由“ark 插件图片”素材来源下载，只下载 `resources/graph/`。
+`templates/rank-stats/` 按 ark-plugin 的 graph/stats 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），页面框架沿用 miao-plugin 的 common/layout/default 与 common/common.css，同 ark 的 1.4 倍缩放。上游在浏览器中用 ECharts 绘制折线，这里按 ECharts 的刻度与平滑算法输出相同的 SVG，不随插件分发该库；背景图由“ark 插件图片”素材来源下载，只下载 `resources/graph/`。
 
 参考面板、收益曲线、强度榜、攻略、深渊攻略与商店光锥推荐同 StarRail-plugin 的 apps/srxx.js，直接发送该仓库 `resources/srsr/` 中的米游社作者整理图（Apache-2.0，见 `LICENSES/StarRail-plugin-Apache-2.0.txt`；上游在文件头注明各图作者），多图命令与上游一样以合并转发发送，平台不支持合并转发时改为一条消息。图片内容停在上游收录时的 1.x 版本，不随插件分发，由“星铁插件图片”素材来源在运行时下载；参考面板按角色的各个名字查找上游文件名，例如本插件的“穹·存护”对应上游的“开拓者•存护”。面板帮助同 miao-plugin 对“星铁面板帮助”的回复，发送该仓库的 `resources/character/imgs/help.jpg`（MIT），由 miao 素材来源在运行时下载。
 

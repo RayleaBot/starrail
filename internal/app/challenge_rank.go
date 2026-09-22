@@ -3,11 +3,12 @@ package app
 import (
 	"context"
 	"fmt"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 type ChallengeMetric struct {
@@ -34,18 +35,14 @@ type ChallengeEntry struct {
 	UpdatedMS int64              `json:"updated_ms"`
 }
 
-func challengeKinds(game string) []ChallengeKind {
-	defs := map[string][][4]string{
-		"genshin":  {{"abyss", "深渊", "abyss", "floor star battle"}, {"theater", "剧诗", "theater", "mode floor medal time borrow"}, {"hard_single", "幽境单人", "hard_challenge", "difficulty time"}, {"hard_mp", "幽境多人", "hard_challenge", "difficulty time"}},
-		"starrail": {{"challenge", "混沌", "challenge", "floor star round battle"}, {"story", "虚构", "story", "floor star score round"}, {"boss", "末日", "boss", "floor score star"}, {"peak", "仲裁", "peak", "hard boss mob round"}},
-		"zzz":      {{"challenge", "防卫战", "challenge", "score rating"}, {"deadly", "危局", "deadly", "star score"}, {"deadly_hard", "危局绝境", "deadly", "score star"}, {"holo_boss", "拟境", "holo_boss", "star time flawless"}, {"void_front", "临界", "void_front", "score"}, {"tower_s1", "爬塔S1", "tower", "floor"}, {"tower_s2", "爬塔S2", "tower", "floor flawless"}, {"tower_s3", "爬塔S3", "tower", "score floor flawless"}, {"tower_s4", "爬塔S4", "tower", "score floor flawless"}},
-	}
-	labels := map[string]string{"floor": "最深层/幕", "star": "星数", "battle": "战斗次数", "mode": "模式", "medal": "星章", "time": "用时（秒）", "borrow": "借出次数", "difficulty": "难度", "round": "轮数", "score": "得分", "hard": "绝境模式", "boss": "王棋星数", "mob": "骑士星数", "rating": "评级（C=1 至 S+=5）", "flawless": "无伤/最佳次数"}
+func challengeKinds() []ChallengeKind {
+	defs := [][4]string{{"challenge", "混沌", "challenge", "floor star round battle"}, {"story", "虚构", "story", "floor star score round"}, {"boss", "末日", "boss", "floor score star"}, {"peak", "仲裁", "peak", "hard boss mob round"}}
+	labels := map[string]string{"floor": "最深层", "star": "星数", "battle": "战斗次数", "round": "轮数", "score": "得分", "hard": "绝境模式", "boss": "王棋星数", "mob": "骑士星数"}
 	out := []ChallengeKind{}
-	for _, d := range defs[game] {
-		v := ChallengeKind{ID: d[0], Label: d[1], Operation: game + "." + d[2]}
+	for _, d := range defs {
+		v := ChallengeKind{ID: d[0], Label: d[1], Operation: "starrail." + d[2]}
 		for _, key := range strings.Fields(d[3]) {
-			v.Metrics = append(v.Metrics, ChallengeMetric{key, labels[key], slices.Contains([]string{"time", "round", "battle"}, key)})
+			v.Metrics = append(v.Metrics, ChallengeMetric{key, labels[key], slices.Contains([]string{"round", "battle"}, key)})
 		}
 		v.Required = []string{v.Metrics[0].Key}
 		if v.ID == "peak" {
@@ -55,8 +52,8 @@ func challengeKinds(game string) []ChallengeKind {
 	}
 	return out
 }
-func challengeKind(game, id string) (ChallengeKind, bool) {
-	for _, k := range challengeKinds(game) {
+func challengeKind(id string) (ChallengeKind, bool) {
+	for _, k := range challengeKinds() {
 		if strings.EqualFold(id, k.ID) || strings.EqualFold(id, k.Label) {
 			return k, true
 		}
@@ -102,7 +99,7 @@ func challengeSeason(data map[string]any) string {
 	}
 	return ""
 }
-func challengeExtract(game string, kind ChallengeKind, data map[string]any, period int) (ChallengeEntry, error) {
+func challengeExtract(kind ChallengeKind, data map[string]any, period int) (ChallengeEntry, error) {
 	out := ChallengeEntry{Kind: kind.ID, Metrics: map[string]float64{}}
 	put := func(key string, paths ...string) {
 		for _, p := range paths {
@@ -127,15 +124,8 @@ func challengeExtract(game string, kind ChallengeKind, data map[string]any, peri
 		}
 		out.Metrics[key] = total
 	}
-	if game == "genshin" && (kind.ID == "theater" || strings.HasPrefix(kind.ID, "hard_")) {
-		list := asList(data["data"])
-		if period < 1 || period > len(list) {
-			return out, gameError("challenge_unavailable", "官方未返回所选期次的成绩。")
-		}
-		data = asObject(list[period-1])
-	}
 	out.Season = challengeSeason(data)
-	if game == "starrail" && kind.ID != "peak" {
+	if kind.ID != "peak" {
 		groups := asList(data["groups"])
 		for _, raw := range groups {
 			group := asObject(raw)
@@ -146,56 +136,14 @@ func challengeExtract(game string, kind ChallengeKind, data map[string]any, peri
 			}
 		}
 	}
-	switch game + "." + kind.ID {
-	case "genshin.abyss":
-		parts := strings.Split(asText(data["max_floor"]), "-")
-		if len(parts) == 2 {
-			f, e := strconv.Atoi(parts[0])
-			c, e2 := strconv.Atoi(parts[1])
-			if e == nil && e2 == nil && f >= 0 && c >= 0 && c <= 9 {
-				out.Metrics["floor"] = float64(f*10 + c)
-			}
-		}
-		highest := -1
-		for _, v := range asList(data["floors"]) {
-			item := asObject(v)
-			idx := number(item["index"])
-			if idx > highest {
-				highest = idx
-				if star, ok := challengeNumber(item["star"]); ok {
-					out.Metrics["star"] = star
-				} else {
-					delete(out.Metrics, "star")
-				}
-			}
-		}
-		put("battle", "total_battle_times")
-	case "genshin.theater":
-		put("mode", "stat.difficulty_id")
-		if rounds, ok := fieldAt(data, "detail.rounds_data").([]any); ok {
-			out.Metrics["floor"] = float64(len(rounds))
-		}
-		if medals, ok := fieldAt(data, "stat.get_medal_round_list").([]any); ok {
-			out.Metrics["medal"] = 0
-			for _, v := range medals {
-				if n, ok := challengeNumber(v); ok && n == 1 {
-					out.Metrics["medal"]++
-				}
-			}
-		}
-		put("time", "stat.total_use_time", "detail.fight_statisic.total_use_time")
-		put("borrow", "stat.rent_cnt")
-	case "genshin.hard_single", "genshin.hard_mp":
-		mode := strings.TrimPrefix(kind.ID, "hard_")
-		put("difficulty", mode+".best.difficulty", mode+".difficulty")
-		put("time", mode+".best.second", mode+".second")
-	case "starrail.challenge", "starrail.story", "starrail.boss":
+	switch kind.ID {
+	case "challenge", "story", "boss":
 		put("floor", "max_floor")
 		put("star", "all_floor_detail.0.star_num", "max_floor_detail.star_num")
 		put("round", "all_floor_detail.0.round_num", "max_floor_detail.round_num")
 		put("score", "all_floor_detail.0.score", "max_floor_detail.score")
 		put("battle", "battle_num")
-	case "starrail.peak":
+	case "peak":
 		records := asList(data["challenge_peak_records"])
 		if len(records) >= period && period > 0 {
 			data = asObject(records[period-1])
@@ -217,58 +165,6 @@ func challengeExtract(game string, kind ChallengeKind, data map[string]any, peri
 		put("round", "boss_record.round_num")
 		if _, ok := out.Metrics["round"]; !ok {
 			sum("round", "mob_records", "round_num")
-		}
-	case "zzz.challenge":
-		data = asObject(data["hadal_info_v2"])
-		out.Season = challengeSeason(data)
-		put("score", "brief.score")
-		if v, ok := map[string]float64{"C": 1, "B": 2, "A": 3, "S": 4, "S+": 5}[asText(fieldAt(data, "brief.rating"))]; ok {
-			out.Metrics["rating"] = v
-		}
-	case "zzz.deadly":
-		put("star", "total_star")
-		put("score", "total_score")
-	case "zzz.deadly_hard":
-		if data["has_hard"] != true {
-			return out, gameError("challenge_unavailable", "此期没有绝境成绩。")
-		}
-		sum("score", "hard_list", "score")
-		sum("star", "hard_list", "star")
-	case "zzz.holo_boss":
-		sum("star", "list", "star")
-		valid := true
-		total, flawless := 0.0, 0.0
-		for _, item := range asList(data["list"]) {
-			m, ok := challengeNumber(fieldAt(item, "challenge_time.minute"))
-			sec, ok2 := challengeNumber(fieldAt(item, "challenge_time.second"))
-			if !ok || !ok2 {
-				valid = false
-			}
-			total += m*60 + sec
-			if fieldAt(item, "boss.medal.is_no_injured") == true {
-				flawless++
-			}
-		}
-		if valid {
-			out.Metrics["time"] = total
-		}
-		out.Metrics["flawless"] = flawless
-	case "zzz.void_front":
-		data = asObject(fieldAt(data, "void_front_battle_detail.void_front_battle_abstract_info_brief"))
-		out.Season = challengeSeason(data)
-		if out.Season == "" {
-			if v := asText(data["end_ts"]); v != "" {
-				out.Season = "end:" + v
-			}
-		}
-		put("score", "total_score")
-	default:
-		if game == "zzz" && strings.HasPrefix(kind.ID, "tower_s") {
-			out.Season = kind.ID
-			data = asObject(data["climbing_"+kind.ID])
-			put("floor", "climbing_tower_layer", "layer_info.climbing_tower_layer")
-			put("score", "layer_info.total_score")
-			put("flawless", "floor_mvp_num", "mvp_info.floor_mvp_num")
 		}
 	}
 	if out.Season == "" {
@@ -383,7 +279,7 @@ func (a *App) challengeList(scope GroupScope, kind ChallengeKind, season, dimens
 }
 func (a *App) manageChallenge(action string, input map[string]any) (map[string]any, error) {
 	if action == "challenge.schema" {
-		return map[string]any{"kinds": challengeKinds(a.Game.ID)}, nil
+		return map[string]any{"kinds": challengeKinds()}, nil
 	}
 	var q struct {
 		Scope     GroupScope `json:"scope"`
@@ -397,7 +293,7 @@ func (a *App) manageChallenge(action string, input map[string]any) (map[string]a
 	if decodeObject(input, &q) != nil || !q.Scope.valid() {
 		return nil, gameError("input_invalid", "挑战榜输入无效。")
 	}
-	kind, ok := challengeKind(a.Game.ID, q.Kind)
+	kind, ok := challengeKind(q.Kind)
 	if !ok && !(action == "challenge.clear" && q.Kind == "") {
 		return nil, gameError("input_invalid", "请选择本游戏支持的玩法。")
 	}
@@ -427,7 +323,7 @@ func (a *App) challengeCommand(ctx context.Context, event *rayleabot.EventContex
 	if len(args) > 0 {
 		kindID = args[0]
 	}
-	kind, ok := challengeKind(a.Game.ID, kindID)
+	kind, ok := challengeKind(kindID)
 	withdraw := command == "challenge-withdraw"
 	clear := command == "challenge-clear"
 	if (withdraw || clear) && (kindID == "" || ok) {
@@ -450,7 +346,7 @@ func (a *App) challengeCommand(ctx context.Context, event *rayleabot.EventContex
 	}
 	if !ok {
 		names := []string{}
-		for _, v := range challengeKinds(a.Game.ID) {
+		for _, v := range challengeKinds() {
 			names = append(names, v.Label)
 		}
 		return event.SendText("可选玩法：" + strings.Join(names, "、") + "。\n提交挑战 玩法 [本期/上期] [UID]：向本群公开自己的 UID、昵称及官方成绩。\n挑战排行 玩法 [期次] [指标] [页码]；退出挑战 [玩法]。")
@@ -513,7 +409,7 @@ func (a *App) challengeCommand(ctx context.Context, event *rayleabot.EventContex
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	entry, err := challengeExtract(a.Game.ID, kind, result.Data, period)
+	entry, err := challengeExtract(kind, result.Data, period)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}

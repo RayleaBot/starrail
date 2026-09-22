@@ -33,8 +33,6 @@ type Game struct {
 	// Hints are the replies of commands that upstream answers only by naming
 	// the commands that query, by command ID; {prefix} is the reply prefix.
 	Hints map[string]string `json:"hints"`
-	// QueryRanks are the group rankings fed by members' own record queries.
-	QueryRanks []QueryRankType `json:"query_ranks"`
 	// Panels are the 更新面板 rules and replies.
 	Panels PanelSettings `json:"panels"`
 	// Artwork lists the upstream image repositories an administrator can
@@ -59,7 +57,6 @@ type Assets struct {
 	Resources   []byte
 	Simulation  []byte
 	CloudPanels []byte
-	Enemies     []byte
 	// Images holds the plugin's own image builders by operation name; Panel
 	// draws single-character panels.
 	Images map[string]ImageBuilder
@@ -76,20 +73,17 @@ type Assets struct {
 	SimulationImage SimulationImageBuilder
 	// Rank draws a group's panel ranking.
 	Rank RankImageBuilder
-	// QueryRank orders and draws the rankings of game.json's query_ranks.
-	QueryRank QueryRankImageBuilder
 	// Showcase is the public service 更新面板 reads without an account;
 	// PanelList draws 面板列表.
 	Showcase  ShowcaseSource
 	PanelList PanelListImageBuilder
-	// ArtifactList draws 圣遗物列表 and 遗器列表; DailyMaterial draws
-	// 今日素材; Banners reads the banners online.
+	// ArtifactList draws 遗器列表; DailyMaterial draws
+	// 今日素材.
 	ArtifactList  ArtifactListImageBuilder
 	DailyMaterial DailyMaterialImageBuilder
 	// UIDList draws 我的uid; RankStats draws 排名统计.
 	UIDList   UIDListImageBuilder
 	RankStats RankStatsImageBuilder
-	Banners   BannerSource
 	// Queries picks the official query, by operation name, for commands that
 	// draw on another operation's data, as 最新深渊 runs whichever record
 	// opened last.
@@ -126,7 +120,6 @@ type App struct {
 	PanelHistory   *PanelHistoryStore
 	Groups         *GroupStore
 	Simulation     *SimulationStore
-	QueryRanks     *QueryRankStore
 	Cloud          CloudClient
 	BuildPresets   *BuildPresetStore
 
@@ -141,7 +134,6 @@ type App struct {
 	entryPage          EntryImageBuilder
 	simulationImage    SimulationImageBuilder
 	rankImage          RankImageBuilder
-	queryRankImage     QueryRankImageBuilder
 	showcase           ShowcaseSource
 	panelList          PanelListImageBuilder
 	artifactListImage  ArtifactListImageBuilder
@@ -152,8 +144,6 @@ type App struct {
 	guides             guideCache
 	emoticons          newsEmoticons
 	aliases            customAliases
-	maps               mapImages
-	banners            BannerSource
 	usageOnce          sync.Once
 }
 
@@ -186,7 +176,7 @@ func New(assets Assets, directory string) (*App, error) {
 	if directory == "" {
 		return nil, fmt.Errorf("plugin data directory is required")
 	}
-	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, queryRankImage: assets.QueryRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, banners: assets.Banners, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, QueryRanks: &QueryRankStore{Directory: filepath.Join(directory, "query-ranks")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
+	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{}}
@@ -263,7 +253,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return event.SendText(friendlyError(readErr))
 		}
 		applyGroupConfig(event, config)
-		if config.Enabled != nil && !*config.Enabled && !(command == "poke" && len(args) > 0 && args[0] == "关闭") && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "community-stop" && command != "cloud-game-stop" && command != "reminder-stop" && command != "gacha-stop" && command != "gacha-progress" && !(command == "gacha-schedule" && len(args) > 0 && args[0] == "关闭") && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
+		if config.Enabled != nil && !*config.Enabled && !(command == "poke" && len(args) > 0 && args[0] == "关闭") && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "community-stop" && command != "reminder-stop" && command != "gacha-stop" && command != "gacha-progress" && !(command == "gacha-schedule" && len(args) > 0 && args[0] == "关闭") && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
 			return event.Result(map[string]any{"handled": false})
 		}
 	}
@@ -276,18 +266,14 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	var view View
 	var err error
 	switch command {
-	case "role-cards", "role-cards-submit", "role-cards-exchange", "role-cards-withdraw":
-		return a.cardsCommand(ctx, event, command, args)
-	case "birthday":
-		return a.birthdayCommand(ctx, event, args)
 	case "help", "version":
 		return a.helpCommand(ctx, event, command, args)
 	case "artwork", "artwork-status":
 		return a.artworkCommand(event, command, args)
 	case "photo", "image-library", "original-image", "interaction", "poke":
 		return a.interactionCommand(ctx, event, command, args)
-	case "guides", "guide-help", "guide-default", "map", "enemy", "blueprint":
-		return a.resourceToolsCommand(ctx, event, command, args)
+	case "guides", "guide-help", "guide-default":
+		return a.guideCommand(ctx, event, command, args)
 	case "subscribe", "unsubscribe":
 		return a.subscriptionCommand(ctx, event, command, args)
 	case "news", "info", "events", "search", "post", "estimate":
@@ -306,9 +292,9 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.challengeCommand(ctx, event, command, args)
 	case "gacha-background", "gacha-schedule", "gacha-progress", "gacha-stop":
 		return a.syncTaskCommand(ctx, event, command, args)
-	case "community-task", "community-stop", "cloud-game-task", "cloud-game-stop":
+	case "community-task", "community-stop":
 		return a.accountTaskCommand(ctx, event, command, args)
-	case "community-status", "community-sign", "cloud-game-status", "cloud-game-sign":
+	case "community-status", "community-sign":
 		return a.communityCommand(ctx, event, command, args)
 	case "cloud-private-panel":
 		return a.privateCloudPanelCommand(ctx, event, args)
@@ -335,15 +321,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.signinCommand(ctx, event, command, args)
 	case "simulation", "simulation-history", "simulation-reset":
 		return a.simulationCommand(ctx, event, command, args)
-	case "simulation-fate":
-		if a.Game.ID != "genshin" {
-			return event.Result(map[string]any{"handled": false})
-		}
-		return a.simulationCommand(ctx, event, command, args)
 	case "rank", "rank-top", "rank-reset", "rank-refresh", "rank-switch":
 		return a.rankCommand(ctx, event, command, args)
-	case "query-rank", "query-rank-switch":
-		return a.queryRankCommand(ctx, event, command)
 	case "panel-refresh", "panel-refresh-account", "panel-list", "panel-delete":
 		return a.panelCommand(ctx, event, command, args)
 	case "artifact-list":
@@ -465,7 +444,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.chatReminder(ctx, event, command, args)
 	case "build":
 		if len(args) < 1 || len(args) > 2 {
-			return event.SendText("使用“" + prefix + "角色名伤害 [UID]”（如“" + prefix + "胡桃伤害”）查看固定参考情境下的角色伤害。")
+			return event.SendText("使用“" + prefix + "角色名伤害 [UID]”（如“" + prefix + "希儿伤害”）查看固定参考情境下的角色伤害。")
 		}
 		panel, _, panelErr := a.commandPanel(ctx, event, args)
 		if panelErr != nil {
@@ -480,7 +459,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		view = BuildView(a.Game, built)
 	case "score":
 		if len(args) < 1 || len(args) > 2 {
-			return event.SendText("使用“" + prefix + "评分 角色 [UID]”，或按上游写法在角色名后接圣遗物、遗器。")
+			return event.SendText("使用“" + prefix + "评分 角色 [UID]”，或按上游写法在角色名后接遗器。")
 		}
 		panel, uid, panelErr := a.commandPanel(ctx, event, args)
 		if panelErr != nil {
@@ -564,7 +543,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			err = gameError("archive_missing", "还没有此角色的抽卡档案，请先在游戏管理页导入记录。")
 			break
 		}
-		game := a.bannerGame()
+		game := a.Game
 		view = GachaView(game, archive)
 		if command == "gacha-versions" {
 			view = versionDrawView(game, versionDraws(game, archive))
@@ -617,14 +596,13 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			err = queryErr
 			break
 		}
-		shown := a.recordQueryRank(event, operation.Name, result)
 		if query == a.Game.ID+".monthly" {
 			// Upstream keeps every month it reads; a month that cannot be kept
 			// still answers.
-			_, _ = a.Monthly.Keep(a.accountClient(event).Provider, choice, a.Game.ID, result.Data, time.Now())
+			_, _ = a.Monthly.Keep(a.accountClient(event).Provider, choice, result.Data, time.Now())
 		}
 		view = BusinessView(a.Game, textOperation, result, a.Catalog)
-		view.Image = a.featureImage(ctx, a.accountClient(event), choice, operation.Name, event.Event.Command(), input, result, shown)
+		view.Image = a.featureImage(ctx, a.accountClient(event), choice, operation.Name, event.Event.Command(), input, result)
 	}
 	if err != nil {
 		return event.SendText(friendlyError(err))
@@ -669,25 +647,18 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 			input["schedule_type"] = period
 			args = args[1:]
 		}
-	case "month", "year_month":
+	case "year_month":
 		if len(args) > 0 {
 			month, err := strconv.Atoi(args[0])
-			valid := err == nil && month >= 1 && month <= 12
-			if operation.Input == "year_month" {
-				valid = err == nil && month >= 202001 && month <= 210012 && month%100 >= 1 && month%100 <= 12
-			}
-			if !valid {
-				return nil, "", gameError("input_invalid", "原神月份使用 1–12，星铁和绝区零使用 YYYYMM，例如 202609。")
+			if err != nil || month < 202001 || month > 210012 || month%100 < 1 || month%100 > 12 {
+				return nil, "", gameError("input_invalid", "月份使用 YYYYMM，例如 202609。")
 			}
 			input["month"] = month
 			args = args[1:]
 		}
-	case "characters", "characters_optional", "agents":
-		if operation.Input == "characters_optional" && len(args) == 0 {
-			break
-		}
+	case "characters_optional":
 		if len(args) == 0 {
-			return nil, "", gameError("input_invalid", "请提供角色名或角色 ID。")
+			break
 		}
 		id := args[0]
 		if entry, ok := a.Catalog.Resolve(id, "character", aliases); ok {
@@ -696,11 +667,7 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 		if _, err := strconv.Atoi(id); err != nil {
 			return nil, "", gameError("character_ambiguous", "角色名未唯一匹配，请先查询图鉴或使用角色 ID。")
 		}
-		key := "character_ids"
-		if operation.Input == "agents" {
-			key = "id_list"
-		}
-		input[key] = []any{id}
+		input["character_ids"] = []any{id}
 		args = args[1:]
 	}
 	if len(args) > 0 {
@@ -723,35 +690,23 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 		return a.signinAction(ctx, a.accountClient(event), action, input)
 	case "content.start", "content.poll", "content.cancel":
 		return a.contentAction(action, input)
-	case "cards.query", "cards.group.list", "cards.group.remove":
-		return a.cardsAction(ctx, event, action, input)
-	case "birthday.list", "birthday.claim":
-		return a.birthdayAction(ctx, a.accountClient(event), action, input)
 	case "help.query":
-		out, _, err := a.help(ctx, event, asText(input["query"]))
+		out, _, err := a.help(event, asText(input["query"]))
 		return out, err
-	case "statistics.teams":
-		return a.statisticsTeams(ctx, event, input)
 	case "billing.playtime":
 		return a.playtimeAction(ctx, a.accountClient(event), input)
 	case "aliases.validate":
-		return a.aliasAction(event, input)
+		return a.aliasAction(input)
 	case "interaction.list", "interaction.remove":
 		return a.interactionManage(action, input)
 	case "guides.schema", "guides.settings", "guides.configure":
-		return a.GuideSettings.Manage(a.Game.ID, action, input)
-	case "enemies.schema", "enemies.query":
-		return a.enemyAction(action, input)
-	case "map.query":
-		return a.mapQuery(input)
-	case "blueprint.read", "blueprint.compute":
-		return a.blueprintAction(ctx, a.accountClient(event), action, input)
+		return a.GuideSettings.Manage(action, input)
 	case "content.subscription.list", "content.subscription.remove":
-		return a.subscriptionManage(ctx, event, action, input)
+		return a.subscriptionManage(action, input)
 	case "codes.query":
-		return a.Content.codes(ctx, a.Game.ID)
+		return a.Content.codes(ctx)
 	case "billing.schema":
-		return map[string]any{"categories": billingCategories(a.Game.ID)}, nil
+		return map[string]any{"categories": billingCategories()}, nil
 	case "billing.page", "redeem.run":
 		return a.assetAccountAction(ctx, a.accountClient(event), action, input)
 	case "monthly.list", "monthly.fetch", "monthly.get", "monthly.remove":
@@ -793,7 +748,7 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 		}
 		output := map[string]any{"view": BusinessView(a.Game, operation, result, a.Catalog), "result": result}
 		if strings.HasSuffix(operation.Name, ".character") {
-			output["panels"] = NormalizePanels(a.Game.ID, result, a.Catalog)
+			output["panels"] = NormalizePanels(result, a.Catalog)
 			delete(output, "result")
 		}
 		return output, nil
@@ -836,19 +791,16 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 		if strings.HasPrefix(action, "artwork.") {
 			return a.artworkAction(action, input)
 		}
-		if strings.HasPrefix(action, "community.task.") || strings.HasPrefix(action, "cloudgame.task.") {
+		if strings.HasPrefix(action, "community.task.") {
 			return a.signinTask(ctx, event, action, input)
 		}
-		if strings.HasPrefix(action, "community.") || strings.HasPrefix(action, "cloudgame.") {
+		if strings.HasPrefix(action, "community.") {
 			return a.communityAction(ctx, a.accountClient(event), action, input)
 		}
 		if strings.HasPrefix(action, "simulation.") {
 			return a.simulationAction(event, action, input)
 		}
 		if strings.HasPrefix(action, "cloud.") {
-			if a.Game.ID != "genshin" && a.Game.ID != "starrail" {
-				return nil, gameError("operation_denied", "此游戏未提供 ark 云功能。")
-			}
 			return a.cloudAction(ctx, event, action, input)
 		}
 		if strings.HasPrefix(action, "signin.task.") || strings.HasPrefix(action, "monthly.task.") {
@@ -881,14 +833,14 @@ func (a *App) manageGacha(action string, input map[string]any) (map[string]any, 
 		return map[string]any{"items": items}, err
 	case "gacha.history":
 		var filter gacha.HistoryFilter
-		if decodeObject(input, &filter) != nil || filter.Validate(a.Game.ID) != nil {
+		if decodeObject(input, &filter) != nil || filter.Validate() != nil {
 			return nil, gameError("input_invalid", "抽卡筛选条件无效。")
 		}
 		archive, err := a.Gacha.Read(uid, region)
 		if err != nil {
 			return nil, gameError("archive_missing", "未找到此抽卡档案。")
 		}
-		history, err := gacha.Browse(a.Game.ID, archive, filter)
+		history, err := gacha.Browse(archive, filter)
 		if errors.Is(err, gacha.ErrConflict) {
 			return nil, gameError("archive_changed", "档案已更新，请从第一页重新查询。")
 		}
@@ -901,19 +853,19 @@ func (a *App) manageGacha(action string, input map[string]any) (map[string]any, 
 		if err != nil {
 			return nil, gameError("archive_missing", "未找到此抽卡档案。")
 		}
-		summary := gacha.Summarize(a.Game.ID, archive)
+		summary := gacha.Summarize(archive)
 		for i := range summary {
 			if len(summary[i].Rare) > 100 {
 				summary[i].Rare = summary[i].Rare[len(summary[i].Rare)-100:]
 			}
 		}
-		return map[string]any{"summary": summary, "view": GachaView(a.bannerGame(), archive)}, nil
+		return map[string]any{"summary": summary, "view": GachaView(a.Game, archive)}, nil
 	case "gacha.versions":
 		archive, err := a.Gacha.Read(uid, region)
 		if err != nil {
 			return nil, gameError("archive_missing", "未找到此抽卡档案。")
 		}
-		return versionDraws(a.bannerGame(), archive), nil
+		return versionDraws(a.Game, archive), nil
 	case "gacha.remove":
 		var err error
 		if a.SyncTasks != nil {
@@ -928,7 +880,7 @@ func (a *App) manageGacha(action string, input map[string]any) (map[string]any, 
 			return nil, gameError("input_invalid", "抽卡档案信息无效。")
 		}
 		archive.Records = nil
-		if gacha.Validate(a.Game.ID, archive) != nil {
+		if gacha.Validate(archive) != nil {
 			return nil, gameError("input_invalid", "请选择有效 UID、区服与时区。")
 		}
 		transfer, err := a.Transfers.Start(archive, false)

@@ -3,10 +3,11 @@ package assets
 import (
 	"context"
 	"encoding/json"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
 	"math"
 	"os"
 	"testing"
+
+	"github.com/RayleaBot/plugin-starrail/internal/reference"
 )
 
 type vector struct {
@@ -81,9 +82,6 @@ func TestEveryWeaponAndRequestIsolation(t *testing.T) {
 		}
 	}
 	for _, weapon := range metadata.Weapons {
-		if weapon.Game == "zzz" {
-			continue
-		}
 		t.Run(weapon.Game+"/"+weapon.ID, func(t *testing.T) {
 			fixture, ok := byType[weapon.Game+"/"+weapon.Type]
 			if !ok {

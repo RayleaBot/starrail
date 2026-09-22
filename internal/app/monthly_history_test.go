@@ -3,10 +3,11 @@ package app
 import (
 	"context"
 	"encoding/json"
-	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"path/filepath"
 	"testing"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 type monthCaller struct {
@@ -77,21 +78,6 @@ func TestMonthlyHistoryCoverageAndConcurrentChanges(t *testing.T) {
 		t.Fatal(data, err)
 	}
 }
-func TestMonthlyJanuaryYearInferenceAndZZZCurrencies(t *testing.T) {
-	key, estimated, err := monthlyKey("genshin", map[string]any{"data_month": 12}, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
-	if err != nil || key != "2025-12" || !estimated {
-		t.Fatal(key, estimated, err)
-	}
-	_, _, err = monthlyKey("zzz", map[string]any{"data_month": 12}, time.Now())
-	if err == nil {
-		t.Fatal("missing year guessed outside supported API")
-	}
-	totals := monthlyAmounts("zzz", map[string]any{"month_data": map[string]any{"list": []any{map[string]any{"data_type": "PolychromesData", "count": 1200}, map[string]any{"data_type": "MatserTapeData", "count": 0}}}})
-	if totals["菲林"] != 1200 || len(totals) != 2 {
-		t.Fatal(totals)
-	}
-}
-
 func TestDailyMonthlyCollectionPersistsAdmissionAndKeepsNotifyOff(t *testing.T) {
 	now := time.Date(2026, 9, 21, 16, 0, 0, 0, time.UTC).UnixMilli()
 	s := reminderStore(t.TempDir())
@@ -105,11 +91,11 @@ func TestDailyMonthlyCollectionPersistsAdmissionAndKeepsNotifyOff(t *testing.T) 
 		return QueryResult{Data: map[string]any{"data_month": 202609}}, nil
 	}
 	send := func(Reminder, string) error { sends++; return nil }
-	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "zzz"}); err != nil {
+	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "starrail"}); err != nil {
 		t.Fatal(err)
 	}
 	s = &ReminderStore{taskFiles[Reminder]{Directory: s.Directory}}
-	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "zzz"}); err != nil {
+	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "starrail"}); err != nil {
 		t.Fatal(err)
 	}
 	items, _ := s.List()
@@ -132,20 +118,20 @@ func (c *monthsCaller) CallService(_ context.Context, req rayleabot.ServiceCallR
 }
 
 func TestRefreshMonthlyKeepsOfferedMonthsNotYetFinal(t *testing.T) {
-	role := Role{Ref: "role", Game: "zzz", UID: "10000001"}
+	role := Role{Ref: "role", Game: "starrail", UID: "100000001"}
 	month := func(key int) map[string]any {
 		return map[string]any{"data_month": key, "month_data": map[string]any{"list": []any{}}, "optional_month": []any{202607, 202608, 202609}}
 	}
 	caller := &monthsCaller{role: role, months: map[string]map[string]any{"": month(202609), "202607": month(202607), "202608": month(202608)}}
-	client := AccountsClient{Caller: caller, Provider: "p", Game: "zzz"}
+	client := AccountsClient{Caller: caller, Provider: "p", Game: "starrail"}
 	choice := Selection{"account", "role"}
-	a := App{Game: Game{ID: "zzz"}, Monthly: &MonthlyStore{Directory: filepath.Join(t.TempDir(), "monthly")}}
+	a := App{Game: Game{ID: "starrail"}, Monthly: &MonthlyStore{Directory: filepath.Join(t.TempDir(), "monthly")}}
 	// July was saved after it ended, August while it ran.
 	august := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
-	if _, err := a.Monthly.Keep("p", choice, "zzz", month(202607), august); err != nil {
+	if _, err := a.Monthly.Keep("p", choice, month(202607), august); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.Monthly.Keep("p", choice, "zzz", month(202608), august); err != nil {
+	if _, err := a.Monthly.Keep("p", choice, month(202608), august); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.refreshMonthly(t.Context(), client, choice); err != nil {

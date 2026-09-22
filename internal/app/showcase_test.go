@@ -62,28 +62,28 @@ func TestShowcaseKeepsAnswersForTheirTTLAndBacksOffWhenLimited(t *testing.T) {
 }
 
 func TestPanelStoreMergesRefreshesAndListsLikeUpstream(t *testing.T) {
-	catalog, err := ParseCatalog([]byte(`{"version":"1","entries":[{"id":"10000046","name":"胡桃","kind":"character","rarity":5},{"id":"10000023","name":"香菱","kind":"character","rarity":4},{"id":"10000032","name":"班尼特","kind":"character","rarity":4}]}`))
+	catalog, err := ParseCatalog([]byte(`{"version":"1","entries":[{"id":"1102","name":"希儿","kind":"character","rarity":5},{"id":"1001","name":"三月七","kind":"character","rarity":4},{"id":"1106","name":"佩拉","kind":"character","rarity":4}]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	store := &PanelStore{Directory: t.TempDir()}
-	if _, err = store.Keep("100000001", []CharacterPanel{{ID: "10000046", Level: 90}, {ID: "10000023", Level: 80}}, "Enka", &ShowcaseProfile{Nickname: "旅行者", Level: 60}); err != nil {
+	if _, err = store.Keep("100000001", []CharacterPanel{{ID: "1102", Level: 90}, {ID: "1001", Level: 80}}, "Mihomo", &ShowcaseProfile{Nickname: "开拓者", Level: 60}); err != nil {
 		t.Fatal(err)
 	}
 	// A later refresh replaces its characters and keeps the others.
-	saved, err := store.Keep("100000001", []CharacterPanel{{ID: "10000023", Level: 90, Official: map[string]any{"id": 10000023}}, {ID: "10000032", Level: 70}}, "米游社", nil)
-	if err != nil || len(saved.Panels) != 3 || saved.Panels["10000023"].Panel.Level != 90 || saved.Service != "Enka" || saved.Nickname != "旅行者" {
+	saved, err := store.Keep("100000001", []CharacterPanel{{ID: "1001", Level: 90, Official: map[string]any{"id": 1001}}, {ID: "1106", Level: 70}}, "米游社", nil)
+	if err != nil || len(saved.Panels) != 3 || saved.Panels["1001"].Panel.Level != 90 || saved.Service != "Mihomo" || saved.Nickname != "开拓者" {
 		t.Fatal(saved, err)
 	}
 	saved, _ = store.Read("100000001")
-	if saved.Panels["10000023"].panel().Official == nil {
+	if saved.Panels["1001"].panel().Official == nil {
 		t.Fatal("official entry was not kept")
 	}
 	order := []string{}
-	for _, item := range saved.Sorted(catalog, map[string]bool{"10000032": true}) {
+	for _, item := range saved.Sorted(catalog, map[string]bool{"1106": true}) {
 		order = append(order, item.Panel.ID)
 	}
-	if strings.Join(order, ",") != "10000032,10000046,10000023" {
+	if strings.Join(order, ",") != "1106,1102,1001" {
 		t.Fatalf("order = %v", order)
 	}
 	if _, err = store.Read("../x"); err == nil {

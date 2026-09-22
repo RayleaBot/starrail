@@ -11,7 +11,6 @@ type GameData struct {
 	Resources  GameResources
 	Simulation *SimulationDeck
 	CloudGear  *cloudGearData
-	Enemies    *EnemyTable
 }
 
 func parseGameData(assets Assets) (*GameData, error) {
@@ -40,13 +39,6 @@ func parseGameData(assets Assets) (*GameData, error) {
 			return nil, fmt.Errorf("cloud panel equipment data is invalid")
 		}
 		data.CloudGear = gear
-	}
-	if assets.Enemies != nil {
-		table := &EnemyTable{}
-		if err := json.Unmarshal(assets.Enemies, table); err != nil || len(table.Curves) == 0 {
-			return nil, fmt.Errorf("enemy data is invalid")
-		}
-		data.Enemies = table
 	}
 	return data, nil
 }

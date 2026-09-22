@@ -26,14 +26,11 @@ func (a *App) queryCharacterPanel(ctx context.Context, client AccountsClient, ch
 		return CharacterPanel{}, gameError("input_invalid", "请选择有效角色。")
 	}
 	key := "character_ids"
-	if a.Game.ID == "zzz" {
-		key = "id_list"
-	}
 	result, err := client.Execute(ctx, choice, a.Game.ID+".character", map[string]any{key: []any{characterID}})
 	if err != nil {
 		return CharacterPanel{}, err
 	}
-	for _, panel := range NormalizePanels(a.Game.ID, result, a.Catalog) {
+	for _, panel := range NormalizePanels(result, a.Catalog) {
 		if panel.ID == characterID {
 			return panel, nil
 		}

@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
 	"math"
 	"testing"
+
+	"github.com/RayleaBot/plugin-starrail/internal/reference"
 )
 
 func supplementalProfile(t *testing.T, key string, rank int) (reference.Character, map[string]any) {
