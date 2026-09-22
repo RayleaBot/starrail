@@ -219,12 +219,13 @@
     },
     {
       "id": "yunzai-genshin",
-      "name": "原神插件星铁图片",
+      "name": "原神插件图片",
       "archives": [
         "https://codeload.github.com/TimeRainStarSky/Yunzai-genshin/tar.gz/HEAD"
       ],
       "include": [
-        "resources/StarRail/img/other/"
+        "resources/StarRail/img/other/",
+        "resources/img/icon/"
       ],
       "extensions": [
         ".png"
