@@ -8,8 +8,8 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/gacha"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/plugin-starrail/internal/gacha"
 )
 
 // gachaWords are stripped from the command word before picking the pool, as
@@ -34,7 +34,7 @@ var gachaArtwork = [][2]string{
 // overview (all pulls, this banner's pulls, pity on the limited pools and,
 // for the overview, holdings) and either every pool's five-stars or one
 // pool's four- and five-stars grouped by banner.
-func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Image, bool) {
+func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 	kind := 0
 	switch gachaWords.ReplaceAllString(image.Word, "") {
 	case "角色":
@@ -47,16 +47,16 @@ func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Imag
 		kind = 2
 	}
 	now := context.Now.In(chinaTime)
-	var banners []gamekit.PoolInfo
+	var banners []app.PoolInfo
 	if context.Game.Data != nil {
 		banners = context.Game.Data.Resources.Pools
 	}
-	within := func(banner gamekit.PoolInfo, at time.Time) bool {
+	within := func(banner app.PoolInfo, at time.Time) bool {
 		from, errFrom := time.ParseInLocation(timeLayout, banner.From, chinaTime)
 		to, errTo := time.ParseInLocation(timeLayout, banner.To, chinaTime)
 		return errFrom == nil && errTo == nil && at.After(from) && at.Before(to)
 	}
-	current := []gamekit.PoolInfo{}
+	current := []app.PoolInfo{}
 	for _, banner := range banners {
 		if within(banner, now) {
 			current = append(current, banner)
@@ -201,7 +201,7 @@ func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Imag
 		lists = append(lists, map[string]any{"type": pool.id, "name": pool.name, "records": display, "groups": groups})
 	}
 	if len(lists) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	for _, font := range [][2]string{{"SR", "resources/common/font/SR.ttf"}} {
 		if resource, ok := context.ArtworkResource(font[0], "starrail-plugin", font[1]); ok {
@@ -213,7 +213,7 @@ func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Imag
 			resources = append(resources, resource)
 		}
 	}
-	return gamekit.Image{Template: "gacha", Data: map[string]any{
+	return app.Image{Template: "gacha", Data: map[string]any{
 		"uid": image.UID, "overview": kind == 0,
 		"total":         counts["1"] + counts["11"] + counts["12"],
 		"current_total": currentTotal,
@@ -227,7 +227,7 @@ func Gacha(context gamekit.ImageContext, image gamekit.GachaImage) (gamekit.Imag
 // holdingTotals counts the four- and five-star characters (without the
 // Trailblazer) and light cones in StarRail-plugin's base data, the totals its
 // holding rates divide by.
-func holdingTotals(context gamekit.ImageContext) ([2]int, [2]int) {
+func holdingTotals(context app.ImageContext) ([2]int, [2]int) {
 	count := func(name string, skip []string) [2]int {
 		var result [2]int
 		if context.Artwork == nil {
@@ -251,7 +251,7 @@ func holdingTotals(context gamekit.ImageContext) ([2]int, [2]int) {
 			if skipped {
 				continue
 			}
-			switch gamekit.Text(entry.Rarity) {
+			switch app.Text(entry.Rarity) {
 			case "4":
 				result[0]++
 			case "5":

@@ -5,7 +5,7 @@ import (
 	"math"
 	"strconv"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // monthColors is ECharts' default palette, which upstream's chart uses.
@@ -25,13 +25,13 @@ var monthArtwork = [][2]string{
 // Stellar Jade sources as a ring chart with a legend. Upstream draws the ring
 // with ECharts; this draws the same ring (radius 70% to 100% of the 300px
 // chart, centred at 65%, rounded 10px corners, white borders) as SVG.
-func Month(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Month(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	month, _ := result.Data["month_data"].(map[string]any)
 	day, _ := result.Data["day_data"].(map[string]any)
 	if month == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range monthArtwork {
 		resources.Artwork(item[0], "starrail-plugin", item[1])
 	}
@@ -39,16 +39,16 @@ func Month(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Im
 	total := 0
 	for _, raw := range groups {
 		group, _ := raw.(map[string]any)
-		total += gamekit.Int(group["num"])
+		total += app.Int(group["num"])
 	}
 	const cx, cy, outer, inner, corner = 377.0, 150.0, 150.0, 105.0, 10.0
 	legend, sectors := []any{}, []any{}
 	angle := -math.Pi / 2
 	for index, raw := range groups {
 		group, _ := raw.(map[string]any)
-		num := gamekit.Int(group["num"])
+		num := app.Int(group["num"])
 		color := monthColors[index%len(monthColors)]
-		legend = append(legend, map[string]any{"color": color, "name": gamekit.Text(group["action_name"]) + " " + strconv.Itoa(num), "y": fmt.Sprintf("%.1f", 150+(float64(index)-float64(len(groups)-1)/2)*30)})
+		legend = append(legend, map[string]any{"color": color, "name": app.Text(group["action_name"]) + " " + strconv.Itoa(num), "y": fmt.Sprintf("%.1f", 150+(float64(index)-float64(len(groups)-1)/2)*30)})
 		if total == 0 || num == 0 {
 			continue
 		}
@@ -59,11 +59,11 @@ func Month(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Im
 			"label": strconv.Itoa(int(math.Round(share*100))) + "%", "x": fmt.Sprintf("%.1f", cx+(inner+outer)/2*math.Cos(middle)), "y": fmt.Sprintf("%.1f", cy+(inner+outer)/2*math.Sin(middle))})
 		angle = end
 	}
-	return gamekit.Image{Template: "month", Data: map[string]any{
-		"month": gamekit.Text(result.Data["month"]), "legend": legend, "sectors": sectors,
-		"month_hcoin": gamekit.Text(month["current_hcoin"]), "month_pass": gamekit.Text(month["current_rails_pass"]),
-		"today_hcoin": gamekit.Text(day["current_hcoin"]), "today_pass": gamekit.Text(day["current_rails_pass"]),
-		"yesterday_hcoin": gamekit.Text(day["last_hcoin"]), "yesterday_pass": gamekit.Text(day["last_rails_pass"]),
+	return app.Image{Template: "month", Data: map[string]any{
+		"month": app.Text(result.Data["month"]), "legend": legend, "sectors": sectors,
+		"month_hcoin": app.Text(month["current_hcoin"]), "month_pass": app.Text(month["current_rails_pass"]),
+		"today_hcoin": app.Text(day["current_hcoin"]), "today_pass": app.Text(day["current_rails_pass"]),
+		"yesterday_hcoin": app.Text(day["last_hcoin"]), "yesterday_pass": app.Text(day["last_rails_pass"]),
 	}, Resources: resources.List}, true
 }
 

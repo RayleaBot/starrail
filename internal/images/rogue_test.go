@@ -3,7 +3,7 @@ package images_test
 import (
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 	"github.com/RayleaBot/plugin-starrail/internal/images"
 )
 
@@ -16,7 +16,7 @@ func TestRogueFollowsStarRailPlugin(t *testing.T) {
 	// The kit keeps only the asked period, as either record.
 	for _, key := range []string{"current_record", "last_record"} {
 		data := decodeJSON(t, `{"role":{"nickname":"开拓者","level":70},"basic_info":{"unlocked_skill_points":40,"unlocked_miracle_num":100,"unlocked_buff_num":200},"`+key+`":`+record+`}`)
-		image, ok := images.Rogue(gamekit.ImageContext{}, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+		image, ok := images.Rogue(app.ImageContext{}, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 		if !ok || image.Data["begin"] != "2026.9.1" || image.Data["finished"] != "3" || image.Data["nickname"] != "开拓者" {
 			t.Fatalf("%s: image = %v", key, image.Data)
 		}
@@ -26,7 +26,7 @@ func TestRogueFollowsStarRailPlugin(t *testing.T) {
 			t.Errorf("run = %v", run)
 		}
 	}
-	if _, ok := images.Rogue(gamekit.ImageContext{}, gamekit.QueryResult{Data: map[string]any{}}); ok {
+	if _, ok := images.Rogue(app.ImageContext{}, app.QueryResult{Data: map[string]any{}}); ok {
 		t.Error("no record answers in text")
 	}
 }
@@ -38,7 +38,7 @@ func TestSwarmFollowsStarRailPlugin(t *testing.T) {
 			{"difficulty":5,"finish_time":{"year":2026,"month":9,"day":5,"hour":20,"minute":3,"second":9},"fury":{"type":0,"point":"12"},
 			 "worm_weak":["弱化"],"cached_avatars":[{"icon":"http://insecure.example/a.png","level":80}],"blocks":[{"name":"战斗•虫群","num":3},{"name":"事件","num":2}]},
 			{"difficulty":4,"fury":{"type":1,"point":"3"},"blocks":[{"name":"事件","num":1}]}]}}`)
-	image, ok := images.Swarm(gamekit.ImageContext{}, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	image, ok := images.Swarm(app.ImageContext{}, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 	if !ok || image.Data["narrow"] != "7" || image.Data["event"] != "60" {
 		t.Fatalf("image = %v", image.Data)
 	}
@@ -55,7 +55,7 @@ func TestSwarmFollowsStarRailPlugin(t *testing.T) {
 	if block := first["blocks"].([]any)[0].(map[string]any); block["name"] != "战斗•虫群" || block["num"] != "3" {
 		t.Errorf("blocks = %v", first["blocks"])
 	}
-	if _, ok := images.Swarm(gamekit.ImageContext{}, gamekit.QueryResult{Data: map[string]any{}}); ok {
+	if _, ok := images.Swarm(app.ImageContext{}, app.QueryResult{Data: map[string]any{}}); ok {
 		t.Error("no record answers in text")
 	}
 }

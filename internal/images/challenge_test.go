@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 func clock(year, month, day int) map[string]any {
@@ -35,8 +35,8 @@ func TestChallengeFollowsStarRailPlugin(t *testing.T) {
 			map[string]any{"name": "难度1", "star_num": json.Number("3"), "is_fast": true, "node_1": node("4000", true)},
 		},
 	}
-	context := gamekit.ImageContext{Now: time.Date(2026, 9, 12, 12, 0, 0, 0, chinaTime), Input: map[string]any{"schedule_type": 1}}
-	image, ok := challengeImage(apocalypticShadow)(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	context := app.ImageContext{Now: time.Date(2026, 9, 12, 12, 0, 0, 0, chinaTime), Input: map[string]any{"schedule_type": 1}}
+	image, ok := challengeImage(apocalypticShadow)(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 	if !ok {
 		t.Fatal("boss record")
 	}
@@ -64,7 +64,7 @@ func TestChallengeFollowsStarRailPlugin(t *testing.T) {
 
 	// The last period keeps the ended group and carries no mark.
 	context.Input = map[string]any{"schedule_type": 2}
-	image, _ = challengeImage(pureFiction)(context, gamekit.QueryResult{Data: data})
+	image, _ = challengeImage(pureFiction)(context, app.QueryResult{Data: data})
 	if image.Data["begin"] != "2026.07.27" || image.Data["badge"] != "" || image.Data["period"] != "上期" {
 		t.Errorf("last period = %v %v %v", image.Data["begin"], image.Data["badge"], image.Data["period"])
 	}
@@ -72,7 +72,7 @@ func TestChallengeFollowsStarRailPlugin(t *testing.T) {
 	// Memory of Chaos reads its own period and totals no score.
 	data["begin_time"], data["end_time"] = clock(2026, 8, 10), clock(2026, 9, 21)
 	context.Input = nil
-	image, _ = challengeImage(memoryOfChaos)(context, gamekit.QueryResult{Data: data})
+	image, _ = challengeImage(memoryOfChaos)(context, app.QueryResult{Data: data})
 	if image.Data["begin"] != "2026.08.10" || image.Data["badge"] != "expiring" || image.Data["floors"].([]any)[0].(map[string]any)["score"] != "" {
 		t.Errorf("memory of chaos = %v", image.Data)
 	}
@@ -97,8 +97,8 @@ func TestChallengeRoutesFollowStarRailPlugin(t *testing.T) {
 
 	period := map[string]any{"begin_time": clock(2026, 9, 1), "end_time": clock(2026, 10, 13)}
 	record := map[string]any{"star_num": json.Number("12"), "groups": []any{period}, "all_floor_detail": []any{}}
-	context := gamekit.ImageContext{Now: time.Date(2026, 9, 21, 12, 0, 0, 0, chinaTime)}
-	image, ok := latestChallengeImage(context, gamekit.QueryResult{Operation: "starrail.story", Data: record})
+	context := app.ImageContext{Now: time.Date(2026, 9, 21, 12, 0, 0, 0, chinaTime)}
+	image, ok := latestChallengeImage(context, app.QueryResult{Operation: "starrail.story", Data: record})
 	if !ok || image.Data["kind"] != "fiction" {
 		t.Errorf("latest = %v", image.Data)
 	}
@@ -106,11 +106,11 @@ func TestChallengeRoutesFollowStarRailPlugin(t *testing.T) {
 	// 深渊 adds the other two records of the same period.
 	asked := []string{}
 	context.Input = map[string]any{"schedule_type": 2}
-	context.Query = func(operation string, input map[string]any) (gamekit.QueryResult, error) {
-		asked = append(asked, operation+"/"+gamekit.Text(input["schedule_type"]))
-		return gamekit.QueryResult{Data: record}, nil
+	context.Query = func(operation string, input map[string]any) (app.QueryResult, error) {
+		asked = append(asked, operation+"/"+app.Text(input["schedule_type"]))
+		return app.QueryResult{Data: record}, nil
 	}
-	image, ok = allChallengesImage(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: record})
+	image, ok = allChallengesImage(context, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: record})
 	records, _ := image.Data["records"].([]any)
 	if !ok || image.Template != "challenge-all" || len(records) != 3 || image.Data["period"] != "上期" || strings.Join(asked, ",") != "starrail.boss/2,starrail.story/2" {
 		t.Fatalf("all = %v %v", image.Data, asked)
@@ -120,10 +120,10 @@ func TestChallengeRoutesFollowStarRailPlugin(t *testing.T) {
 			t.Errorf("column %d = %v", index, records[index])
 		}
 	}
-	context.Query = func(string, map[string]any) (gamekit.QueryResult, error) {
-		return gamekit.QueryResult{}, errors.New("captcha")
+	context.Query = func(string, map[string]any) (app.QueryResult, error) {
+		return app.QueryResult{}, errors.New("captcha")
 	}
-	if _, ok := allChallengesImage(context, gamekit.QueryResult{Data: record}); ok {
+	if _, ok := allChallengesImage(context, app.QueryResult{Data: record}); ok {
 		t.Error("a failed record leaves the reply in text")
 	}
 }

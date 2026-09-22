@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/artwork"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/plugin-starrail/internal/artwork"
 )
 
 func TestGachaSimulationKeepsDrawOrderAndFallsBackToMiao(t *testing.T) {
@@ -25,19 +25,19 @@ func TestGachaSimulationKeepsDrawOrderAndFallsBackToMiao(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	catalog := gamekit.Catalog{Entries: []gamekit.Entry{
+	catalog := app.Catalog{Entries: []app.Entry{
 		{ID: "1005", Name: "卡芙卡", Kind: "character", Element: "雷"},
 		{ID: "1401", Name: "遐蝶", Kind: "character", Element: "量子"},
 		{ID: "21999", Name: "新光锥", Kind: "weapon"},
 	}}
-	context := gamekit.ImageContext{Artwork: &artwork.Store{Root: root}, Catalog: catalog}
-	draws := []gamekit.SimulationDraw{}
+	context := app.ImageContext{Artwork: &artwork.Store{Root: root}, Catalog: catalog}
+	draws := []app.SimulationDraw{}
 	for range 10 {
-		draws = append(draws, gamekit.SimulationDraw{Name: "新光锥", Rarity: 3, Item: "weapon"})
+		draws = append(draws, app.SimulationDraw{Name: "新光锥", Rarity: 3, Item: "weapon"})
 	}
-	draws[0] = gamekit.SimulationDraw{Name: "卡芙卡", Rarity: 5, Item: "character", Interval: 76}
-	draws[9] = gamekit.SimulationDraw{Name: "遐蝶", Rarity: 5, Item: "character", Interval: 12, Guaranteed: true}
-	image, ok := GachaSimulation(context, gamekit.SimulationImage{Draws: draws})
+	draws[0] = app.SimulationDraw{Name: "卡芙卡", Rarity: 5, Item: "character", Interval: 76}
+	draws[9] = app.SimulationDraw{Name: "遐蝶", Rarity: 5, Item: "character", Interval: 12, Guaranteed: true}
+	image, ok := GachaSimulation(context, app.SimulationImage{Draws: draws})
 	if !ok {
 		t.Fatal("no image")
 	}

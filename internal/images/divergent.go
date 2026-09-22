@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // divergentArtwork maps the images the Divergent Universe pages name to
@@ -28,18 +28,18 @@ var (
 
 // divergentHeader is the header every Divergent Universe page shares: the
 // equilibrium level, this week's extra points and the current star rank.
-func divergentHeader(resources *challengeResources, result gamekit.QueryResult) map[string]any {
+func divergentHeader(resources *challengeResources, result app.QueryResult) map[string]any {
 	basic, _ := result.Data["basic"].(map[string]any)
 	brief, _ := basic["normal_record_brief"].(map[string]any)
 	info, _ := brief["common_info_v2"].(map[string]any)
 	return map[string]any{
-		"uid": result.Role.UID, "season_level": gamekit.Text(basic["season_level"]),
-		"weekly_score": gamekit.Text(basic["weekly_score"]), "weekly_score_max": gamekit.Text(basic["weekly_score_max"]),
-		"rank_level": gamekit.Text(info["level"]), "rank_icon": resources.official(brief["icon"]), "rank_title": gamekit.Text(brief["title"]),
+		"uid": result.Role.UID, "season_level": app.Text(basic["season_level"]),
+		"weekly_score": app.Text(basic["weekly_score"]), "weekly_score_max": app.Text(basic["weekly_score_max"]),
+		"rank_level": app.Text(info["level"]), "rank_icon": resources.official(brief["icon"]), "rank_title": app.Text(brief["title"]),
 	}
 }
 
-func newDivergentResources(context gamekit.ImageContext) *challengeResources {
+func newDivergentResources(context app.ImageContext) *challengeResources {
 	resources := newChallengeResources(context)
 	for _, item := range divergentArtwork {
 		resources.local(item[0], item[1])
@@ -51,15 +51,15 @@ func newDivergentResources(context gamekit.ImageContext) *challengeResources {
 // the header, the Gallery of Possibilities and Stable Array rewards, the
 // latest Protocol run's time, star level and lineup, and this week's
 // first-clear reward and latest difficulty.
-func Divergent(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Divergent(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	basic, _ := result.Data["basic"].(map[string]any)
 	if basic == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	resources := newDivergentResources(context)
 	data := divergentHeader(resources, result)
-	data["gallery"] = gamekit.Text(basic["possibility_gallery_finished"]) + "/" + gamekit.Text(basic["possibility_gallery_total"])
-	data["tasks"] = gamekit.Text(basic["season_task_finished"]) + "/" + gamekit.Text(basic["season_task_total"])
+	data["gallery"] = app.Text(basic["possibility_gallery_finished"]) + "/" + app.Text(basic["possibility_gallery_total"])
+	data["tasks"] = app.Text(basic["season_task_finished"]) + "/" + app.Text(basic["season_task_total"])
 	brief, _ := basic["normal_record_brief"].(map[string]any)
 	info, _ := brief["common_info_v2"].(map[string]any)
 	if exists, _ := info["exist_data"].(bool); exists {
@@ -70,28 +70,28 @@ func Divergent(context gamekit.ImageContext, result gamekit.QueryResult) (gameki
 			latest, _ = records[0].(map[string]any)
 		}
 		latestInfo, _ := latest["common_info_v2"].(map[string]any)
-		data["latest"] = map[string]any{"time": divergentTime(latest["finish_time"]), "level": gamekit.Text(latestInfo["level"]), "lineup": resources.lineup(latest)}
+		data["latest"] = map[string]any{"time": divergentTime(latest["finish_time"]), "level": app.Text(latestInfo["level"]), "lineup": resources.lineup(latest)}
 	}
 	finished, _ := basic["finished_weekly"].(bool)
 	data["weekly_finished"] = finished
 	// Upstream names the difficulty by its ID when there is one.
 	weekly, _ := basic["weekly_record_brief"].(map[string]any)
 	weeklyInfo, _ := weekly["common_info_v2"].(map[string]any)
-	title := gamekit.Text(weekly["title"])
-	if id := gamekit.Int(weeklyInfo["id"]); id != 0 {
+	title := app.Text(weekly["title"])
+	if id := app.Int(weeklyInfo["id"]); id != 0 {
 		title = ""
 		if id > 0 && id < len(divergentTitles) {
 			title = divergentTitles[id]
 		}
 	}
 	data["weekly_title"] = title
-	return gamekit.Image{Template: "divergent", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "divergent", Data: data, Resources: resources.List}, true
 }
 
 // DivergentNormal draws one Protocol run the way StarRail-plugin's
 // rogueTournNormal page does; the command word picks the first, second or
 // third most recent run.
-func DivergentNormal(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func DivergentNormal(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	detail, _ := result.Data["normal_detail"].(map[string]any)
 	return divergentRun(context, result, detail, "差分宇宙·常规演算", false)
 }
@@ -99,7 +99,7 @@ func DivergentNormal(context gamekit.ImageContext, result gamekit.QueryResult) (
 // DivergentWeek draws one weekly run the way StarRail-plugin's
 // rogueTournWeek page does: 上期 or 上周 reads last week, the command word
 // picks the run, and the week's name and effects head the page.
-func DivergentWeek(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func DivergentWeek(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	key, period := "cur_week_detail", "本期"
 	if strings.Contains(context.Word, "上期") || strings.Contains(context.Word, "上周") {
 		key, period = "last_week_detail", "上期"
@@ -112,14 +112,14 @@ func DivergentWeek(context gamekit.ImageContext, result gamekit.QueryResult) (ga
 // and star level, Path, weighted Curios, expanded Equations, Blessing counts
 // by Path, Curios and the domains passed. Upstream answers in text when the
 // run does not exist.
-func divergentRun(context gamekit.ImageContext, result gamekit.QueryResult, detail map[string]any, title string, weekly bool) (gamekit.Image, bool) {
+func divergentRun(context app.ImageContext, result app.QueryResult, detail map[string]any, title string, weekly bool) (app.Image, bool) {
 	records, _ := detail["records"].([]any)
 	index := 1
 	if match := divergentIndexWord.FindStringSubmatch(context.Word); match != nil {
 		index = divergentIndexes[match[1]]
 	}
 	if len(records) < index {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	record, _ := records[index-1].(map[string]any)
 	resources := newDivergentResources(context)
@@ -128,21 +128,21 @@ func divergentRun(context gamekit.ImageContext, result gamekit.QueryResult, deta
 	info, _ := record["common_info_v2"].(map[string]any)
 	persona, _ := record["persona_style"].(map[string]any)
 	data["run"] = fmt.Sprintf("%d / %d", index, len(records))
-	data["time"], data["level"], data["lineup"] = divergentTime(record["finish_time"]), gamekit.Text(info["level"]), resources.lineup(record)
-	data["persona"] = map[string]any{"icon": resources.official(persona["icon"]), "title": gamekit.Text(persona["title"]),
-		"level": gamekit.Text(persona["style_level"]), "desc": officialRichText(gamekit.Text(persona["desc"]))}
+	data["time"], data["level"], data["lineup"] = divergentTime(record["finish_time"]), app.Text(info["level"]), resources.lineup(record)
+	data["persona"] = map[string]any{"icon": resources.official(persona["icon"]), "title": app.Text(persona["title"]),
+		"level": app.Text(persona["style_level"]), "desc": officialRichText(app.Text(persona["desc"]))}
 	hex := []any{}
 	hexList, _ := record["hex_miracles"].([]any)
 	for _, raw := range hexList {
 		item, _ := raw.(map[string]any)
-		hex = append(hex, map[string]any{"icon": resources.official(item["icon"]), "name": gamekit.Text(item["name"])})
+		hex = append(hex, map[string]any{"icon": resources.official(item["icon"]), "name": app.Text(item["name"])})
 	}
 	formulas := []any{}
 	formulaList, _ := record["formula_list"].([]any)
 	for _, raw := range formulaList {
 		item, _ := raw.(map[string]any)
-		formulas = append(formulas, map[string]any{"category": gamekit.Text(item["formula_category"]), "icon": resources.official(item["icon"]),
-			"sub_icon": resources.official(item["sub_icon"]), "name": gamekit.Text(item["name"])})
+		formulas = append(formulas, map[string]any{"category": app.Text(item["formula_category"]), "icon": resources.official(item["icon"]),
+			"sub_icon": resources.official(item["sub_icon"]), "name": app.Text(item["name"])})
 	}
 	buffs, buffCount := []any{}, 0
 	buffList, _ := record["buffs"].([]any)
@@ -151,20 +151,20 @@ func divergentRun(context gamekit.ImageContext, result gamekit.QueryResult, deta
 		baseType, _ := group["base_type"].(map[string]any)
 		items, _ := group["items"].([]any)
 		buffCount += len(items)
-		buffs = append(buffs, map[string]any{"icon": resources.pathIcon(gamekit.Text(baseType["name"])), "count": len(items)})
+		buffs = append(buffs, map[string]any{"icon": resources.pathIcon(app.Text(baseType["name"])), "count": len(items)})
 	}
 	miracles := []any{}
 	miracleList, _ := record["miracles"].([]any)
 	for _, raw := range miracleList {
 		item, _ := raw.(map[string]any)
-		miracles = append(miracles, map[string]any{"icon": resources.official(item["icon"]), "name": gamekit.Text(item["name"]), "rank": gamekit.Text(item["rank"])})
+		miracles = append(miracles, map[string]any{"icon": resources.official(item["icon"]), "name": app.Text(item["name"]), "rank": app.Text(item["rank"])})
 	}
 	rooms := []any{}
 	roomList, _ := record["room_card_list"].([]any)
 	for _, raw := range roomList {
 		room, _ := raw.(map[string]any)
-		rooms = append(rooms, map[string]any{"color": gamekit.Text(room["bg_color"]), "icon": resources.official(room["icon_path"]),
-			"name": gamekit.Text(room["type_name"]), "level": gamekit.Text(room["level"])})
+		rooms = append(rooms, map[string]any{"color": app.Text(room["bg_color"]), "icon": resources.official(room["icon_path"]),
+			"name": app.Text(room["type_name"]), "level": app.Text(room["level"])})
 	}
 	data["hex_miracles"], data["formulas"], data["buffs"], data["buff_count"] = hex, formulas, buffs, buffCount
 	data["miracles"], data["rooms"] = miracles, rooms
@@ -173,11 +173,11 @@ func divergentRun(context gamekit.ImageContext, result gamekit.QueryResult, deta
 		effects := []any{}
 		descs, _ := detail["weekly_buff_desc"].([]any)
 		for _, raw := range descs {
-			effects = append(effects, officialRichText(strings.TrimPrefix(gamekit.Text(raw), "●")))
+			effects = append(effects, officialRichText(strings.TrimPrefix(app.Text(raw), "●")))
 		}
-		data["weekly"] = map[string]any{"name": gamekit.Text(detail["weekly_name"]), "effects": effects}
+		data["weekly"] = map[string]any{"name": app.Text(detail["weekly_name"]), "effects": effects}
 	}
-	return gamekit.Image{Template: "divergent-run", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "divergent-run", Data: data, Resources: resources.List}, true
 }
 
 // divergentTime is upstream's formatTime: a zero-padded date and time.
@@ -186,8 +186,8 @@ func divergentTime(value any) string {
 	if fields == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s.%02d.%02d %02d:%02d:%02d", gamekit.Text(fields["year"]), gamekit.Int(fields["month"]), gamekit.Int(fields["day"]),
-		gamekit.Int(fields["hour"]), gamekit.Int(fields["minute"]), gamekit.Int(fields["second"]))
+	return fmt.Sprintf("%s.%02d.%02d %02d:%02d:%02d", app.Text(fields["year"]), app.Int(fields["month"]), app.Int(fields["day"]),
+		app.Int(fields["hour"]), app.Int(fields["minute"]), app.Int(fields["second"]))
 }
 
 var (

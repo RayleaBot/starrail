@@ -3,7 +3,7 @@ package images
 import (
 	"strconv"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // simulationImages is where StarRail-plugin keeps its 十连 page's pictures.
@@ -24,11 +24,11 @@ var simulationPaths = [][2]string{{"毁灭", "毁灭"}, {"巡猎", "巡猎"}, {"
 // light cones with their path, and five-stars with the pulls they took.
 // StarRail-plugin's pictures cover only its own old pool; a character or light
 // cone it lacks shows miao's splash or icon instead.
-func GachaSimulation(context gamekit.ImageContext, simulation gamekit.SimulationImage) (gamekit.Image, bool) {
+func GachaSimulation(context app.ImageContext, simulation app.SimulationImage) (app.Image, bool) {
 	if context.Artwork == nil || len(simulation.Draws) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	resources.Artwork("SR", "starrail-plugin", "resources/common/font/SR.ttf")
 	picture := func(id, name string) string { return resources.Artwork(id, "starrail-plugin", simulationImages+name) }
 	cards := []any{}
@@ -87,5 +87,5 @@ func GachaSimulation(context gamekit.ImageContext, simulation gamekit.Simulation
 	}
 	data := map[string]any{"rows": rows, "icon": picture("icon", "DrawcardIcon.png"), "background": picture("background", "GachaImg_Common_Star.png"),
 		"line": picture("line", "bkg-line.png"), "sparkle": picture("sparkle", "CS_Gacha_BG_Stars3.png"), "star": picture("star", "StarBig.png")}
-	return gamekit.Image{Template: "gacha-simulation", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "gacha-simulation", Data: data, Resources: resources.List}, true
 }

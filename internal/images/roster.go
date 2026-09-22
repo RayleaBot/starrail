@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/plugin-starrail/internal/reference"
 )
 
 // rosterEntry is one owned character as miao's avatar card shows it, with
@@ -14,7 +14,7 @@ import (
 type rosterEntry struct {
 	id                                  string
 	card                                map[string]any
-	panel                               *gamekit.CharacterPanel
+	panel                               *app.CharacterPanel
 	level, star, aeq, cons              int
 	weaponLevel, weaponStar, refinement int
 }
@@ -23,7 +23,7 @@ type rosterEntry struct {
 // query without IDs answers for all of them) as miao's avatar cards, in
 // miao's order: level, rarity, original talents, eidolons, light cone level,
 // rarity and superimposition, highest first.
-func buildRoster(context gamekit.ImageContext, resources *gamekit.ImageResources, list []any) []rosterEntry {
+func buildRoster(context app.ImageContext, resources *app.ImageResources, list []any) []rosterEntry {
 	records, weapons := map[string]reference.Character{}, map[string]reference.Weapon{}
 	if context.Game.Calc != nil {
 		metadata := context.Game.Calc.Metadata()
@@ -34,10 +34,10 @@ func buildRoster(context gamekit.ImageContext, resources *gamekit.ImageResources
 			weapons[weapon.ID] = weapon
 		}
 	}
-	panels := map[string]gamekit.CharacterPanel{}
+	panels := map[string]app.CharacterPanel{}
 	if context.Query != nil {
 		if result, err := context.Query("starrail.character", nil); err == nil {
-			for _, panel := range gamekit.NormalizePanels("starrail", result, context.Catalog) {
+			for _, panel := range app.NormalizePanels("starrail", result, context.Catalog) {
 				panels[panel.ID] = panel
 			}
 		}
@@ -48,20 +48,20 @@ func buildRoster(context gamekit.ImageContext, resources *gamekit.ImageResources
 	entries := []rosterEntry{}
 	for _, raw := range list {
 		avatar, _ := raw.(map[string]any)
-		id := gamekit.Text(avatar["id"])
+		id := app.Text(avatar["id"])
 		record := records[id]
-		star := gamekit.Int(record.Data["star"])
+		star := app.Int(record.Data["star"])
 		if star != 4 {
 			star = 5
 		}
 		card := map[string]any{"known": record.Name != "", "name": record.Name, "abbr": abbreviation(context.Catalog, record), "elem": elementClasses[record.Element], "star": star,
 			"face": miao("resources/meta-sr/character/" + record.Name + "/imgs/face.webp"), "type": "mini",
-			"level": gamekit.Int(avatar["level"]), "cons": gamekit.Int(avatar["rank"]), "artis": []any{}}
+			"level": app.Int(avatar["level"]), "cons": app.Int(avatar["rank"]), "artis": []any{}}
 		item := rosterEntry{id: id, card: card, star: star, aeq: 4}
 		if panel, ok := panels[id]; ok {
 			item.panel = &panel
 			card["level"], card["cons"] = panel.Level, panel.Rank
-			levels := gamekit.PanelTalents("starrail", panel, record)
+			levels := app.PanelTalents("starrail", panel, record)
 			talents := []any{}
 			item.aeq = 0
 			for _, key := range []string{"a", "e", "q", "t"} {
@@ -89,9 +89,9 @@ func buildRoster(context gamekit.ImageContext, resources *gamekit.ImageResources
 					badge++
 				}
 				path := "resources/meta-sr/weapon/" + entry.Type + "/" + entry.Name + "/"
-				card["weapon"] = map[string]any{"icon": miao(path + "icon.webp"), "small": miao(path + "icon-s.webp"), "star": gamekit.Int(weapon.Rarity),
+				card["weapon"] = map[string]any{"icon": miao(path + "icon.webp"), "small": miao(path + "icon-s.webp"), "star": app.Int(weapon.Rarity),
 					"affix": weapon.Refinement, "badge": badge, "level": weapon.Level, "name": name}
-				item.weaponLevel, item.weaponStar, item.refinement = weapon.Level, gamekit.Int(weapon.Rarity), weapon.Refinement
+				item.weaponLevel, item.weaponStar, item.refinement = weapon.Level, app.Int(weapon.Rarity), weapon.Refinement
 			}
 			// miao shows each set worn as two or four pieces, by its head (or
 			// its planar sphere for ornaments).
@@ -118,7 +118,7 @@ func buildRoster(context gamekit.ImageContext, resources *gamekit.ImageResources
 			}
 			card["artis"] = sets
 		}
-		item.level, item.cons = gamekit.Int(card["level"]), gamekit.Int(card["cons"])
+		item.level, item.cons = app.Int(card["level"]), app.Int(card["cons"])
 		entries = append(entries, item)
 	}
 	sort.SliceStable(entries, func(i, j int) bool {

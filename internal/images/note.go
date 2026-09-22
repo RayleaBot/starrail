@@ -8,12 +8,12 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // Builders lists the image builders by the operation they draw.
-func Builders() map[string]gamekit.ImageBuilder {
-	return map[string]gamekit.ImageBuilder{"starrail.note": Note, "starrail.challenge": challengeImage(memoryOfChaos),
+func Builders() map[string]app.ImageBuilder {
+	return map[string]app.ImageBuilder{"starrail.note": Note, "starrail.challenge": challengeImage(memoryOfChaos),
 		"starrail.story": challengeImage(pureFiction), "starrail.boss": challengeImage(apocalypticShadow), "starrail.peak": Peak,
 		"starrail.abyss": allChallengesImage, "starrail.abyss_latest": latestChallengeImage,
 		"starrail.characters": Characters, "starrail.training": Training, "starrail.monthly": Month, "starrail.rogue": Rogue, "starrail.swarm": Swarm,
@@ -38,16 +38,16 @@ var weekdays = [...]string{"星期日", "星期一", "星期二", "星期三", "
 // the requester's avatar and today's check-in, trailblaze power with its
 // recovery time, daily training and simulated universe scores, and each
 // assignment with its remaining time.
-func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Note(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	data := result.Data
 	if _, ok := data["current_stamina"]; !ok {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	now := context.Now.In(time.FixedZone("UTC+8", 8*3600))
-	current, maximum := gamekit.Int(data["current_stamina"]), gamekit.Int(data["max_stamina"])
+	current, maximum := app.Int(data["current_stamina"]), app.Int(data["max_stamina"])
 	stamina := map[string]any{"current": current, "max": maximum, "full": current == maximum, "progress": percent(current, maximum)}
 	if current != maximum {
-		seconds := gamekit.Int(data["stamina_recover_time"])
+		seconds := app.Int(data["stamina_recover_time"])
 		end := now.Add(time.Duration(seconds) * time.Second)
 		day := "今日"
 		if end.Day() != now.Day() {
@@ -68,17 +68,17 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 	expeditions := []any{}
 	for index, raw := range asList(data["expeditions"]) {
 		item, _ := raw.(map[string]any)
-		remaining := gamekit.Int(item["remaining_time"])
+		remaining := app.Int(item["remaining_time"])
 		avatars := []any{}
 		for slot, avatar := range asList(item["avatars"]) {
 			id := fmt.Sprintf("expedition-%d-%d", index, slot)
-			if url := gamekit.Text(avatar); url != "" {
+			if url := app.Text(avatar); url != "" {
 				resources = append(resources, rayleabot.RenderImageResource{ID: id, URL: url})
 				avatars = append(avatars, id)
 			}
 		}
 		expeditions = append(expeditions, map[string]any{
-			"name":      gamekit.Text(item["name"]),
+			"name":      app.Text(item["name"]),
 			"remaining": duration(remaining, "%02d时%02d分"),
 			"finished":  remaining == 0,
 			"avatars":   avatars,
@@ -96,7 +96,7 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 			signed, _ = sign.Data["is_sign"].(bool)
 		}
 	}
-	return gamekit.Image{
+	return app.Image{
 		Template: "note",
 		Data: map[string]any{
 			"nickname":    result.Role.Nickname,
@@ -105,10 +105,10 @@ func Note(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 			"signed":      signed,
 			"time":        now.Format("2006-01-02 15:04:05") + " " + weekdays[now.Weekday()],
 			"stamina":     stamina,
-			"train":       gamekit.Text(data["current_train_score"]) + "/" + gamekit.Text(data["max_train_score"]),
-			"rogue":       gamekit.Text(data["current_rogue_score"]) + "/" + gamekit.Text(data["max_rogue_score"]),
-			"accepted":    gamekit.Text(accepted),
-			"total":       gamekit.Text(data["total_expedition_num"]),
+			"train":       app.Text(data["current_train_score"]) + "/" + app.Text(data["max_train_score"]),
+			"rogue":       app.Text(data["current_rogue_score"]) + "/" + app.Text(data["max_rogue_score"]),
+			"accepted":    app.Text(accepted),
+			"total":       app.Text(data["total_expedition_num"]),
 			"expeditions": expeditions,
 		},
 		Resources: resources,

@@ -6,8 +6,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/plugin-starrail/internal/reference"
 )
 
 // rankArtwork maps the images named in the converted stylesheets (miao's
@@ -37,9 +37,9 @@ var rankTalents = map[string][]string{"记忆": {"a", "e", "t", "q", "me", "mt"}
 // sets with their score and grade, and the default detail's damage. miao
 // widens the page for Remembrance and Elation characters, whose rows show
 // more talents.
-func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, bool) {
+func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 	if context.Game.Calc == nil || len(rank.Entries) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	metadata := context.Game.Calc.Metadata()
 	records, weapons := map[string]reference.Character{}, map[string]reference.Weapon{}
@@ -49,7 +49,7 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 	for _, weapon := range metadata.Weapons {
 		weapons[weapon.ID] = weapon
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range rankArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -65,7 +65,7 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 	for index, entry := range rank.Entries {
 		record, panel := records[entry.CharacterID], *entry.Panel
 		base := "resources/meta-sr/character/" + record.Name + "/imgs/"
-		star := gamekit.Int(record.Data["star"])
+		star := app.Int(record.Data["star"])
 		if star != 4 {
 			star = 5
 		}
@@ -86,7 +86,7 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 			keys = []string{"a", "e", "t", "q"}
 		}
 		wide = wide || len(keys) > 4
-		levels := gamekit.PanelTalents("starrail", panel, record)
+		levels := app.PanelTalents("starrail", panel, record)
 		talents := []any{}
 		for _, key := range keys {
 			level := levels[key]
@@ -99,7 +99,7 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 			if catalogEntry, ok := context.Catalog.Get(weapon.ID); ok && utf8.RuneCountInString(label) > 4 && catalogEntry.Abbr != "" {
 				label = catalogEntry.Abbr
 			}
-			row["weapon"] = map[string]any{"icon": miao("resources/meta-sr/weapon/" + cone.Type + "/" + cone.Name + "/icon.webp"), "star": gamekit.Int(weapon.Rarity),
+			row["weapon"] = map[string]any{"icon": miao("resources/meta-sr/weapon/" + cone.Type + "/" + cone.Name + "/icon.webp"), "star": app.Int(weapon.Rarity),
 				"name": label, "affix": weapon.Refinement, "badge": weapon.Refinement + 1, "level": weapon.Level}
 		}
 		// miao shows each set worn as two or four pieces by its first piece.
@@ -128,14 +128,14 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 		if grade == "" {
 			grade = "D"
 		}
-		row["sets"], row["set_count"], row["set_name"] = sets, len(sets), gamekit.RankSetName(context.Catalog, panel)
+		row["sets"], row["set_count"], row["set_name"] = sets, len(sets), app.RankSetName(context.Catalog, panel)
 		row["grade"], row["mark"] = grade, miaoComma(entry.Score, 1)
 		if entry.Damage != nil {
 			value := entry.Damage.Text
 			if value == "" {
 				value = miaoComma(entry.Damage.Value, 1)
 			}
-			row["damage"] = map[string]any{"title": gamekit.RankDamageTitle(entry.Damage.Title), "value": value}
+			row["damage"] = map[string]any{"title": app.RankDamageTitle(entry.Damage.Title), "value": value}
 		}
 		rows = append(rows, row)
 	}
@@ -155,5 +155,5 @@ func Rank(context gamekit.ImageContext, rank gamekit.RankImage) (gamekit.Image, 
 	}
 	since := time.UnixMilli(rank.SinceMS).In(chinaTime).Format("01-02 15:04")
 	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "wide": wide, "since": since, "hash": context.Game.Prefix, "rows": rows}
-	return gamekit.Image{Template: "rank", Data: data, Resources: resources.List}, true
+	return app.Image{Template: "rank", Data: data, Resources: resources.List}, true
 }

@@ -11,14 +11,14 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/plugin-starrail/internal/reference"
 )
 
 // Source is Mihomo's parsed Star Rail API in Chinese. miao reads Mihomo's
 // raw answer and adds up the properties itself; the parsed answer carries
 // the same panel with its properties added up.
-var Source = gamekit.ShowcaseSource{Name: "Mihomo", URL: func(uid string) string { return "https://api.mihomo.me/sr_info_parsed/" + uid + "?lang=cn" }, Parse: Parse}
+var Source = app.ShowcaseSource{Name: "Mihomo", URL: func(uid string) string { return "https://api.mihomo.me/sr_info_parsed/" + uid + "?lang=cn" }, Parse: Parse}
 
 type mihomoAnswer struct {
 	Player *struct {
@@ -121,24 +121,24 @@ func display(value float64, percent bool, field string) string {
 	return strconv.FormatFloat(math.Floor(value+1e-6), 'f', 0, 64)
 }
 
-func relicStat(stat mihomoStat) (gamekit.PanelStat, bool) {
+func relicStat(stat mihomoStat) (app.PanelStat, bool) {
 	ids, ok := relicStats[stat.Type]
 	if !ok {
-		return gamekit.PanelStat{}, false
+		return app.PanelStat{}, false
 	}
-	return gamekit.PanelStat{ID: ids[0], Key: ids[1], Name: stat.Name, Value: display(stat.Value, stat.Percent, stat.Field), Times: max(0, stat.Count-1)}, true
+	return app.PanelStat{ID: ids[0], Key: ids[1], Name: stat.Name, Value: display(stat.Value, stat.Percent, stat.Field), Times: max(0, stat.Count-1)}, true
 }
 
 // Parse reads Mihomo's answer the way miao's HomoApi does: every character
 // the player shows with its light cone, relics, traces and talents.
-func Parse(_ context.Context, game gamekit.Game, catalog gamekit.Catalog, raw []byte) (gamekit.ShowcaseProfile, error) {
+func Parse(_ context.Context, game app.Game, catalog app.Catalog, raw []byte) (app.ShowcaseProfile, error) {
 	var answer mihomoAnswer
 	if err := json.Unmarshal(raw, &answer); err != nil || answer.Player == nil {
-		return gamekit.ShowcaseProfile{}, &gamekit.ShowcaseFailure{Status: 200}
+		return app.ShowcaseProfile{}, &app.ShowcaseFailure{Status: 200}
 	}
-	profile := gamekit.ShowcaseProfile{Nickname: answer.Player.Nickname, Level: answer.Player.Level, TTL: 5 * time.Minute}
+	profile := app.ShowcaseProfile{Nickname: answer.Player.Nickname, Level: answer.Player.Level, TTL: 5 * time.Minute}
 	if len(answer.Characters) == 0 {
-		return profile, gamekit.ErrShowcaseEmpty
+		return profile, app.ErrShowcaseEmpty
 	}
 	for _, character := range answer.Characters {
 		if panel, ok := parseCharacter(game, catalog, character); ok {
@@ -148,15 +148,15 @@ func Parse(_ context.Context, game gamekit.Game, catalog gamekit.Catalog, raw []
 	return profile, nil
 }
 
-func parseCharacter(game gamekit.Game, catalog gamekit.Catalog, character mihomoCharacter) (gamekit.CharacterPanel, bool) {
+func parseCharacter(game app.Game, catalog app.Catalog, character mihomoCharacter) (app.CharacterPanel, bool) {
 	entry, ok := catalog.Get(character.ID)
 	record, found := calcRecord(game, character.ID)
 	if !ok || !found {
-		return gamekit.CharacterPanel{}, false
+		return app.CharacterPanel{}, false
 	}
 	promote := character.Promotion
-	panel := gamekit.CharacterPanel{ID: character.ID, Name: entry.Name, Level: character.Level, Promote: &promote, Rank: character.Rank, RankKnown: true, Element: elements[character.Element.ID], Source: "mihomo",
-		WeaponKnown: true, EquipmentKnown: true, Stats: []gamekit.PanelStat{}, Equipment: []gamekit.PanelEquipment{}, Skills: []gamekit.PanelSkill{}, Ranks: []gamekit.PanelSkill{}}
+	panel := app.CharacterPanel{ID: character.ID, Name: entry.Name, Level: character.Level, Promote: &promote, Rank: character.Rank, RankKnown: true, Element: elements[character.Element.ID], Source: "mihomo",
+		WeaponKnown: true, EquipmentKnown: true, Stats: []app.PanelStat{}, Equipment: []app.PanelEquipment{}, Skills: []app.PanelSkill{}, Ranks: []app.PanelSkill{}}
 	base, added := map[string]float64{}, map[string]float64{}
 	for _, stat := range character.Attributes {
 		base[stat.Field] += stat.Value
@@ -166,17 +166,17 @@ func parseCharacter(game gamekit.Game, catalog gamekit.Catalog, character mihomo
 	}
 	for _, stat := range panelStats {
 		from := base[stat.field] + stat.base
-		item := gamekit.PanelStat{ID: stat.id, Name: stat.name, Value: display(from+added[stat.field], stat.percent, stat.field), Base: display(from, stat.percent, stat.field), Added: display(added[stat.field], stat.percent, stat.field)}
+		item := app.PanelStat{ID: stat.id, Name: stat.name, Value: display(from+added[stat.field], stat.percent, stat.field), Base: display(from, stat.percent, stat.field), Added: display(added[stat.field], stat.percent, stat.field)}
 		panel.Stats = append(panel.Stats, item)
 	}
 	if cone := character.LightCone; cone != nil {
 		promotion := cone.Promotion
-		w := gamekit.PanelEquipment{ID: cone.ID, Name: cone.Name, Level: cone.Level, Promote: &promotion, Rarity: strconv.Itoa(cone.Rarity), Refinement: cone.Rank, Main: []gamekit.PanelStat{}, Sub: []gamekit.PanelStat{}, Complete: true}
+		w := app.PanelEquipment{ID: cone.ID, Name: cone.Name, Level: cone.Level, Promote: &promotion, Rarity: strconv.Itoa(cone.Rarity), Refinement: cone.Rank, Main: []app.PanelStat{}, Sub: []app.PanelStat{}, Complete: true}
 		if weapon, ok := catalog.Get(cone.ID); ok {
 			w.Name = weapon.Name
 		}
 		for _, stat := range cone.Attributes {
-			w.Main = append(w.Main, gamekit.PanelStat{ID: stat.Field, Name: stat.Name, Value: display(stat.Value, stat.Percent, stat.Field)})
+			w.Main = append(w.Main, app.PanelStat{ID: stat.Field, Name: stat.Name, Value: display(stat.Value, stat.Percent, stat.Field)})
 		}
 		for _, stat := range cone.Properties {
 			if item, ok := relicStat(stat); ok {
@@ -186,7 +186,7 @@ func parseCharacter(game gamekit.Game, catalog gamekit.Catalog, character mihomo
 		panel.Weapon = &w
 	}
 	for _, relic := range character.Relics {
-		piece := gamekit.PanelEquipment{ID: relic.ID, Name: relic.Name, Slot: relic.Type, Level: relic.Level, Rarity: strconv.Itoa(relic.Rarity), SetName: relic.SetName, Main: []gamekit.PanelStat{}, Sub: []gamekit.PanelStat{}}
+		piece := app.PanelEquipment{ID: relic.ID, Name: relic.Name, Slot: relic.Type, Level: relic.Level, Rarity: strconv.Itoa(relic.Rarity), SetName: relic.SetName, Main: []app.PanelStat{}, Sub: []app.PanelStat{}}
 		if main, ok := relicStat(relic.MainAffix); ok {
 			main.Times = 0
 			piece.Main = append(piece.Main, main)
@@ -199,13 +199,13 @@ func parseCharacter(game gamekit.Game, catalog gamekit.Catalog, character mihomo
 		piece.Complete = len(piece.Main) == 1
 		panel.Equipment = append(panel.Equipment, piece)
 	}
-	slices.SortFunc(panel.Equipment, func(a, b gamekit.PanelEquipment) int { return a.Slot - b.Slot })
+	slices.SortFunc(panel.Equipment, func(a, b app.PanelEquipment) int { return a.Slot - b.Slot })
 	panel.Skills = skills(record, character)
 	constellations, _ := record.Data["cons"].(map[string]any)
 	for index := 1; index <= 6; index++ {
 		item, _ := constellations[strconv.Itoa(index)].(map[string]any)
 		name, _ := item["name"].(string)
-		panel.Ranks = append(panel.Ranks, gamekit.PanelSkill{Name: name, Active: index <= character.Rank})
+		panel.Ranks = append(panel.Ranks, app.PanelSkill{Name: name, Active: index <= character.Rank})
 	}
 	return panel, true
 }
@@ -214,10 +214,10 @@ func parseCharacter(game gamekit.Game, catalog gamekit.Catalog, character mihomo
 // (by the record's talentId, or by the point's last digits), whose level gets
 // the eidolons' bonus; the other activated points are traces. An enhanced
 // character's points start with 1, as the official panel gives them.
-func skills(record reference.Character, character mihomoCharacter) []gamekit.PanelSkill {
+func skills(record reference.Character, character mihomoCharacter) []app.PanelSkill {
 	talentID, _ := record.Data["talentId"].(map[string]any)
 	cons, _ := record.Data["talentCons"].(map[string]any)
-	result := []gamekit.PanelSkill{}
+	result := []app.PanelSkill{}
 	for _, point := range character.SkillTrees {
 		id := point.ID
 		if character.Enhanced && !strings.HasPrefix(id, "1"+character.ID) {
@@ -241,18 +241,18 @@ func skills(record reference.Character, character mihomoCharacter) []gamekit.Pan
 					}
 				}
 			}
-			result = append(result, gamekit.PanelSkill{Kind: kind, PointType: 2, ID: id, Level: point.Level + plus, ExtraLevel: plus, Active: point.Level > 0, Name: kind})
+			result = append(result, app.PanelSkill{Kind: kind, PointType: 2, ID: id, Level: point.Level + plus, ExtraLevel: plus, Active: point.Level > 0, Name: kind})
 			continue
 		}
 		if point.Level > 0 {
-			result = append(result, gamekit.PanelSkill{PointType: 1, ID: id, Level: point.Level, Active: true, Name: "行迹 " + id})
+			result = append(result, app.PanelSkill{PointType: 1, ID: id, Level: point.Level, Active: true, Name: "行迹 " + id})
 		}
 	}
 	return result
 }
 
 // calcRecord is the character's upstream record.
-func calcRecord(game gamekit.Game, id string) (reference.Character, bool) {
+func calcRecord(game app.Game, id string) (reference.Character, bool) {
 	if game.Calc == nil {
 		return reference.Character{}, false
 	}

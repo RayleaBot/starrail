@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 	"github.com/RayleaBot/plugin-starrail/internal/assets"
 	"github.com/RayleaBot/plugin-starrail/internal/showcase"
 )
@@ -21,11 +21,11 @@ const mihomoFixture = `{"player":{"uid":"800000001","nickname":"开拓者","leve
 "additions":[{"field":"hp","value":5125.01},{"field":"spd","value":4.6},{"field":"crit_rate","value":0.6558},{"field":"sp_rate","value":0.1944}]}]}`
 
 func TestParseReadsMihomoLikeMiao(t *testing.T) {
-	app, err := gamekit.New(assets.Kit(), t.TempDir())
+	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	profile, err := showcase.Parse(t.Context(), app.Game, app.Catalog, []byte(mihomoFixture))
+	profile, err := showcase.Parse(t.Context(), application.Game, application.Catalog, []byte(mihomoFixture))
 	if err != nil || profile.Nickname != "开拓者" || len(profile.Panels) != 1 {
 		t.Fatal(profile, err)
 	}
@@ -35,7 +35,7 @@ func TestParseReadsMihomoLikeMiao(t *testing.T) {
 	}
 	// Properties add the traces and relics to the base, shown as the game
 	// cuts them; energy regeneration counts from 100%.
-	stats := map[string]gamekit.PanelStat{}
+	stats := map[string]app.PanelStat{}
 	for _, stat := range panel.Stats {
 		stats[stat.ID] = stat
 	}
@@ -62,7 +62,7 @@ func TestParseReadsMihomoLikeMiao(t *testing.T) {
 	if levels["普攻"] != 7 || levels["战技"] != 12 || levels["忆灵技"] != 6 || len(traces) != 1 || traces[0] != "1413101" {
 		t.Fatalf("talents = %v, traces = %v", levels, traces)
 	}
-	if _, err = showcase.Parse(t.Context(), app.Game, app.Catalog, []byte(`{"player":{"uid":"1"},"characters":[]}`)); !errors.Is(err, gamekit.ErrShowcaseEmpty) {
+	if _, err = showcase.Parse(t.Context(), application.Game, application.Catalog, []byte(`{"player":{"uid":"1"},"characters":[]}`)); !errors.Is(err, app.ErrShowcaseEmpty) {
 		t.Fatal(err)
 	}
 }

@@ -4,14 +4,14 @@ import (
 	"strings"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 	"github.com/RayleaBot/plugin-starrail/internal/images"
 )
 
 func TestMonthFollowsStarRailPlugin(t *testing.T) {
 	data := decodeJSON(t, `{"month":"202609","month_data":{"current_hcoin":4000,"current_rails_pass":18,"group_by":[{"action_name":"每日活跃","num":3000},{"action_name":"其他","num":1000},{"action_name":"邮件奖励","num":0}]},
 		"day_data":{"current_hcoin":60,"current_rails_pass":0,"last_hcoin":180,"last_rails_pass":1}}`)
-	image, ok := images.Month(gamekit.ImageContext{}, gamekit.QueryResult{Data: data})
+	image, ok := images.Month(app.ImageContext{}, app.QueryResult{Data: data})
 	if !ok || image.Data["month_hcoin"] != "4000" || image.Data["yesterday_hcoin"] != "180" {
 		t.Fatalf("image = %v", image.Data)
 	}

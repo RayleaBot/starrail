@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 func TestNoteFollowsStarRailPlugin(t *testing.T) {
@@ -21,11 +21,11 @@ func TestNoteFollowsStarRailPlugin(t *testing.T) {
 		},
 	}
 	queried := ""
-	context := gamekit.ImageContext{Now: now, Query: func(operation string, _ map[string]any) (gamekit.QueryResult, error) {
+	context := app.ImageContext{Now: now, Query: func(operation string, _ map[string]any) (app.QueryResult, error) {
 		queried = operation
-		return gamekit.QueryResult{Data: map[string]any{"is_sign": true}}, nil
+		return app.QueryResult{Data: map[string]any{"is_sign": true}}, nil
 	}}
-	image, ok := Note(context, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001", Nickname: "开拓者", Level: 70}, Data: data})
+	image, ok := Note(context, app.QueryResult{Role: app.Role{UID: "100000001", Nickname: "开拓者", Level: 70}, Data: data})
 	if !ok || image.Template != "note" || queried != "starrail.sign_info" || image.Data["signed"] != true {
 		t.Fatalf("image = %+v, queried %q", image, queried)
 	}

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // wikiArtwork maps the images the talent page's converted stylesheets name
@@ -54,17 +54,17 @@ type wikiCharacter struct {
 // Entry draws miao's talent page for a Star Rail character: 天赋 and 行迹
 // list the abilities and traces, 星魂 the Eidolons. The page reads miao's
 // character data, which comes with the downloaded miao artwork.
-func Entry(context gamekit.ImageContext, page gamekit.EntryImage) (gamekit.Image, bool) {
+func Entry(context app.ImageContext, page app.EntryImage) (app.Image, bool) {
 	if page.Command != "talent-wiki" || page.Entry.Kind != "character" || context.Artwork == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	raw, err := context.Artwork.Open("miao-plugin", "resources/meta-sr/character/"+page.Entry.Name+"/data.json")
 	if err != nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	var character wikiCharacter
 	if json.Unmarshal(raw, &character) != nil || len(character.Talent) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	cons := strings.Contains(page.Word, "星魂") || strings.Contains(page.Word, "命")
 	return characterTalent(context, character, cons), true
@@ -74,8 +74,8 @@ func Entry(context gamekit.ImageContext, page gamekit.EntryImage) (gamekit.Image
 // the card, name and description with the level-80 base stats, then every
 // ability with its description filled at level 8 (5 for basic attacks and the
 // memosprite's) and its level table, and the traces, or the six Eidolons.
-func characterTalent(context gamekit.ImageContext, character wikiCharacter, cons bool) gamekit.Image {
-	resources := &gamekit.ImageResources{Context: context}
+func characterTalent(context app.ImageContext, character wikiCharacter, cons bool) app.Image {
+	resources := &app.ImageResources{Context: context}
 	for _, item := range wikiArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -113,7 +113,7 @@ func characterTalent(context gamekit.ImageContext, character wikiCharacter, cons
 			list = append(list, wikiDetail(eidolon.Name, strings.Split(eidolon.Desc, "<br>"), nil, image(icon, icon), 0, 0))
 		}
 		data["constellations"] = list
-		return gamekit.Image{Template: "character-talent", Data: data, Resources: resources.List}
+		return app.Image{Template: "character-talent", Data: data, Resources: resources.List}
 	}
 	talents := []any{}
 	for _, key := range wikiTalentKeys {
@@ -157,7 +157,7 @@ func characterTalent(context gamekit.ImageContext, character wikiCharacter, cons
 		passives = append(passives, wikiDetail(trace.Name, strings.Split(trace.Desc, "<br>"), nil, image("tree-"+strconv.Itoa(trace.Idx), "tree-"+strconv.Itoa(trace.Idx)), 0, 0))
 	}
 	data["talents"], data["passives"] = talents, passives
-	return gamekit.Image{Template: "character-talent", Data: data, Resources: resources.List}
+	return app.Image{Template: "character-talent", Data: data, Resources: resources.List}
 }
 
 type wikiTable struct {

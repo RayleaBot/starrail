@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 func TestPeakFollowsStarRailPlugin(t *testing.T) {
@@ -22,7 +22,7 @@ func TestPeakFollowsStarRailPlugin(t *testing.T) {
 	}
 	data := map[string]any{"challenge_peak_records": []any{run("本期", true), run("上期", false), run("前期", false)},
 		"challenge_peak_best_record_brief": map[string]any{"total_battle_num": json.Number("12")}}
-	image, ok := Peak(gamekit.ImageContext{Input: map[string]any{"schedule_type": 1}}, gamekit.QueryResult{Role: gamekit.Role{UID: "100000001"}, Data: data})
+	image, ok := Peak(app.ImageContext{Input: map[string]any{"schedule_type": 1}}, app.QueryResult{Role: app.Role{UID: "100000001"}, Data: data})
 	if !ok || image.Template != "peak" || image.Data["tag"] != "本期" {
 		t.Fatalf("image = %v %v", image.Template, image.Data)
 	}
@@ -42,18 +42,18 @@ func TestPeakFollowsStarRailPlugin(t *testing.T) {
 	}
 
 	// The last run is the second of the recent runs.
-	image, _ = Peak(gamekit.ImageContext{Input: map[string]any{"schedule_type": 2}}, gamekit.QueryResult{Data: data})
+	image, _ = Peak(app.ImageContext{Input: map[string]any{"schedule_type": 2}}, app.QueryResult{Data: data})
 	last := image.Data["records"].([]any)[0].(map[string]any)
 	if image.Data["tag"] != "上期" || last["name"] != "上期" || last["boss"].(map[string]any)["hell"] != false {
 		t.Errorf("last = %v", image.Data)
 	}
 	// 往期 puts the three recent runs side by side.
-	image, _ = Peak(gamekit.ImageContext{Input: map[string]any{"schedule_type": 3}}, gamekit.QueryResult{Data: data})
+	image, _ = Peak(app.ImageContext{Input: map[string]any{"schedule_type": 3}}, app.QueryResult{Data: data})
 	if image.Template != "peak-recent" || len(image.Data["records"].([]any)) != 3 {
 		t.Errorf("recent = %v %v", image.Template, image.Data)
 	}
 	data["challenge_peak_records"] = []any{run("本期", true)}
-	if _, ok := Peak(gamekit.ImageContext{Input: map[string]any{"schedule_type": 2}}, gamekit.QueryResult{Data: data}); ok {
+	if _, ok := Peak(app.ImageContext{Input: map[string]any{"schedule_type": 2}}, app.QueryResult{Data: data}); ok {
 		t.Error("without a last run the reply stays in text")
 	}
 }

@@ -4,31 +4,31 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 	"github.com/RayleaBot/plugin-starrail/internal/assets"
 	"github.com/RayleaBot/plugin-starrail/internal/images"
 )
 
 func TestPanelFollowsMiaoRules(t *testing.T) {
-	app, err := gamekit.New(assets.Kit(), t.TempDir())
+	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	var image gamekit.PanelImage
-	for _, record := range app.Game.Calc.Metadata().Characters {
+	var image app.PanelImage
+	for _, record := range application.Game.Calc.Metadata().Characters {
 		if record.Key == "sr_1306" {
 			image.Record = record
 		}
 	}
-	skills := []gamekit.PanelSkill{{ID: "1306001", Kind: "普攻", Level: 6, Active: true}, {ID: "1306002", Kind: "战技", Level: 12, ExtraLevel: 2, Active: true}}
+	skills := []app.PanelSkill{{ID: "1306001", Kind: "普攻", Level: 6, Active: true}, {ID: "1306002", Kind: "战技", Level: 12, ExtraLevel: 2, Active: true}}
 	for _, id := range []string{"1306101", "1306201", "1306202"} {
-		skills = append(skills, gamekit.PanelSkill{ID: id, PointType: 1, Active: id != "1306202"})
+		skills = append(skills, app.PanelSkill{ID: id, PointType: 1, Active: id != "1306202"})
 	}
-	image.Panel = gamekit.CharacterPanel{ID: "1306", Level: 80, Rank: 1, Element: "量子", Skills: skills,
-		Weapon: &gamekit.PanelEquipment{ID: "23003", Name: "但战斗还未结束", Level: 80, Refinement: 5, Main: []gamekit.PanelStat{{Key: "hpPlus", Value: "1164"}}}}
-	game := app.Game
+	image.Panel = app.CharacterPanel{ID: "1306", Level: 80, Rank: 1, Element: "量子", Skills: skills,
+		Weapon: &app.PanelEquipment{ID: "23003", Name: "但战斗还未结束", Level: 80, Refinement: 5, Main: []app.PanelStat{{Key: "hpPlus", Value: "1164"}}}}
+	game := application.Game
 	game.Prefix = "*"
-	drawn, ok := images.Panel(gamekit.ImageContext{Game: game, Now: time.Now()}, image)
+	drawn, ok := images.Panel(app.ImageContext{Game: game, Now: time.Now()}, image)
 	if !ok || drawn.Template != "panel" || drawn.Data["elem"] != "quantum" {
 		t.Fatalf("drawn = %+v", drawn)
 	}

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // Miao's Star Rail calendar skips these announcements by ID and by title.
@@ -82,17 +82,17 @@ type calendarItem struct {
 // version's Anomaly Arbitration, and the current time. 日历列表 draws the
 // list layout. Miao passes each rotation's bar type as a function, so its bars
 // lose their styling and icon; this gives each the type miao names.
-func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gamekit.Image, bool) {
+func Calendar(context app.ImageContext, calendar app.CalendarImage) (app.Image, bool) {
 	announcements := calendar.Announcements
 	if len(announcements.Groups) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	now := context.Now.In(chinaTime)
 	times, gacha := calendarTimes(append(slices.Clone(announcements.Contents), announcements.PictureContents...))
 	first := time.Date(now.Year(), now.Month(), now.Day()-6, 0, 0, 0, 0, chinaTime)
 	last := time.Date(now.Year(), now.Month(), now.Day()+6, 23, 59, 59, 0, chinaTime)
 	total := float64(last.Sub(first))
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range calendarArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -115,12 +115,12 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 	}
 	resources.Prefetch("mihoyo", urls...)
 	place := func(ann map[string]any, target *[]calendarItem, kind string) {
-		id, title := gamekit.Text(ann["ann_id"]), gamekit.Text(ann["title"])
+		id, title := app.Text(ann["ann_id"]), app.Text(ann["title"])
 		if title == "" || slices.Contains(calendarIgnoreIDs, id) || calendarIgnore.MatchString(title) {
 			return
 		}
 		item := calendarItem{title: title, kind: kind, sort: 5}
-		banner := gamekit.Text(ann["banner"])
+		banner := app.Text(ann["banner"])
 		if item.kind == "" {
 			item.kind = "activity"
 		}
@@ -134,8 +134,8 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 			item.kind = "pass"
 		}
 		window := times[id]
-		sDate := calendarDate(window[0], gamekit.Text(ann["start_time"]))
-		eDate := calendarDate(window[1], gamekit.Text(ann["end_time"]))
+		sDate := calendarDate(window[0], app.Text(ann["start_time"]))
+		eDate := calendarDate(window[1], app.Text(ann["end_time"]))
 		sTime, eTime := sDate, eDate
 		if sTime.Before(first) {
 			sTime = first
@@ -167,7 +167,7 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 		if banner != "" {
 			item.banner = resources.URL("mihoyo", banner)
 		}
-		if gamekit.Text(ann["tag_icon"]) != "" {
+		if app.Text(ann["tag_icon"]) != "" {
 			item.icon = resources.URL("mihoyo", ann["tag_icon"])
 		}
 		if item.kind == "activity" {
@@ -191,8 +191,8 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 	}
 	version := [2]string{}
 	for _, raw := range calendarGroup(announcements.Groups[0]) {
-		if calendarVersionAnn.MatchString(gamekit.Text(raw["title"])) {
-			version = [2]string{gamekit.Text(raw["start_time"]), gamekit.Text(raw["end_time"])}
+		if calendarVersionAnn.MatchString(app.Text(raw["title"])) {
+			version = [2]string{app.Text(raw["start_time"]), app.Text(raw["end_time"])}
 		}
 	}
 	for _, period := range calendarAbyss(now, last, version) {
@@ -257,7 +257,7 @@ func Calendar(context gamekit.ImageContext, calendar gamekit.CalendarImage) (gam
 	if strings.HasSuffix(calendar.Word, "日历列表") || strings.HasSuffix(calendar.Word, "活动") {
 		mode, template = "list", "calendar-list"
 	}
-	return gamekit.Image{Template: template, Data: map[string]any{
+	return app.Image{Template: template, Data: map[string]any{
 		"mode": mode, "months": months, "list_class": fmt.Sprintf("char-%d-%d char-num-", characterCount, characterOld),
 		"rows": rows, "abyss": abyssViews, "now_left": fmt.Sprintf("%.4f", float64(now.Sub(first))/total*100), "now_time": now.Format("2006-01-02 15:04"),
 	}, Resources: resources.List}, true
@@ -307,11 +307,11 @@ func calendarTimes(contents []any) (map[string][2]string, []string) {
 	versions := map[string]string{"1.1": "2022-06-07 11:00:00"}
 	for _, raw := range contents {
 		ann, _ := raw.(map[string]any)
-		match := calendarVersionTitle.FindStringSubmatch(gamekit.Text(ann["title"]))
+		match := calendarVersionTitle.FindStringSubmatch(app.Text(ann["title"]))
 		if match == nil {
 			continue
 		}
-		if section := calendarUpdateTime.FindStringSubmatch(gamekit.Text(ann["content"])); section != nil {
+		if section := calendarUpdateTime.FindStringSubmatch(app.Text(ann["content"])); section != nil {
 			if found := calendarTimeText.FindString(section[1]); found != "" && versions[match[1]] == "" {
 				versions[match[1]] = strings.Replace(found, "06:00", "11:00", 1)
 			}
@@ -320,16 +320,16 @@ func calendarTimes(contents []any) (map[string][2]string, []string) {
 	times, gacha := map[string][2]string{}, []string{}
 	for _, raw := range contents {
 		ann, _ := raw.(map[string]any)
-		if calendarIgnore.MatchString(gamekit.Text(ann["title"])) {
+		if calendarIgnore.MatchString(app.Text(ann["title"])) {
 			continue
 		}
-		content := strings.ReplaceAll(strings.ReplaceAll(gamekit.Text(ann["content"]), `<h1 style="">`, "※"), "</h1>", "※")
+		content := strings.ReplaceAll(strings.ReplaceAll(app.Text(ann["content"]), `<h1 style="">`, "※"), "</h1>", "※")
 		section := calendarSection.FindStringSubmatch(calendarTags.ReplaceAllString(content, ""))
 		if section == nil || section[1] == "" {
 			continue
 		}
 		if strings.Contains(section[0], "活动跃迁") {
-			gacha = append(gacha, gamekit.Text(ann["img"]))
+			gacha = append(gacha, app.Text(ann["img"]))
 		}
 		var span []string
 		match := calendarRange.FindStringSubmatch(section[1])
@@ -347,7 +347,7 @@ func calendarTimes(contents []any) (map[string][2]string, []string) {
 			span = strings.Split(match[1], "-")
 		}
 		if len(span) == 2 {
-			times[gamekit.Text(ann["ann_id"])] = [2]string{strings.ReplaceAll(strings.TrimSpace(span[0]), "/", "-"), strings.ReplaceAll(strings.TrimSpace(span[1]), "/", "-")}
+			times[app.Text(ann["ann_id"])] = [2]string{strings.ReplaceAll(strings.TrimSpace(span[0]), "/", "-"), strings.ReplaceAll(strings.TrimSpace(span[1]), "/", "-")}
 		}
 	}
 	return times, gacha

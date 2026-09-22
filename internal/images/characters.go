@@ -3,7 +3,7 @@ package images
 import (
 	"strings"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // commonItemArtwork is miao's shared item frames and fonts the roster pages
@@ -39,12 +39,12 @@ func trailblazer(id string) bool { return len(id) == 4 && strings.HasPrefix(id, 
 // does for Star Rail: the profile banner with nickname and level, the
 // five-star and gold card counts, and every character as an avatar card,
 // strongest first. miao reads none of Star Rail's other index counts.
-func Characters(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Characters(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	list, _ := result.Data["avatar_list"].([]any)
 	if len(list) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range commonItemArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -82,7 +82,7 @@ func Characters(context gamekit.ImageContext, result gamekit.QueryResult) (gamek
 	// character's face.
 	player["banner"] = resources.Artwork("banner", "miao-plugin", "resources/meta-sr/character/common/imgs/banner.webp")
 	player["face"] = entries[0].card["face"]
-	return gamekit.Image{Template: "characters", Data: map[string]any{
+	return app.Image{Template: "characters", Data: map[string]any{
 		"uid": result.Role.UID, "player": player, "stats": stats, "avatars": avatars, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"),
 	}, Resources: resources.List}, true
 }
@@ -98,12 +98,12 @@ var (
 // Rail: every character in miao's order with level, eidolons, the four skills
 // coloured by their original level, the light cone, and the relic sets with
 // the pinned scoring's grade and score.
-func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	list, _ := result.Data["avatar_list"].([]any)
 	if len(list) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range commonItemArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
@@ -116,19 +116,19 @@ func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 			level, original := any("-"), 1
 			if index < len(levels) {
 				talent := levels[index].(map[string]any)
-				level, original = talent["level"], gamekit.Int(talent["original"])
+				level, original = talent["level"], app.Int(talent["original"])
 			}
 			steps := trainingLevels
 			if key == "a" {
 				steps = trainingAttackLevels
 			}
-			talents = append(talents, map[string]any{"level": level, "class": steps[min(max(original, 0), len(steps)-1)], "plus": gamekit.Int(level) > original})
+			talents = append(talents, map[string]any{"level": level, "class": steps[min(max(original, 0), len(steps)-1)], "plus": app.Int(level) > original})
 		}
 		row := map[string]any{"no": len(rows) + 1, "star": item.star, "face": card["face"], "name": card["abbr"], "level": item.level, "cons": item.cons,
 			"talents": talents, "artis": card["artis"]}
 		if weapon, _ := card["weapon"].(map[string]any); weapon != nil {
 			row["weapon"] = map[string]any{"star": weapon["star"], "level": weapon["level"], "icon": weapon["small"], "affix": weapon["affix"],
-				"badge": gamekit.Int(weapon["affix"]) + 1, "name": weapon["name"]}
+				"badge": app.Int(weapon["affix"]) + 1, "name": weapon["name"]}
 		}
 		// Characters with relics get the pinned scoring's grade and score.
 		if item.panel != nil && len(item.panel.Equipment) > 0 && context.Score != nil {
@@ -138,7 +138,7 @@ func Training(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit
 		}
 		rows = append(rows, row)
 	}
-	return gamekit.Image{Template: "training", Data: map[string]any{
+	return app.Image{Template: "training", Data: map[string]any{
 		"uid": result.Role.UID, "count": len(rows), "rows": rows, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"),
 	}, Resources: resources.List}, true
 }

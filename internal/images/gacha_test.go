@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/gacha"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/plugin-starrail/internal/gacha"
 )
 
 func TestGachaFollowsStarRailPlugin(t *testing.T) {
-	banner := gamekit.PoolInfo{Version: "2.0", Half: "上半", From: "2024-02-06 12:00:00", To: "2024-02-26 14:59:59", Characters5: []string{"花火"}}
-	context := gamekit.ImageContext{Game: gamekit.Game{Data: &gamekit.GameData{Resources: gamekit.GameResources{Pools: []gamekit.PoolInfo{banner}}}}, Now: time.Date(2026, 9, 21, 12, 0, 0, 0, chinaTime)}
+	banner := app.PoolInfo{Version: "2.0", Half: "上半", From: "2024-02-06 12:00:00", To: "2024-02-26 14:59:59", Characters5: []string{"花火"}}
+	context := app.ImageContext{Game: app.Game{Data: &app.GameData{Resources: app.GameResources{Pools: []app.PoolInfo{banner}}}}, Now: time.Date(2026, 9, 21, 12, 0, 0, 0, chinaTime)}
 	records := []gacha.Record{}
 	add := func(count int, name, rank, itemType string) {
 		for range count {
@@ -25,7 +25,7 @@ func TestGachaFollowsStarRailPlugin(t *testing.T) {
 	add(1, "花火", "5", "角色")
 	add(5, "锋镝", "3", "光锥")
 
-	image, ok := Gacha(context, gamekit.GachaImage{UID: "100000001", Word: "跃迁记录", Archive: gacha.Archive{Records: records}})
+	image, ok := Gacha(context, app.GachaImage{UID: "100000001", Word: "跃迁记录", Archive: gacha.Archive{Records: records}})
 	if !ok || image.Data["overview"] != true || image.Data["total"] != 85 || image.Data["pity_role"] != 5 || image.Data["current_total"] != 0 {
 		t.Fatalf("data = %v", image.Data)
 	}
@@ -43,7 +43,7 @@ func TestGachaFollowsStarRailPlugin(t *testing.T) {
 		t.Errorf("overview cards = %v", shown)
 	}
 
-	image, _ = Gacha(context, gamekit.GachaImage{Word: "角色记录", Archive: gacha.Archive{Records: records}})
+	image, _ = Gacha(context, app.GachaImage{Word: "角色记录", Archive: gacha.Archive{Records: records}})
 	groups := image.Data["lists"].([]any)[0].(map[string]any)["groups"].([]any)
 	group := groups[0].(map[string]any)
 	if image.Data["overview"] != false || len(groups) != 1 || group["total"] != 85 || group["pool"].(map[string]any)["version"] != "2.0" {

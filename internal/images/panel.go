@@ -7,8 +7,8 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	gamekit "github.com/RayleaBot/game-plugin-kit"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/plugin-starrail/internal/reference"
 )
 
 // panelArtwork maps the miao images named in the panel stylesheet to their
@@ -64,10 +64,10 @@ var panelSources = map[string]string{"mihoyo": "mysPanelHSR", "enka": "enka", "m
 // Rail: the splash with level, eidolons and attributes, eidolon icons,
 // skills and traces, the light cone, the relic rating with every substat,
 // the six relics, and the reference damage table.
-func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Image, bool) {
+func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	panel, record := image.Panel, image.Record
 	if record.Name == "" {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	resources := []rayleabot.RenderImageResource{}
 	add := func(id, name string) {
@@ -91,7 +91,7 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 	case "欢愉":
 		talentKeys = append(talentKeys, [2]string{"xe", "欢愉技"})
 	}
-	levels := gamekit.PanelTalents("starrail", panel, record)
+	levels := app.PanelTalents("starrail", panel, record)
 	talents := []any{}
 	for _, talent := range talentKeys {
 		level := levels[talent[0]]
@@ -104,7 +104,7 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 	for index := 1; index <= 6; index++ {
 		id := "cons-" + strconv.Itoa(index)
 		file := images + id + ".webp"
-		if raised := gamekit.Text(talentCons[strconv.Itoa(index)]); index == 3 || index == 5 {
+		if raised := app.Text(talentCons[strconv.Itoa(index)]); index == 3 || index == 5 {
 			file = images + "talent-" + raised + ".webp"
 		}
 		add(id, file)
@@ -137,16 +137,16 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 	if image.Change != "" {
 		data["change"] = image.Change
 	}
-	return gamekit.Image{Template: "panel", Data: data, Resources: resources}, true
+	return app.Image{Template: "panel", Data: data, Resources: resources}, true
 }
 
 // traces lays out the trace tree as upstream does: ten stat nodes in pairs
 // around the three ability nodes, each lit when unlocked.
-func traces(panel gamekit.CharacterPanel, record reference.Character, images string, add func(id, name string)) []any {
+func traces(panel app.CharacterPanel, record reference.Character, images string, add func(id, name string)) []any {
 	lit := map[string]bool{}
 	for _, skill := range panel.Skills {
 		if skill.Active && skill.PointType != 2 && skill.ID != "" {
-			if match := treeSuffix.FindStringSubmatch(gamekit.RecordSkillID("starrail", panel, record, skill)); match != nil {
+			if match := treeSuffix.FindStringSubmatch(app.RecordSkillID("starrail", panel, record, skill)); match != nil {
 				lit[match[1]] = true
 			}
 		}
@@ -156,7 +156,7 @@ func traces(panel gamekit.CharacterPanel, record reference.Character, images str
 	for id, raw := range tree {
 		if match := treeSuffix.FindStringSubmatch(id); match != nil && match[1][0] == '2' {
 			node, _ := raw.(map[string]any)
-			statIcon[match[1]] = "resources/meta-sr/public/icons/tree-" + gamekit.Text(node["key"]) + ".webp"
+			statIcon[match[1]] = "resources/meta-sr/public/icons/tree-" + app.Text(node["key"]) + ".webp"
 		}
 	}
 	groups := make([][]any, 9)
@@ -184,8 +184,8 @@ func traces(panel gamekit.CharacterPanel, record reference.Character, images str
 	return result
 }
 
-func attributes(panel gamekit.CharacterPanel, record reference.Character) []any {
-	stats := map[string]gamekit.PanelStat{}
+func attributes(panel app.CharacterPanel, record reference.Character) []any {
+	stats := map[string]app.PanelStat{}
 	for _, stat := range panel.Stats {
 		stats[stat.ID] = stat
 	}
@@ -216,9 +216,9 @@ func attributes(panel gamekit.CharacterPanel, record reference.Character) []any 
 
 // lightCone is the light cone card: miao's splash, its three base stats and
 // the skill text with this superimposition's values.
-func lightCone(context gamekit.ImageContext, weapon *gamekit.PanelEquipment, add func(id, name string)) map[string]any {
+func lightCone(context app.ImageContext, weapon *app.PanelEquipment, add func(id, name string)) map[string]any {
 	result := map[string]any{"name": weapon.Name, "level": weapon.Level, "affix": weapon.Refinement}
-	for _, stat := range append(append([]gamekit.PanelStat{}, weapon.Main...), weapon.Sub...) {
+	for _, stat := range append(append([]app.PanelStat{}, weapon.Main...), weapon.Sub...) {
 		if key := strings.TrimSuffix(stat.Key, "Plus"); key == "hp" || key == "atk" || key == "def" {
 			result[key] = statText(stat.Value)
 		}
@@ -233,14 +233,14 @@ func lightCone(context gamekit.ImageContext, weapon *gamekit.PanelEquipment, add
 		add("weapon-splash", "resources/meta-sr/weapon/"+entry.Type+"/"+entry.Name+"/splash.webp")
 		skill, _ := entry.Data["skill"].(map[string]any)
 		tables, _ := skill["tables"].(map[string]any)
-		desc := skillPlaceholder.ReplaceAllStringFunc(gamekit.Text(skill["desc"]), func(match string) string {
+		desc := skillPlaceholder.ReplaceAllStringFunc(app.Text(skill["desc"]), func(match string) string {
 			parts := skillPlaceholder.FindStringSubmatch(match)
 			series, _ := tables[parts[1]].([]any)
 			index := weapon.Refinement - 1
 			if index < 0 || index >= len(series) {
 				return ""
 			}
-			value, _ := strconv.ParseFloat(gamekit.Text(series[index]), 64)
+			value, _ := strconv.ParseFloat(app.Text(series[index]), 64)
 			if parts[3] == "%" {
 				digits := 1
 				if parts[2] == "f2" {
@@ -265,7 +265,7 @@ func lightCone(context gamekit.ImageContext, weapon *gamekit.PanelEquipment, add
 }
 
 // rating is the relic rating block and the six relics.
-func rating(panel gamekit.CharacterPanel, detail *gamekit.ScoreDetail, add func(id, name string)) (map[string]any, []any) {
+func rating(panel app.CharacterPanel, detail *app.ScoreDetail, add func(id, name string)) (map[string]any, []any) {
 	class := func(key string) string {
 		switch w := detail.Weights[key]; {
 		case w > 79.9:
@@ -291,7 +291,7 @@ func rating(panel gamekit.CharacterPanel, detail *gamekit.ScoreDetail, add func(
 	pieces := []any{}
 	for slot := 1; slot <= 6; slot++ {
 		piece, scored := detail.Pieces[slot]
-		var equipment *gamekit.PanelEquipment
+		var equipment *app.PanelEquipment
 		for index := range panel.Equipment {
 			if panel.Equipment[index].Slot == slot {
 				equipment = &panel.Equipment[index]
@@ -313,7 +313,7 @@ func rating(panel gamekit.CharacterPanel, detail *gamekit.ScoreDetail, add func(
 	return map[string]any{"mark": detail.Mark, "grade": detail.Grade, "rule": detail.Title, "all": all}, pieces
 }
 
-func damage(result *gamekit.BuildResult) map[string]any {
+func damage(result *app.BuildResult) map[string]any {
 	rows := []any{}
 	for index, item := range result.Baseline.Results {
 		row := map[string]any{"index": index + 1, "title": item.Title}
@@ -362,11 +362,11 @@ func comma(value float64) string {
 // abbreviation is the short name upstream uses in command hints and cards:
 // miao's abbreviation when the name has one, otherwise the full name, as
 // miao's character model does.
-func abbreviation(catalog gamekit.Catalog, record reference.Character) string {
+func abbreviation(catalog app.Catalog, record reference.Character) string {
 	if entry, ok := catalog.Get(record.ID); ok && entry.Abbr != "" {
 		return entry.Abbr
 	}
-	if abbr := gamekit.Text(record.Data["abbr"]); abbr != "" {
+	if abbr := app.Text(record.Data["abbr"]); abbr != "" {
 		return abbr
 	}
 	return record.Name

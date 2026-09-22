@@ -3,13 +3,13 @@ package images_test
 import (
 	"testing"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 	"github.com/RayleaBot/plugin-starrail/internal/images"
 )
 
 func TestHelpFollowsStarRailPlugin(t *testing.T) {
-	help := gamekit.HelpImage{Title: "星铁帮助", Groups: []gamekit.HelpGroup{{Title: "战绩", Commands: []gamekit.HelpCommand{{ID: "challenge", Usage: "*忘却之庭"}, {ID: "gears", Usage: "*黄金"}}}}}
-	image, ok := images.Help(gamekit.ImageContext{}, help)
+	help := app.HelpImage{Title: "星铁帮助", Groups: []app.HelpGroup{{Title: "战绩", Commands: []app.HelpCommand{{ID: "challenge", Usage: "*忘却之庭"}, {ID: "gears", Usage: "*黄金"}}}}}
+	image, ok := images.Help(app.ImageContext{}, help)
 	if !ok {
 		t.Fatal("help")
 	}

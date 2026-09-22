@@ -1,7 +1,7 @@
 package images
 
 import (
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // peakArtwork maps the fixed images of the Anomaly Arbitration pages to their
@@ -23,14 +23,14 @@ var peakArtwork = [][2]string{
 // the current or last run, and peak_recent with the three recent runs side by
 // side for 往期. Each run shows its rank and theme, the King's and Knights'
 // stars, then the King and every Knight with rounds, stars, team and buff.
-func Peak(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Peak(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	records, _ := result.Data["challenge_peak_records"].([]any)
-	period := gamekit.Int(context.Input["schedule_type"])
+	period := app.Int(context.Input["schedule_type"])
 	switch period {
 	case 2:
 		// The last run is the second of the recent runs.
 		if len(records) < 2 {
-			return gamekit.Image{}, false
+			return app.Image{}, false
 		}
 		records = records[1:2]
 	case 3:
@@ -39,7 +39,7 @@ func Peak(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 		records = records[:min(len(records), 1)]
 	}
 	if len(records) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 
 	resources := newChallengeResources(context)
@@ -66,20 +66,20 @@ func Peak(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 		from, _ := challengeTime(group["begin_time"])
 		to, _ := challengeTime(group["end_time"])
 		bossRecord, _ := record["boss_record"].(map[string]any)
-		rank := gamekit.Text(group["theme_pic_path"])
+		rank := app.Text(group["theme_pic_path"])
 		battles := ""
 		if brief != nil {
-			rank, battles = gamekit.Text(brief["challenge_peak_rank_icon"]), gamekit.Text(brief["total_battle_num"])
+			rank, battles = app.Text(brief["challenge_peak_rank_icon"]), app.Text(brief["total_battle_num"])
 		} else if bossRecord != nil {
-			rank = gamekit.Text(bossRecord["challenge_peak_rank_icon"])
+			rank = app.Text(bossRecord["challenge_peak_rank_icon"])
 		}
 
 		info, _ := record["boss_info"].(map[string]any)
 		cleared, _ := bossRecord["has_challenge_record"].(bool)
 		hard, _ := bossRecord["hard_mode"].(bool)
-		boss := map[string]any{"hell": cleared && hard, "cleared": cleared, "name": gamekit.Text(info["name_mi18n"]), "icon": resources.official(info["icon"])}
+		boss := map[string]any{"hell": cleared && hard, "cleared": cleared, "name": app.Text(info["name_mi18n"]), "icon": resources.official(info["icon"])}
 		if cleared {
-			boss["rounds"], boss["stars"], boss["time"] = gamekit.Text(bossRecord["round_num"]), stars("boss-star", gamekit.Int(bossRecord["star_num"])), challengeClock(bossRecord)
+			boss["rounds"], boss["stars"], boss["time"] = app.Text(bossRecord["round_num"]), stars("boss-star", app.Int(bossRecord["star_num"])), challengeClock(bossRecord)
 			boss["avatars"], boss["buff"] = resources.team(bossRecord), resources.buff(bossRecord)
 		}
 
@@ -94,18 +94,18 @@ func Peak(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 			}
 			fast, _ := mobRecord["is_fast"].(bool)
 			cleared, _ := mobRecord["has_challenge_record"].(bool)
-			mob := map[string]any{"title": gamekit.Text(info["name"]) + ": " + gamekit.Text(info["monster_name"]), "icon": resources.official(info["monster_icon"]),
+			mob := map[string]any{"title": app.Text(info["name"]) + ": " + app.Text(info["monster_name"]), "icon": resources.official(info["monster_icon"]),
 				"fast": fast, "cleared": cleared}
 			if cleared && !fast {
-				mob["rounds"], mob["stars"], mob["time"], mob["avatars"] = gamekit.Text(mobRecord["round_num"]), stars("rogue-star", gamekit.Int(mobRecord["star_num"])), challengeClock(mobRecord), resources.team(mobRecord)
+				mob["rounds"], mob["stars"], mob["time"], mob["avatars"] = app.Text(mobRecord["round_num"]), stars("rogue-star", app.Int(mobRecord["star_num"])), challengeClock(mobRecord), resources.team(mobRecord)
 			}
 			mobs = append(mobs, mob)
 		}
 
 		runs = append(runs, map[string]any{"begin": from.Format("2006.01.02"), "end": to.Format("2006.01.02"),
 			"rank_icon": resources.official(rank), "theme": resources.official(group["theme_pic_path"]),
-			"boss_stars": gamekit.Text(record["boss_stars"]), "mob_stars": gamekit.Text(record["mob_stars"]),
-			"version": gamekit.Text(group["game_version"]), "name": gamekit.Text(group["name_mi18n"]), "battles": battles,
+			"boss_stars": app.Text(record["boss_stars"]), "mob_stars": app.Text(record["mob_stars"]),
+			"version": app.Text(group["game_version"]), "name": app.Text(group["name_mi18n"]), "battles": battles,
 			"boss": boss, "mobs": mobs})
 	}
 
@@ -116,5 +116,5 @@ func Peak(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Ima
 	case 3:
 		template, tag = "peak-recent", "最近三期"
 	}
-	return gamekit.Image{Template: template, Data: map[string]any{"uid": result.Role.UID, "tag": tag, "records": runs}, Resources: resources.List}, true
+	return app.Image{Template: template, Data: map[string]any{"uid": result.Role.UID, "tag": tag, "records": runs}, Resources: resources.List}, true
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // challengeKind is one of the three records StarRail-plugin draws with
@@ -64,35 +64,35 @@ func latestChallenge(now time.Time) challengeKind {
 
 // challengeImage draws a record the way StarRail-plugin's challenge command
 // does.
-func challengeImage(kind challengeKind) gamekit.ImageBuilder {
-	return func(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func challengeImage(kind challengeKind) app.ImageBuilder {
+	return func(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 		resources := newChallengeResources(context)
 		record, ok := challengeRecordData(context, kind, result.Data, resources)
 		if !ok {
-			return gamekit.Image{}, false
+			return app.Image{}, false
 		}
 		record["uid"], record["period"] = result.Role.UID, challengePeriod(context)
-		return gamekit.Image{Template: "challenge", Data: record, Resources: resources.List}, true
+		return app.Image{Template: "challenge", Data: record, Resources: resources.List}, true
 	}
 }
 
 // latestChallengeImage draws 最新深渊 as the record that ran.
-func latestChallengeImage(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func latestChallengeImage(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	for _, kind := range challengeKinds {
 		if kind.operation == result.Operation {
 			return challengeImage(kind)(context, result)
 		}
 	}
-	return gamekit.Image{}, false
+	return app.Image{}, false
 }
 
 // allChallengesImage draws 深渊 the way upstream's index_all does: Memory of
 // Chaos, Apocalyptic Shadow and Pure Fiction of the same period side by side.
 // Upstream answers nothing when one of them fails; this reply falls back to
 // Memory of Chaos in text.
-func allChallengesImage(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func allChallengesImage(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	if context.Query == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	resources := newChallengeResources(context)
 	resources.local("all-bg", "resources/challenge/images/pc_bg.46428ec0.png")
@@ -102,13 +102,13 @@ func allChallengesImage(context gamekit.ImageContext, result gamekit.QueryResult
 		if kind != memoryOfChaos {
 			other, err := context.Query(kind.operation, context.Input)
 			if err != nil {
-				return gamekit.Image{}, false
+				return app.Image{}, false
 			}
 			data = other.Data
 		}
 		record, ok := challengeRecordData(context, kind, data, resources)
 		if !ok {
-			return gamekit.Image{}, false
+			return app.Image{}, false
 		}
 		// Only the Apocalyptic Shadow column shows the period's bosses.
 		if kind != apocalypticShadow {
@@ -116,11 +116,11 @@ func allChallengesImage(context gamekit.ImageContext, result gamekit.QueryResult
 		}
 		records = append(records, record)
 	}
-	return gamekit.Image{Template: "challenge-all", Data: map[string]any{"uid": result.Role.UID, "period": challengePeriod(context), "records": records}, Resources: resources.List}, true
+	return app.Image{Template: "challenge-all", Data: map[string]any{"uid": result.Role.UID, "period": challengePeriod(context), "records": records}, Resources: resources.List}, true
 }
 
-func challengePeriod(context gamekit.ImageContext) string {
-	if gamekit.Int(context.Input["schedule_type"]) == 2 {
+func challengePeriod(context app.ImageContext) string {
+	if app.Int(context.Input["schedule_type"]) == 2 {
 		return "上期"
 	}
 	return "本期"
@@ -130,8 +130,8 @@ func challengePeriod(context gamekit.ImageContext) string {
 // NEW or EXPIRING mark, the stars, deepest floor and battles, the bosses of
 // the period, then every floor not skipped with its stars or score and each
 // node's time, team and buff.
-func challengeRecordData(context gamekit.ImageContext, kind challengeKind, data map[string]any, resources *challengeResources) (map[string]any, bool) {
-	current := gamekit.Int(context.Input["schedule_type"]) != 2
+func challengeRecordData(context app.ImageContext, kind challengeKind, data map[string]any, resources *challengeResources) (map[string]any, bool) {
+	current := app.Int(context.Input["schedule_type"]) != 2
 	// Pure Fiction and Apocalyptic Shadow list both periods; upstream keeps
 	// the one the command asked for.
 	groups, _ := data["groups"].([]any)
@@ -145,7 +145,7 @@ func challengeRecordData(context gamekit.ImageContext, kind challengeKind, data 
 			want = "End"
 		}
 		for _, raw := range groups {
-			if item, _ := raw.(map[string]any); gamekit.Text(item["status"]) == want {
+			if item, _ := raw.(map[string]any); app.Text(item["status"]) == want {
 				group = item
 				break
 			}
@@ -183,7 +183,7 @@ func challengeRecordData(context gamekit.ImageContext, kind challengeKind, data 
 			if boss == nil {
 				continue
 			}
-			bosses = append(bosses, map[string]any{"label": "节点" + strconv.Itoa(index+1), "name": gamekit.Text(boss["name_mi18n"]),
+			bosses = append(bosses, map[string]any{"label": "节点" + strconv.Itoa(index+1), "name": app.Text(boss["name_mi18n"]),
 				"icon": resources.official(boss["icon"]), "third": index == 2})
 		}
 	}
@@ -197,7 +197,7 @@ func challengeRecordData(context gamekit.ImageContext, kind challengeKind, data 
 		}
 		tierce, _ := floor["is_tierce"].(bool)
 		stars := []any{}
-		normal, extra := gamekit.Int(floor["star_num"]), gamekit.Int(floor["extra_star_num"])
+		normal, extra := app.Int(floor["star_num"]), app.Int(floor["extra_star_num"])
 		if tierce {
 			normal -= extra
 		}
@@ -217,11 +217,11 @@ func challengeRecordData(context gamekit.ImageContext, kind challengeKind, data 
 			}
 			nodeScore := ""
 			if value := node["score"]; value != nil {
-				nodeScore = gamekit.Text(value)
+				nodeScore = app.Text(value)
 				// Upstream totals the nodes when the first has a score, and
 				// counts the third only on floors that have one.
 				if kind.scored && (index == 0 || scored && (index == 1 || tierce)) {
-					score += gamekit.Int(value)
+					score += app.Int(value)
 					scored = true
 				}
 			}
@@ -235,15 +235,15 @@ func challengeRecordData(context gamekit.ImageContext, kind challengeKind, data 
 		if scored {
 			total = strconv.Itoa(score)
 		}
-		floors = append(floors, map[string]any{"name": gamekit.Text(floor["name"]), "has_round": hasRound, "round": gamekit.Text(floor["round_num"]),
+		floors = append(floors, map[string]any{"name": app.Text(floor["name"]), "has_round": hasRound, "round": app.Text(floor["round_num"]),
 			"stars": stars, "score": total, "nodes": nodes})
 	}
 
 	return map[string]any{
 		"kind": kind.class, "title": kind.title, "badge": badge,
 		"begin": from.Format("2006.01.02"), "end": to.Format("2006.01.02"),
-		"star_num": gamekit.Int(data["star_num"]), "extra_star_num": gamekit.Int(data["extra_star_num"]),
-		"max_floor": gamekit.Text(data["max_floor"]), "battle_num": gamekit.Text(data["battle_num"]),
+		"star_num": app.Int(data["star_num"]), "extra_star_num": app.Int(data["extra_star_num"]),
+		"max_floor": app.Text(data["max_floor"]), "battle_num": app.Text(data["battle_num"]),
 		"bosses": bosses, "floors": floors,
 	}, true
 }
@@ -251,11 +251,11 @@ func challengeRecordData(context gamekit.ImageContext, kind challengeKind, data 
 // challengeTime reads the official {year, month, day, hour, minute} time.
 func challengeTime(value any) (time.Time, bool) {
 	fields, _ := value.(map[string]any)
-	year := gamekit.Int(fields["year"])
+	year := app.Int(fields["year"])
 	if year == 0 {
 		return time.Time{}, false
 	}
-	return time.Date(year, time.Month(gamekit.Int(fields["month"])), gamekit.Int(fields["day"]), gamekit.Int(fields["hour"]), gamekit.Int(fields["minute"]), 0, 0, chinaTime), true
+	return time.Date(year, time.Month(app.Int(fields["month"])), app.Int(fields["day"]), app.Int(fields["hour"]), app.Int(fields["minute"]), 0, 0, chinaTime), true
 }
 
 // challengeClock formats when a node or record was cleared; quick clears
@@ -270,10 +270,10 @@ func challengeClock(record map[string]any) string {
 // challengeResources collects a challenge image's resources: StarRail-plugin
 // art, element icons, and the official images the response links to, cached
 // on demand.
-type challengeResources struct{ gamekit.ImageResources }
+type challengeResources struct{ app.ImageResources }
 
-func newChallengeResources(context gamekit.ImageContext) *challengeResources {
-	return &challengeResources{gamekit.ImageResources{Context: context}}
+func newChallengeResources(context app.ImageContext) *challengeResources {
+	return &challengeResources{app.ImageResources{Context: context}}
 }
 
 func (r *challengeResources) local(id, name string) string {
@@ -289,8 +289,8 @@ func (r *challengeResources) team(record map[string]any) []any {
 	avatars, _ := record["avatars"].([]any)
 	for _, raw := range avatars {
 		avatar, _ := raw.(map[string]any)
-		element := strings.ToLower(gamekit.Text(avatar["element"]))
-		list = append(list, map[string]any{"rarity": gamekit.Int(avatar["rarity"]), "rank": gamekit.Int(avatar["rank"]), "level": gamekit.Text(avatar["level"]),
+		element := strings.ToLower(app.Text(avatar["element"]))
+		list = append(list, map[string]any{"rarity": app.Int(avatar["rarity"]), "rank": app.Int(avatar["rank"]), "level": app.Text(avatar["level"]),
 			"element": r.local("element-"+element, "resources/common/element/"+element+".png"), "icon": r.official(avatar["icon"])})
 	}
 	return list
@@ -302,5 +302,5 @@ func (r *challengeResources) buff(record map[string]any) any {
 	if buff == nil {
 		return nil
 	}
-	return map[string]any{"icon": r.official(buff["icon"]), "name": gamekit.Text(buff["name_mi18n"]), "desc": gamekit.Text(buff["desc_mi18n"])}
+	return map[string]any{"icon": r.official(buff["icon"]), "name": app.Text(buff["name_mi18n"]), "desc": app.Text(buff["desc_mi18n"])}
 }

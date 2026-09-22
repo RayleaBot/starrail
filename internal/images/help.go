@@ -3,7 +3,7 @@ package images
 import (
 	"fmt"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // helpIcons gives each command the icon of the StarRail-plugin help entry
@@ -35,11 +35,11 @@ var helpArtwork = [][2]string{
 // Help draws the help menu the way StarRail-plugin's help/index does: the
 // title bar, then each group as a table of three columns, each command with
 // its icon, usage and description, on its default theme.
-func Help(context gamekit.ImageContext, help gamekit.HelpImage) (gamekit.Image, bool) {
+func Help(context app.ImageContext, help app.HelpImage) (app.Image, bool) {
 	if len(help.Groups) == 0 {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
-	resources := &gamekit.ImageResources{Context: context}
+	resources := &app.ImageResources{Context: context}
 	for _, item := range helpArtwork {
 		resources.Artwork(item[0], "starrail-plugin", item[1])
 	}
@@ -66,5 +66,5 @@ func Help(context gamekit.ImageContext, help gamekit.HelpImage) (gamekit.Image, 
 		}
 		groups = append(groups, map[string]any{"title": group.Title, "rows": rows})
 	}
-	return gamekit.Image{Template: "help", Data: map[string]any{"title": help.Title, "subtitle": help.Subtitle, "groups": groups}, Resources: resources.List}, true
+	return app.Image{Template: "help", Data: map[string]any{"title": help.Title, "subtitle": help.Subtitle, "groups": groups}, Resources: resources.List}, true
 }

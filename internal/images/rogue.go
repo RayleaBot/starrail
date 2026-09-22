@@ -3,7 +3,7 @@ package images
 import (
 	"strconv"
 
-	gamekit "github.com/RayleaBot/game-plugin-kit"
+	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
 // rogueArtwork maps the images the rogue page names to StarRail-plugin's
@@ -20,14 +20,14 @@ var rogueArtwork = [][2]string{
 // does: the unlocked skill points, Curios and Blessings, the period and its
 // clears, then every run with its world, difficulty, score, time, lineup,
 // Path resonances, Blessings by Path and Curios.
-func Rogue(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Rogue(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	// The kit keeps the asked period only; upstream reads both as last_record.
 	record, _ := result.Data["current_record"].(map[string]any)
 	if record == nil {
 		record, _ = result.Data["last_record"].(map[string]any)
 	}
 	if record == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	resources := newChallengeResources(context)
 	for _, item := range rogueArtwork {
@@ -38,16 +38,16 @@ func Rogue(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Im
 	for _, raw := range list {
 		run, _ := raw.(map[string]any)
 		entry := resources.rogueRun(run)
-		entry["name"], entry["difficulty"], entry["score"] = gamekit.Text(run["name"]), gamekit.Text(run["difficulty"]), gamekit.Text(run["score"])
+		entry["name"], entry["difficulty"], entry["score"] = app.Text(run["name"]), app.Text(run["difficulty"]), app.Text(run["score"])
 		runs = append(runs, entry)
 	}
 	role, _ := result.Data["role"].(map[string]any)
 	basic, _ := result.Data["basic_info"].(map[string]any)
 	summary, _ := record["basic"].(map[string]any)
-	return gamekit.Image{Template: "rogue", Data: map[string]any{
-		"uid": result.Role.UID, "nickname": gamekit.Text(role["nickname"]), "level": gamekit.Text(role["level"]),
-		"skill_points": gamekit.Text(basic["unlocked_skill_points"]), "miracles": gamekit.Text(basic["unlocked_miracle_num"]), "buffs": gamekit.Text(basic["unlocked_buff_num"]),
-		"begin": rogueDate(summary["schedule_begin"]), "end": rogueDate(summary["schedule_end"]), "finished": gamekit.Text(summary["finish_cnt"]), "runs": runs,
+	return app.Image{Template: "rogue", Data: map[string]any{
+		"uid": result.Role.UID, "nickname": app.Text(role["nickname"]), "level": app.Text(role["level"]),
+		"skill_points": app.Text(basic["unlocked_skill_points"]), "miracles": app.Text(basic["unlocked_miracle_num"]), "buffs": app.Text(basic["unlocked_buff_num"]),
+		"begin": rogueDate(summary["schedule_begin"]), "end": rogueDate(summary["schedule_end"]), "finished": app.Text(summary["finish_cnt"]), "runs": runs,
 	}, Resources: resources.List}, true
 }
 
@@ -67,7 +67,7 @@ func (r *challengeResources) rogueRun(run map[string]any) map[string]any {
 	baseList, _ := run["base_type_list"].([]any)
 	for _, rawBase := range baseList {
 		base, _ := rawBase.(map[string]any)
-		bases = append(bases, map[string]any{"icon": r.pathIcon(gamekit.Text(base["name"])), "count": gamekit.Text(base["cnt"])})
+		bases = append(bases, map[string]any{"icon": r.pathIcon(app.Text(base["name"])), "count": app.Text(base["cnt"])})
 	}
 	buffs := []any{}
 	buffList, _ := run["buffs"].([]any)
@@ -79,9 +79,9 @@ func (r *challengeResources) rogueRun(run map[string]any) map[string]any {
 		for _, rawItem := range entries {
 			item, _ := rawItem.(map[string]any)
 			evolved, _ := item["is_evoluted"].(bool)
-			items = append(items, map[string]any{"name": gamekit.Text(item["name"]), "rank": gamekit.Text(item["rank"]), "evolved": evolved})
+			items = append(items, map[string]any{"name": app.Text(item["name"]), "rank": app.Text(item["rank"]), "evolved": evolved})
 		}
-		name := gamekit.Text(baseType["name"])
+		name := app.Text(baseType["name"])
 		buffs = append(buffs, map[string]any{"icon": r.pathIcon(name), "name": name, "items": items})
 	}
 	miracles := []any{}
@@ -91,8 +91,8 @@ func (r *challengeResources) rogueRun(run map[string]any) map[string]any {
 		miracles = append(miracles, r.official(miracle["icon"]))
 	}
 	finish, _ := run["finish_time"].(map[string]any)
-	time := gamekit.Text(finish["year"]) + "." + gamekit.Text(finish["month"]) + "." + gamekit.Text(finish["day"]) + " " +
-		gamekit.Text(finish["hour"]) + ":" + gamekit.Text(finish["minute"]) + ":" + gamekit.Text(finish["second"])
+	time := app.Text(finish["year"]) + "." + app.Text(finish["month"]) + "." + app.Text(finish["day"]) + " " +
+		app.Text(finish["hour"]) + ":" + app.Text(finish["minute"]) + ":" + app.Text(finish["second"])
 	return map[string]any{"time": time, "lineup": r.lineup(run), "bases": bases, "buffs": buffs, "miracles": miracles}
 }
 
@@ -104,8 +104,8 @@ func (r *challengeResources) lineup(run map[string]any) []any {
 	avatars, _ := run["final_lineup"].([]any)
 	for _, raw := range avatars {
 		avatar, _ := raw.(map[string]any)
-		element := gamekit.Text(avatar["element"])
-		lineup = append(lineup, map[string]any{"rarity": gamekit.Int(avatar["rarity"]), "rank": gamekit.Int(avatar["rank"]), "level": gamekit.Text(avatar["level"]),
+		element := app.Text(avatar["element"])
+		lineup = append(lineup, map[string]any{"rarity": app.Int(avatar["rarity"]), "rank": app.Int(avatar["rank"]), "level": app.Text(avatar["level"]),
 			"icon": r.official(avatar["icon"]), "element": r.local("element-"+element, "resources/common/element/"+element+".png"), "element_name": element})
 	}
 	return lineup
@@ -114,7 +114,7 @@ func (r *challengeResources) lineup(run map[string]any) []any {
 // rogueDate writes a period date the way the pages do, unpadded.
 func rogueDate(value any) string {
 	fields, _ := value.(map[string]any)
-	return gamekit.Text(fields["year"]) + "." + gamekit.Text(fields["month"]) + "." + gamekit.Text(fields["day"])
+	return app.Text(fields["year"]) + "." + app.Text(fields["month"]) + "." + app.Text(fields["day"])
 }
 
 // swarmPaths are the radar's Paths in the order of the official destiny
@@ -140,11 +140,11 @@ var swarmArtwork = [][2]string{
 // the radar, then the last three runs with difficulty, time, lineup, Path
 // resonances, the disorder countdown or disturbance level, weakening effects,
 // stored characters, Blessings, Curios and the domain types passed.
-func Swarm(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Image, bool) {
+func Swarm(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	basic, _ := result.Data["basic"].(map[string]any)
 	detail, _ := result.Data["detail"].(map[string]any)
 	if basic == nil || detail == nil {
-		return gamekit.Image{}, false
+		return app.Image{}, false
 	}
 	resources := newChallengeResources(context)
 	for _, item := range swarmArtwork {
@@ -156,7 +156,7 @@ func Swarm(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Im
 		level := ""
 		if index < len(destinies) {
 			entry, _ := destinies[index].(map[string]any)
-			level = gamekit.Text(entry["level"])
+			level = app.Text(entry["level"])
 		}
 		radar[path[0]] = map[string]any{"icon": resources.pathIcon("「" + path[1] + "」"), "level": level}
 	}
@@ -169,29 +169,29 @@ func Swarm(context gamekit.ImageContext, result gamekit.QueryResult) (gamekit.Im
 		weak := []any{}
 		weakList, _ := run["worm_weak"].([]any)
 		for _, item := range weakList {
-			weak = append(weak, gamekit.Text(item))
+			weak = append(weak, app.Text(item))
 		}
 		cached := []any{}
 		cachedList, _ := run["cached_avatars"].([]any)
 		for _, rawAvatar := range cachedList {
 			avatar, _ := rawAvatar.(map[string]any)
-			cached = append(cached, map[string]any{"icon": resources.official(avatar["icon"]), "level": gamekit.Text(avatar["level"])})
+			cached = append(cached, map[string]any{"icon": resources.official(avatar["icon"]), "level": app.Text(avatar["level"])})
 		}
 		passed := []any{}
 		blockList, _ := run["blocks"].([]any)
 		for _, rawBlock := range blockList {
 			item, _ := rawBlock.(map[string]any)
-			name := gamekit.Text(item["name"])
-			passed = append(passed, map[string]any{"name": name, "num": gamekit.Text(item["num"]), "icon": resources.local("block-"+strconv.Itoa(len(resources.List)), "resources/rogue/locust/"+name+".png")})
+			name := app.Text(item["name"])
+			passed = append(passed, map[string]any{"name": name, "num": app.Text(item["num"]), "icon": resources.local("block-"+strconv.Itoa(len(resources.List)), "resources/rogue/locust/"+name+".png")})
 		}
-		entry["difficulty"], entry["countdown"], entry["fury"] = gamekit.Text(run["difficulty"]), gamekit.Int(fury["type"]) == 0, gamekit.Text(fury["point"])
+		entry["difficulty"], entry["countdown"], entry["fury"] = app.Text(run["difficulty"]), app.Int(fury["type"]) == 0, app.Text(fury["point"])
 		entry["weak"], entry["cached"], entry["blocks"] = weak, cached, passed
 		runs = append(runs, entry)
 	}
 	role, _ := result.Data["role"].(map[string]any)
 	counts, _ := basic["cnt"].(map[string]any)
-	return gamekit.Image{Template: "swarm", Data: map[string]any{
-		"uid": result.Role.UID, "nickname": gamekit.Text(role["nickname"]), "level": gamekit.Text(role["level"]),
-		"narrow": gamekit.Text(counts["narrow"]), "miracle": gamekit.Text(counts["miracle"]), "event": gamekit.Text(counts["event"]), "radar": radar, "runs": runs,
+	return app.Image{Template: "swarm", Data: map[string]any{
+		"uid": result.Role.UID, "nickname": app.Text(role["nickname"]), "level": app.Text(role["level"]),
+		"narrow": app.Text(counts["narrow"]), "miracle": app.Text(counts["miracle"]), "event": app.Text(counts["event"]), "radar": radar, "runs": runs,
 	}, Resources: resources.List}, true
 }

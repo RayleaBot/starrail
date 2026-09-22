@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/RayleaBot/game-plugin-kit/reference"
+	"github.com/RayleaBot/plugin-starrail/internal/reference"
 	"math"
 	"testing"
 )
