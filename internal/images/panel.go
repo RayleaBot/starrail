@@ -57,6 +57,9 @@ var (
 // chinaTime is the time zone the upstream images print times in.
 var chinaTime = time.FixedZone("UTC+8", 8*3600)
 
+// panelSources are miao's names for the services a panel came from.
+var panelSources = map[string]string{"mihoyo": "mysPanelHSR", "enka": "enka", "mihomo": "homo", "change": "面板变换"}
+
 // Panel draws a single character the way miao's profile-detail does for Star
 // Rail: the splash with level, eidolons and attributes, eidolon icons,
 // skills and traces, the light cone, the relic rating with every substat,
@@ -108,11 +111,17 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 		cons = append(cons, map[string]any{"icon": id, "off": index > panel.Rank})
 	}
 
+	// miao names a panel's source as its data services do, and a changed
+	// panel 面板变换.
+	updated := context.Now
+	if panel.UpdatedAtMS > 0 {
+		updated = time.UnixMilli(panel.UpdatedAtMS)
+	}
 	data := map[string]any{
 		"elem": elem, "name": record.Name, "uid": image.UID, "level": panel.Level, "cons": panel.Rank,
 		"memosprite": len(talentKeys) > 4, "talents": talents, "trees": traces(panel, record, images, add),
 		"attrs": attributes(panel, record), "cons_icons": cons,
-		"data_source": "mys", "update_time": context.Now.In(chinaTime).Format("2006-01-02 15:04:05"),
+		"data_source": panelSources[panel.Source], "update_time": updated.In(chinaTime).Format("2006-01-02 15:04:05"),
 		"artifact_hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "圣遗物",
 		"damage_hint":   context.Game.Prefix + abbreviation(context.Catalog, record) + "伤害",
 	}
@@ -124,6 +133,9 @@ func Panel(context gamekit.ImageContext, image gamekit.PanelImage) (gamekit.Imag
 	}
 	if image.Damage != nil {
 		data["damage"] = damage(image.Damage)
+	}
+	if image.Change != "" {
+		data["change"] = image.Change
 	}
 	return gamekit.Image{Template: "panel", Data: data, Resources: resources}, true
 }
