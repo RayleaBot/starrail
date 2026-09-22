@@ -4,7 +4,7 @@
 
 原神与星铁资料来自 miao-plugin，固定提交 7f6f1c84c89102bc6b1c58c8e1b06c61f4642161；保留 LICENSES/miao-plugin-MIT.txt。
 
-没有账号时的面板来自 Mihomo（api.mihomo.me）的 `sr_info_parsed` 中文接口（miao-plugin 星铁的默认面板服务；上游读取未合计的 `sr_info` 后自行合计属性），按五分钟缓存；天赋等级同 miao 的 HomoApi。`templates/panel-list/` 按 miao-plugin 的 `character/profile-list` 改写（MIT）。抽卡导入导出遵循 [UIGF](https://uigf.org/en/standards/uigf.html)，尚未申请兼容性认证。
+没有账号时的面板来自 Mihomo（api.mihomo.me）的 `sr_info_parsed` 中文接口（miao-plugin 星铁的默认面板服务；上游读取未合计的 `sr_info` 后自行合计属性），按五分钟缓存；天赋等级同 miao 的 HomoApi。`templates/panel-list/` 与 `templates/artifact-list/` 按 miao-plugin 的 `character/profile-list` 与 `character/artis-list` 改写（MIT；miao 没有星铁角色的侧脸图，列表不显示头像）。抽卡导入导出遵循 [UIGF](https://uigf.org/en/standards/uigf.html)，尚未申请兼容性认证。
 
 本插件及编译期业务库沿用 RayleaBot SDK 的 AGPL-3.0 许可，安装包管理页提供对应源码下载。上游数据的原许可声明另行保留。
 
