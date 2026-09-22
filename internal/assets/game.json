@@ -237,5 +237,14 @@
         "https://"
       ]
     }
-  ]
+  ],
+  "pictures": {
+    "photos": [],
+    "atlas": [
+      {
+        "source": "star-rail-atlas",
+        "index": "path.json"
+      }
+    ]
+  }
 }
