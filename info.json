@@ -28,8 +28,7 @@
     "message.private",
     "message.group",
     "config.changed",
-    "scheduler.trigger",
-    "notice.poke"
+    "scheduler.trigger"
   ],
   "default_config": {
     "account_provider": "raylea.mihoyo-accounts",
@@ -972,19 +971,6 @@
       }
     },
     {
-      "id": "poke",
-      "name": "戳一戳",
-      "description": "开启或关闭本人的戳一戳角色互动",
-      "usage": "#戳一戳 开启/关闭",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "戳一戳"
-        ]
-      }
-    },
-    {
       "id": "help",
       "name": "帮助",
       "description": "查看全部命令，可按关键词筛选",
@@ -1112,17 +1098,6 @@
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:星铁)?推送(?:公告|资讯)$"
-      }
-    },
-    {
-      "id": "interaction",
-      "name": "老婆",
-      "description": "设置老婆、老公等角色偏好并看图",
-      "usage": "#老婆设置<角色>",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?:互动|(?P<relation>老婆|媳妇|女友|女朋友|老公|男友|男朋友|女儿|儿子|伙伴)(?P<action>设置|添加|移除|列表|随机|照片|卡片)?(?P<character>[^0-9]*?))$"
       }
     },
     {
@@ -1882,9 +1857,7 @@
       "commands": [
         "photo",
         "photo-upload",
-        "image-library",
-        "interaction",
-        "poke"
+        "image-library"
       ]
     },
     {
