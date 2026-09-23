@@ -242,8 +242,12 @@ func wikiDetail(name string, desc []string, tables []wikiTable, icon string, fir
 	return map[string]any{"icon": icon, "name": name, "desc": text.String(), "tables": len(tables) > 0, "shared": shared, "rows": rows, "levels": levels}
 }
 
-// jsFixed is JavaScript's toFixed: the exact value rounded half up.
+// jsFixed is JavaScript's toFixed: the exact value rounded half up, a
+// negative value as its magnitude after a minus sign.
 func jsFixed(value float64, digits int) string {
+	if value < 0 {
+		return "-" + jsFixed(-value, digits)
+	}
 	scaled := new(big.Float).SetPrec(256).SetFloat64(value)
 	scaled.Mul(scaled, new(big.Float).SetPrec(256).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(digits)), nil)))
 	scaled.Add(scaled, new(big.Float).SetPrec(256).SetFloat64(0.5))

@@ -14,8 +14,10 @@ import (
 )
 
 // gachaWords are stripped from the command word before picking the pool, as
-// StarRail-plugin's gatcha command does.
-var gachaWords = regexp.MustCompile(`#|\*|＊|星铁|星轨|崩铁|星穹铁道|穹批|跃迁|抽卡|抽奖|记录|分析|统计|祈愿|池`)
+// StarRail-plugin's gatcha command does. Upstream leaves 统计 in, so every
+// 统计 word its rule takes, as 角色统计, fell to the overview; it is
+// stripped here with the others.
+var gachaWords = regexp.MustCompile(`#|\*|＊|星铁|星轨|崩铁|星穹铁道|穹批|跃迁|抽卡|记录|分析|统计`)
 
 // gachaPools are the warp pools upstream reports, in its order.
 var gachaPools = []struct{ id, name string }{{"1", "群星跃迁"}, {"2", "新手跃迁"}, {"11", "限定跃迁"}, {"12", "光锥跃迁"}}
@@ -34,15 +36,17 @@ var gachaArtwork = [][2]string{
 // Gacha draws warp records the way StarRail-plugin's gatcha/new does: the
 // overview (all pulls, this banner's pulls, pity on the limited pools and,
 // for the overview, holdings) and either every pool's five-stars or one
-// pool's four- and five-stars grouped by banner; Yunzai's 抽卡统计 and
-// miao's pages are drawn by their own builders.
+// pool's four- and five-stars grouped by banner; Yunzai's and miao's pages
+// are drawn by their own builders.
 func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 	switch {
 	case image.Miao && strings.HasSuffix(image.Word, "统计"):
 		return GachaStat(context, image)
 	case image.Miao:
 		return GachaDetail(context, image)
-	case image.Count:
+	case image.Command == "gacha-log":
+		return GachaLog(context, image)
+	case image.Command == "gacha-versions":
 		return GachaCount(context, image)
 	}
 	kind := 0

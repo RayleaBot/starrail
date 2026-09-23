@@ -391,8 +391,8 @@ func (a *App) sendHere(event *rayleabot.EventContext) func(...rayleabot.Segment)
 }
 
 // sendGachaLinkResult answers a finished fetch: after a pasted link, Yunzai's
-// report of each pool and its character event warp record; after 更新跃迁记录,
-// StarRail-plugin's list of analysis commands.
+// report of each pool and its gacha-log page of the character event warp;
+// after 更新跃迁记录, StarRail-plugin's list of analysis commands.
 func (a *App) sendGachaLinkResult(ctx context.Context, event *rayleabot.EventContext, job *gachaLinkJob, result gacha.ImportResult, send func(...rayleabot.Segment) error) error {
 	prefix := a.Game.Prefix
 	if job.update {
@@ -407,7 +407,7 @@ func (a *App) sendGachaLinkResult(ctx context.Context, event *rayleabot.EventCon
 	}
 	view := GachaView(a.Game, archive)
 	if a.gacha != nil {
-		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: result.UID, Role: Role{Game: a.Game.ID, UID: result.UID, Region: result.Region}, Word: "角色记录", Archive: archive}); ok {
+		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: result.UID, Role: Role{Game: a.Game.ID, UID: result.UID, Region: result.Region}, Command: "gacha-log", Archive: archive}); ok {
 			view.Image = &drawn
 		}
 	}
@@ -469,9 +469,14 @@ func (a *App) chatArchive(ctx context.Context, event *rayleabot.EventContext, ui
 	}
 	archive, err := a.Gacha.Read(role.UID, role.Region)
 	if err != nil {
-		return gacha.Archive{}, role, gameError("archive_missing", "暂无抽卡记录\n"+a.Game.Prefix+"记录帮助，查看配置说明")
+		return gacha.Archive{}, role, a.noGachaRecords()
 	}
 	return archive, role, nil
+}
+
+// noGachaRecords is Yunzai's reply for a UID without warp records.
+func (a *App) noGachaRecords() error {
+	return gameError("archive_missing", "暂无抽卡记录\n"+a.Game.Prefix+"记录帮助，查看配置说明")
 }
 
 func (a *App) archiveOrEmpty(uid, region string) gacha.Archive {

@@ -568,7 +568,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		view = a.fullPanelView(ctx, event, panel, uid, true, "")
 	case "accounts", "select", "uid-remove":
 		return a.uidCommand(ctx, event, command, args)
-	case "gacha", "gacha-versions", "gacha-detail", "gacha-stat":
+	case "gacha", "gacha-log", "gacha-versions", "gacha-detail", "gacha-stat":
 		// miao's words start with 喵喵; others it has only with its setting.
 		word := event.Event.Command()
 		miao := a.commands.miaoGacha(word, settings(event).MiaoGacha)
@@ -594,16 +594,21 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			view = versionDrawView(game, versionDraws(game, archive))
 		}
 		if a.gacha != nil {
-			image := GachaImage{UID: role.UID, Role: role, Word: word, Archive: archive, Count: command == "gacha-versions", Group: event.Event.Target.Type == "group", Miao: miao}
+			image := GachaImage{UID: role.UID, Role: role, Word: word, Archive: archive, Command: command, Group: event.Event.Target.Type == "group", Miao: miao}
 			if miao {
 				saved, _ := a.Profiles.Read(role.UID)
 				image.Nickname = saved.Nickname
 			}
 			drawn, ok := a.gacha(a.imageContext(ctx), image)
-			if ok {
+			switch {
+			case ok:
 				view.Image = &drawn
-			} else if miao {
+			case miao:
 				return event.SendText(missing)
+			case command == "gacha-log":
+				// Yunzai answers 全部记录 without any pool's records as it
+				// answers a UID without records.
+				err = a.noGachaRecords()
 			}
 		}
 	default:

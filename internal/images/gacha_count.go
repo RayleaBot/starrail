@@ -14,8 +14,9 @@ import (
 // countWords are stripped before picking the pool, as LogCount.getPool does.
 var countWords = regexp.MustCompile(`#|抽卡|记录|祈愿|分析|池|原神|星铁|崩坏星穹铁道|铁道|统计`)
 
-// countStandard are the standard five-stars LogCount ranks one lower.
-var countStandard = []string{"姬子", "杰帕德", "彦卿", "白露", "瓦尔特", "克拉拉", "布洛妮娅", "银河铁道之夜", "无可取代的东西", "但战斗还未结束", "以世界之名", "制胜的瞬间", "如泥酣眠", "时节不居"}
+// standardFiveStars are the standard warp's five-stars, which Yunzai's
+// LogCount ranks one lower; its GachaLog.checkIsUp lists the characters.
+var standardFiveStars = []string{"姬子", "杰帕德", "彦卿", "白露", "瓦尔特", "克拉拉", "布洛妮娅", "银河铁道之夜", "无可取代的东西", "但战斗还未结束", "以世界之名", "制胜的瞬间", "如泥酣眠", "时节不居"}
 
 // countArtwork are the fonts and images of Yunzai's log-count page; its
 // genshinLayout header shows the banner miao gives every Star Rail character.
@@ -133,8 +134,7 @@ func GachaCount(context app.ImageContext, image app.GachaImage) (app.Image, bool
 	for _, item := range countArtwork {
 		resources.Artwork(item[0], item[1], item[2])
 	}
-	paths := lightConePaths(context)
-	icons := map[string]string{}
+	icon := gachaIcon(context, resources)
 	pools := []any{}
 	lines := 0
 	for index := len(order) - 1; index >= 0; index-- {
@@ -143,7 +143,7 @@ func GachaCount(context app.ImageContext, image app.GachaImage) (app.Image, bool
 		sorted := slices.Clone(entry.items)
 		key := func(item *counted) int {
 			key := (item.rank-3)*1000 + item.count
-			if slices.Contains(countStandard, item.name) {
+			if slices.Contains(standardFiveStars, item.name) {
 				key--
 			}
 			if item.itemType == "角色" && item.rank == 5 {
@@ -154,19 +154,7 @@ func GachaCount(context app.ImageContext, image app.GachaImage) (app.Image, bool
 		sort.SliceStable(sorted, func(i, j int) bool { return key(sorted[i]) > key(sorted[j]) })
 		items := []any{}
 		for _, item := range sorted {
-			icon, seen := icons[item.name]
-			if !seen {
-				// GachaLog.getIcon: a character's face, a light cone's icon.
-				kind := "character"
-				if item.itemType == "光锥" {
-					kind = "weapon"
-				}
-				if found, ok := context.Catalog.Resolve(item.name, kind, nil); ok {
-					icon = resources.Artwork(kind+"-"+found.ID, "miao-plugin", poolPicture(found, paths[found.ID]))
-				}
-				icons[item.name] = icon
-			}
-			items = append(items, map[string]any{"rank": item.rank, "count": item.count, "life5": item.count >= 5 && item.rank == 5, "icon": icon})
+			items = append(items, map[string]any{"rank": item.rank, "count": item.count, "life5": item.count >= 5 && item.rank == 5, "icon": icon(item.name, item.itemType)})
 		}
 		pools = append(pools, map[string]any{"five": strings.Join(entry.pool.five, "、"), "count": entry.count, "start": entry.pool.from[:10], "end": entry.pool.to[:10], "items": items})
 		lines += (len(items) + 5) / 6
@@ -175,4 +163,25 @@ func GachaCount(context app.ImageContext, image app.GachaImage) (app.Image, bool
 		}
 	}
 	return app.Image{Template: "gacha-count", Data: map[string]any{"uid": image.UID, "type_name": typeName, "dated": typeName != "常驻" && typeName != "新手", "group": image.Group, "pools": pools}, Resources: resources.List}, true
+}
+
+// gachaIcon is Yunzai's GachaLog.getIcon for a page: miao's face for a
+// character and icon for a light cone, looked up once per name.
+func gachaIcon(context app.ImageContext, resources *app.ImageResources) func(name, itemType string) string {
+	paths := lightConePaths(context)
+	icons := map[string]string{}
+	return func(name, itemType string) string {
+		icon, seen := icons[name]
+		if !seen {
+			kind := "character"
+			if itemType == "光锥" {
+				kind = "weapon"
+			}
+			if found, ok := context.Catalog.Resolve(name, kind, nil); ok {
+				icon = resources.Artwork(kind+"-"+found.ID, "miao-plugin", poolPicture(found, paths[found.ID]))
+			}
+			icons[name] = icon
+		}
+		return icon
+	}
 }

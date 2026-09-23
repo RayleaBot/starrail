@@ -233,7 +233,18 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:(?:角色|光锥|武器|常驻|新手)?(?:跃迁|抽卡)?(?:记录|分析|统计)|(?:全部)?(?:抽卡|抽奖|角色|角色联动|武器|武器联动|集录|常驻|up|新手|光锥|光锥联动|全部)池*(?:记录|祈愿|分析))$"
+        "pattern": "^(?:角色|光锥|武器|常驻|新手)?(?:跃迁|抽卡)?(?:记录|分析|统计)"
+      }
+    },
+    {
+      "id": "gacha-log",
+      "name": "抽卡记录",
+      "description": "按 Yunzai 统计所选跃迁的抽数、五星与出金抽数，全部记录列出各跃迁",
+      "usage": "#全部记录 / #角色联动记录 / #光锥联动记录 / #新手池记录 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:全部)?(?:抽卡|抽奖|角色|角色联动|武器|武器联动|集录|常驻|up|新手|光锥|光锥联动|全部)池*(?:记录|祈愿|分析)$"
       }
     },
     {
@@ -1810,6 +1821,7 @@
       "title": "跃迁记录",
       "commands": [
         "gacha",
+        "gacha-log",
         "gacha-summary",
         "gacha-background",
         "gacha-versions",

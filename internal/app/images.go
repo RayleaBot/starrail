@@ -72,9 +72,10 @@ type GachaImage struct {
 	Role    Role
 	Word    string
 	Archive gacha.Archive
-	// Count draws Yunzai's 抽卡统计 page, which gets the 统计 words
-	// StarRail-plugin's rule leaves.
-	Count bool
+	// Command is the declared command whose page is drawn: gacha-log for
+	// Yunzai's 抽卡记录 and 全部记录, gacha-versions for its 抽卡统计, else
+	// StarRail-plugin's warp analysis.
+	Command string
 	// Group is a group chat, where 抽卡统计 shows fewer pools.
 	Group bool
 	// Miao draws miao's 喵喵抽卡记录 or 喵喵抽卡统计 page.
