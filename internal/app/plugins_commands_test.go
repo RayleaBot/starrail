@@ -5,6 +5,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/RayleaBot/plugin-starrail/internal/pluginmeta"
@@ -55,26 +56,12 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"希儿遗器排名", "rank", nil},
 			{"最强希儿", "rank-top", nil},
 			{"今年星琼统计", "monthly-history", nil},
-			{"跃迁记录", "gacha", nil},
 			{"十连光锥", "simulation", nil},
 			{"更新跃迁记录", "gacha-background", nil},
 			{"帮助", "help", nil},
 			{"插件更新日志", "version", nil},
 			{"树脂", "note", nil},
 			{"刷新行迹", "talent-refresh", nil},
-			{"角色分析", "gacha", nil},
-			{"光锥记录", "gacha", nil},
-			{"抽卡统计", "gacha", nil},
-			{"新手统计", "gacha", nil},
-			{"up统计", "gacha-versions", nil},
-			{"角色池统计", "gacha-versions", nil},
-			{"喵喵光锥记录", "gacha-detail", nil},
-			{"喵喵全部统计", "gacha-stat", nil},
-			{"全部统计", "gacha-stat", nil},
-			{"角色记录100000001", "gacha", nil},
-			{"角色联动记录", "gacha-log", nil},
-			{"全部记录", "gacha-log", nil},
-			{"新手池记录", "gacha-log", nil},
 			{"更新图像", "artwork", nil},
 			{"克拉拉养成75", "growth", []string{"克拉拉", "75"}},
 			{"抽卡链接", "gacha-link", nil},
@@ -122,9 +109,11 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 	}
 }
 
-// miao's pages take the 喵喵 words, and with its setting the plain words
-// StarRail-plugin's rule, which runs first upstream, leaves.
-func TestMiaoGachaWordsFollowUpstreamPrecedence(t *testing.T) {
+// Warp words follow Miao-Yunzai's precedence, which the manifest order
+// repeats: StarRail-plugin's rule (priority -114514, no end anchor), miao's
+// rules (50, with its gachaStat switch forced on), then Yunzai's gcLog (300),
+// so each word reaches one page and every page is reachable.
+func TestGachaWordsFollowUpstreamPrecedence(t *testing.T) {
 	manifest, err := pluginmeta.Read(pluginFile(t, "info.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -133,25 +122,30 @@ func TestMiaoGachaWordsFollowUpstreamPrecedence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cases := []struct {
-		word    string
-		off, on bool
-	}{
-		{"喵喵抽卡记录", true, true},
-		{"喵喵常驻统计", true, true},
-		{"抽卡记录", false, false},
-		{"抽卡统计", false, false},
-		{"抽奖记录", false, true},
-		{"角色池记录", false, true},
-		{"up统计", false, true},
-		{"全部统计", false, true},
-		{"新手池统计", false, false},
-		{"角色联动记录", false, false},
+	pages := map[string][]string{
+		"gacha": {"记录", "分析", "统计", "跃迁记录", "跃迁统计", "抽卡记录", "抽卡分析", "抽卡统计", "角色记录", "角色分析", "角色统计",
+			"光锥记录", "武器分析", "常驻记录", "新手记录", "新手统计", "角色跃迁记录", "光锥抽卡统计", "角色记录100000001"},
+		"gacha-detail": {"喵喵抽卡记录", "喵喵光锥记录", "喵喵常驻祈愿", "喵喵集录记录", "抽卡祈愿", "抽奖记录", "角色祈愿", "光锥祈愿",
+			"常驻祈愿", "集录记录", "up记录", "up池记录", "角色池记录", "光锥池分析", "常驻池记录", "角色光锥记录", "up角色祈愿"},
+		"gacha-stat": {"喵喵抽卡统计", "喵喵角色统计", "喵喵全部统计", "抽奖统计", "集录统计", "up统计", "全部统计", "版本统计", "角色池统计",
+			"光锥池统计", "常驻池统计", "抽卡池统计", "全部池统计", "up全部统计"},
+		"gacha-log": {"全部记录", "全部祈愿", "全部分析", "全部池记录", "全部角色记录", "全部光锥联动记录", "角色联动记录", "角色联动池祈愿",
+			"光锥联动记录", "武器联动分析", "新手祈愿", "新手池记录", "角色池池记录", "集录池池记录"},
+		"gacha-versions": {"新手池统计", "新手池池统计", "角色池池统计", "光锥池池统计", "up池池统计"},
+		// Upstream's rule without an end anchor takes 记录帮助 too; the help
+		// Yunzai's replies point to stays reachable.
+		"gacha-help": {"记录帮助"},
 	}
-	for _, tc := range cases {
-		if off, on := set.miaoGacha(tc.word, false), set.miaoGacha(tc.word, true); off != tc.off || on != tc.on {
-			t.Errorf("%s draws miao's page %v without and %v with the setting, want %v and %v", tc.word, off, on, tc.off, tc.on)
+	for want, words := range pages {
+		for _, word := range words {
+			if id, _, _ := set.resolve(word, nil); id != want {
+				t.Errorf("%s resolved to %q, want %s", word, id, want)
+			}
 		}
+	}
+	// Yunzai reads Star Rail's missing 集录 pool for it and draws nothing.
+	if id, _, _ := set.resolve("集录池池统计", nil); strings.HasPrefix(id, "gacha") {
+		t.Errorf("集录池池统计 resolved to %s", id)
 	}
 }
 

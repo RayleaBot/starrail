@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -39,14 +38,14 @@ var gachaArtwork = [][2]string{
 // pool's four- and five-stars grouped by banner; Yunzai's and miao's pages
 // are drawn by their own builders.
 func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
-	switch {
-	case image.Miao && strings.HasSuffix(image.Word, "统计"):
-		return GachaStat(context, image)
-	case image.Miao:
+	switch image.Command {
+	case "gacha-detail":
 		return GachaDetail(context, image)
-	case image.Command == "gacha-log":
+	case "gacha-stat":
+		return GachaStat(context, image)
+	case "gacha-log":
 		return GachaLog(context, image)
-	case image.Command == "gacha-versions":
+	case "gacha-versions":
 		return GachaCount(context, image)
 	}
 	kind := 0

@@ -102,9 +102,6 @@ type Settings struct {
 	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
 	// administrators.
 	AliasPermission int `json:"alias_permission"`
-	// MiaoGacha is miao's gachaStat: 抽卡记录 and 抽卡统计 words without 喵喵
-	// that StarRail-plugin does not take draw miao's pages.
-	MiaoGacha bool `json:"miao_gacha"`
 }
 type App struct {
 	Manifest pluginmeta.Manifest
@@ -568,13 +565,12 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		view = a.fullPanelView(ctx, event, panel, uid, true, "")
 	case "accounts", "select", "uid-remove":
 		return a.uidCommand(ctx, event, command, args)
-	case "gacha", "gacha-log", "gacha-versions", "gacha-detail", "gacha-stat":
-		// miao's words start with 喵喵; others it has only with its setting.
+	case "gacha", "gacha-detail", "gacha-stat", "gacha-log", "gacha-versions":
+		// The manifest orders the warp words as Miao-Yunzai runs them:
+		// StarRail-plugin's rule, miao's, whose gachaStat switch Miao-Yunzai
+		// forces on, then Yunzai's gcLog.
 		word := event.Event.Command()
-		miao := a.commands.miaoGacha(word, settings(event).MiaoGacha)
-		if !miao && (command == "gacha-detail" || command == "gacha-stat") {
-			return event.Result(map[string]any{"handled": false})
-		}
+		miao := command == "gacha-detail" || command == "gacha-stat"
 		uid := ""
 		if len(args) > 0 {
 			uid = args[0]
@@ -594,7 +590,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			view = versionDrawView(game, versionDraws(game, archive))
 		}
 		if a.gacha != nil {
-			image := GachaImage{UID: role.UID, Role: role, Word: word, Archive: archive, Command: command, Group: event.Event.Target.Type == "group", Miao: miao}
+			image := GachaImage{UID: role.UID, Role: role, Word: word, Archive: archive, Command: command, Group: event.Event.Target.Type == "group"}
 			if miao {
 				saved, _ := a.Profiles.Read(role.UID)
 				image.Nickname = saved.Nickname
