@@ -74,9 +74,10 @@ BUNDLES = {
         # Strategy pictures sent by the static picture commands.
         "resources/srsr/*",
     ]),
-    # The ledger, 抽卡统计, the UID list and the news pages.
+    # The ledger pages, 抽卡统计, the UID list and the news pages.
     "yunzai-genshin": ("Yunzai-genshin", [
-        "resources/StarRail/img/other/logo.png",
+        "resources/StarRail/img/note/*",
+        "resources/StarRail/img/other/*",
         "resources/img/icon/check.webp",
         "resources/img/other/bg4.png",
         "resources/img/other/bg5.png",

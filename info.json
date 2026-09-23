@@ -137,6 +137,17 @@
       }
     },
     {
+      "id": "ledger",
+      "name": "星琼",
+      "description": "本月或前两个月的星琼与专票、通票收入（开拓月历）",
+      "usage": "#星琼[月份] [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^星琼(?P<month>(?:[0-9]|[一二两三四五六七八九十]+)*)月*$"
+      }
+    },
+    {
       "id": "training",
       "name": "练度统计",
       "description": "全部角色的等级、星魂、行迹、光锥与遗器评分",
@@ -252,10 +263,10 @@
         "type": "exact",
         "names": [
           "月历",
-          "星琼",
-          "收入",
+          "星琼获取",
           "月收入",
-          "星琼获取"
+          "收入",
+          "原石"
         ]
       }
     },
@@ -1898,6 +1909,7 @@
       "title": "星琼收入",
       "commands": [
         "monthly",
+        "ledger",
         "monthly-history",
         "monthly-save",
         "monthly-task",

@@ -327,6 +327,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.assetCommand(ctx, event, command, args)
 	case "monthly-history", "monthly-save":
 		return a.monthlyCommand(ctx, event, command, args)
+	case "ledger":
+		return a.ledgerCommand(ctx, event, args)
 	case "monthly-task":
 		return a.monthlyTask(ctx, event)
 	case "challenge-remind", "challenge-stop", "challenge-status":

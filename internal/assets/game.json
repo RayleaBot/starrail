@@ -229,6 +229,7 @@
         "https://codeload.github.com/TimeRainStarSky/Yunzai-genshin/tar.gz/HEAD"
       ],
       "include": [
+        "resources/StarRail/img/note/",
         "resources/StarRail/img/other/",
         "resources/img/icon/",
         "resources/img/other/bg4.png",

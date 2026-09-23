@@ -249,6 +249,79 @@ func (a *App) monthlyCommand(ctx context.Context, event *rayleabot.EventContext,
 	return a.sendView(ctx, event, view)
 }
 
+// ledgerCommand is Yunzai's 星琼: the 开拓月历 of this month or one of the two
+// before it, drawn on its ledger page. Upstream then saves the months the
+// official report still offers without holding up the reply, and so does
+// this.
+func (a *App) ledgerCommand(ctx context.Context, event *rayleabot.EventContext, args []string) error {
+	word := ""
+	if len(args) > 0 && !uidPattern.MatchString(args[0]) {
+		word, args = args[0], args[1:]
+	}
+	if len(args) > 1 {
+		return event.SendText("请提供至多一个 UID。")
+	}
+	month, err := ledgerMonth(word, time.Now().In(chinaZone))
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	uid := ""
+	if len(args) == 1 {
+		uid = args[0]
+	}
+	client := a.accountClient(event)
+	listed, err := client.List(ctx, 0)
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	choice, _, err := Choose(listed, a.Game.ID, uid)
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	operation, _ := a.operation(a.Game.ID + ".monthly")
+	input := map[string]any{"month": month}
+	result, err := client.Execute(ctx, choice, operation.Name, input)
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	view := BusinessView(a.Game, operation, result, a.Catalog)
+	view.Image = a.featureImage(ctx, client, choice, a.Game.ID+".ledger", event.Event.Command(), input, result)
+	err = a.sendView(ctx, event, view)
+	// A month that cannot be saved has still been answered.
+	_ = a.keepMonthly(ctx, client, choice, result)
+	return err
+}
+
+// ledgerMonths are the Chinese month words Yunzai's getMonth reads.
+var ledgerMonths = []string{"一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"}
+
+// ledgerMonth reads the month of 星琼7月 or 星琼七月 the way Yunzai's getMonth
+// does: digits or a Chinese numeral, anything else this month; only this
+// month and the two before it can be read. It is YYYYMM, as upstream asks for
+// Star Rail's month, and a month after this one is last year's. Upstream
+// sends such a month (November or December in January, December in February)
+// to this month instead, because its check for later months tests
+// month <= 9 + month, which always holds, and it would have dated the month
+// this year.
+func ledgerMonth(word string, now time.Time) (int, error) {
+	current := int(now.Month())
+	month, err := strconv.Atoi(word)
+	if err != nil {
+		month = slices.Index(ledgerMonths, word) + 1
+	}
+	if month < 1 || month > 12 {
+		month = current
+	}
+	if (current-month+12)%12 > 2 {
+		return 0, gameError("ledger_month", "札记仅支持查询最近三个月的数据")
+	}
+	year := now.Year()
+	if month > current {
+		year--
+	}
+	return year*100 + month, nil
+}
+
 // monthlyTask is Yunzai's 星琼任务 for a super administrator: every account's
 // 开拓月历 is saved as refreshMonthly saves one, as upstream saves each bound
 // CK's. What one event cannot finish is left for the command sent again,
@@ -301,26 +374,31 @@ func (a *App) monthlyTask(ctx context.Context, event *rayleabot.EventContext) er
 	return event.SendText("星琼任务完成")
 }
 
-// refreshMonthly saves this month's report and each month the official report
-// still offers that was not saved after it ended; a month that fails to load
-// is left as saved.
+// refreshMonthly reads this month's report and saves it as keepMonthly does.
 func (a *App) refreshMonthly(ctx context.Context, client AccountsClient, choice Selection) error {
-	operation := a.Game.ID + ".monthly"
-	current, err := client.Execute(ctx, choice, operation, map[string]any{})
+	current, err := client.Execute(ctx, choice, a.Game.ID+".monthly", map[string]any{})
 	if err != nil {
 		return err
 	}
+	return a.keepMonthly(ctx, client, choice, current)
+}
+
+// keepMonthly saves a month's report that was read and each other month the
+// official report still offers that was not saved after it ended; a month
+// that fails to load is left as saved.
+func (a *App) keepMonthly(ctx context.Context, client AccountsClient, choice Selection, read QueryResult) error {
+	operation := a.Game.ID + ".monthly"
 	now := time.Now()
-	if err := a.Monthly.Keep(client.Provider, choice, current.Data, now); err != nil {
+	if err := a.Monthly.Keep(client.Provider, choice, read.Data, now); err != nil {
 		return err
 	}
 	archive, err := a.Monthly.Read(client.Provider, choice)
 	if err != nil {
 		return err
 	}
-	for _, value := range asList(current.Data["optional_month"]) {
+	for _, value := range asList(read.Data["optional_month"]) {
 		month := asText(value)
-		if month == asText(current.Data["data_month"]) {
+		if month == asText(read.Data["data_month"]) {
 			continue
 		}
 		key, err := monthlyKey(map[string]any{"data_month": month})

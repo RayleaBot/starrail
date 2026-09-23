@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="body_box">
+<div class="container" id="container">
+  <div class="title">
+    <div class="uid">
+      <div class="uid_item"><span class="uid_text">UID:</span><span class="uid_span">{{ .uid }}</span></div>
+      <div class="uid_item"><span class="day_span">开拓月历·{{ .day }}</span></div>
+    </div>
+  </div>
+  <div class="title_date">
+    <div class="icon"><img{{ with .face }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+    <div class="title_date_text">
+      <div>{{ .date }}</div>
+      <div>{{ .weekday }}</div>
+    </div>
+  </div>
+  <div class="subject">
+    <div class="subject_solid"><span></span></div>
+    <div class="data-box">
+      <div class="month">
+        <div class="head">当月获取：</div>
+        <div class="primogems"><div class="icon-ys"{{ with .jade }} data-render-resource="{{ . }}"{{ end }}></div><div class="text">星琼：{{ .current_hcoin }} | {{ .gacha }} 抽</div></div>
+        <div class="primogems"><div class="icon-mola"></div><div class="text">专&amp;通票：{{ .current_rails_pass }} 张</div></div>
+      </div>
+      <div class="day">
+        <div class="head">上月获取：</div>
+        <div class="primogems"><div class="icon-ys"{{ with .jade }} data-render-resource="{{ . }}"{{ end }}></div><div class="text">星琼：{{ .last_hcoin }} | {{ .last_gacha }} 抽</div></div>
+        <div class="primogems"><div class="icon-mola"></div><div class="text">专&amp;通票：{{ .last_rails_pass }} 张</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="title_wt"><div>星琼收入统计</div></div>
+  <div class="chart-box">
+    <div class="chart-info">
+      <div id="chartContainer">
+        <svg width="440" height="440" viewBox="0 0 440 440">
+          {{ range .slices }}<path d="{{ .path }}" fill="{{ .color }}" stroke="#fff" stroke-width="1"></path>{{ end }}
+          {{ range .slices }}{{ if .label }}<text class="slice-label" x="{{ .x }}" y="{{ .y }}">{{ .label }}</text>{{ end }}{{ end }}
+        </svg>
+        <div class="statistic-title">总计</div>
+        <div class="statistic-content">{{ .total }}</div>
+      </div>
+      <ul class="tooltip">
+        {{ range .legend }}
+        <li><i style="background: {{ .color }}"></i><span class="action"><em>{{ .action }}</em></span> <span class="num"><em>{{ .num }}</em></span><span class="percent"><em>{{ .percent }}%</em></span></li>
+        {{ end }}
+      </ul>
+    </div>
+  </div>
+  {{ with .render_footer }}<div class="logo">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>

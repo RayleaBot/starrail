@@ -145,3 +145,32 @@ func TestRefreshMonthlyKeepsOfferedMonthsNotYetFinal(t *testing.T) {
 		t.Fatalf("archive = %+v", archive.Items)
 	}
 }
+
+func TestLedgerMonthFollowsYunzai(t *testing.T) {
+	september := time.Date(2026, 9, 23, 12, 0, 0, 0, chinaZone)
+	january := time.Date(2027, 1, 5, 12, 0, 0, 0, chinaZone)
+	for _, tc := range []struct {
+		word string
+		now  time.Time
+		want int
+	}{
+		// No month, a month out of range or a word getMonth does not read
+		// is this month.
+		{"", september, 202609}, {"13", september, 202609}, {"0", september, 202609}, {"两", september, 202609},
+		{"7", september, 202607}, {"八", september, 202608},
+		// A month after this one is last year's.
+		{"十二", january, 202612}, {"11", january, 202611}, {"一", january, 202701},
+	} {
+		if month, err := ledgerMonth(tc.word, tc.now); err != nil || month != tc.want {
+			t.Errorf("%q in %s: %d %v, want %d", tc.word, tc.now.Format("2006-01"), month, err, tc.want)
+		}
+	}
+	for _, tc := range []struct {
+		word string
+		now  time.Time
+	}{{"6", september}, {"十", september}, {"10", january}} {
+		if _, err := ledgerMonth(tc.word, tc.now); err == nil || friendlyError(err) != "札记仅支持查询最近三个月的数据" {
+			t.Errorf("%q in %s: %v", tc.word, tc.now.Format("2006-01"), err)
+		}
+	}
+}

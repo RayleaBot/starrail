@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "day", "face", "date", "weekday", "jade", "current_hcoin", "gacha", "current_rails_pass", "last_hcoin", "last_gacha", "last_rails_pass", "legend", "slices", "total"],
+  "properties": {
+    "uid": { "type": "string" },
+    "day": { "type": "string" },
+    "face": { "type": "string" },
+    "date": { "type": "string" },
+    "weekday": { "type": "string" },
+    "jade": { "type": "string" },
+    "current_hcoin": { "type": "string" },
+    "gacha": { "type": "string" },
+    "current_rails_pass": { "type": "string" },
+    "last_hcoin": { "type": "string" },
+    "last_gacha": { "type": "string" },
+    "last_rails_pass": { "type": "string" },
+    "legend": { "type": "array" },
+    "slices": { "type": "array" },
+    "total": { "type": "string" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

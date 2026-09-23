@@ -11,12 +11,13 @@ import (
 	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
-// Builders lists the image builders by the operation they draw.
+// Builders lists the image builders by the operation they draw. 星琼 draws
+// the 开拓月历 query on a page of its own, listed under its command's name.
 func Builders() map[string]app.ImageBuilder {
 	return map[string]app.ImageBuilder{"starrail.note": Note, "starrail.challenge": challengeImage(memoryOfChaos),
 		"starrail.story": challengeImage(pureFiction), "starrail.boss": challengeImage(apocalypticShadow), "starrail.peak": Peak,
 		"starrail.abyss": allChallengesImage, "starrail.abyss_latest": latestChallengeImage,
-		"starrail.characters": Characters, "starrail.training": Training, "starrail.monthly": Month, "starrail.rogue": Rogue, "starrail.swarm": Swarm,
+		"starrail.characters": Characters, "starrail.training": Training, "starrail.monthly": Month, "starrail.ledger": Ledger, "starrail.rogue": Rogue, "starrail.swarm": Swarm,
 		"starrail.divergent": Divergent, "starrail.divergent_normal": DivergentNormal, "starrail.divergent_week": DivergentWeek}
 }
 
