@@ -53,6 +53,10 @@
       "mark_rank_type": false,
       "profile_change_diff": true,
       "deal_long_dmg_title": 1,
+      "profile_change_ocr": true,
+      "export_panel_data": 1,
+      "import_panel_data": 2,
+      "export_panel_require": 1,
       "group_rank": true,
       "local_group_rank": true,
       "new_user_panel": false
@@ -1339,7 +1343,7 @@
     {
       "id": "cloud-export",
       "name": "导出面板数据",
-      "description": "把本人 UID 已保存的面板上传 ark，十分钟内可在另一个机器人导入",
+      "description": "把 UID 已保存的面板上传 ark，十分钟内可在另一个机器人导入",
       "usage": "#导出面板数据",
       "permission": "everyone",
       "trigger": {
@@ -1350,7 +1354,7 @@
     {
       "id": "cloud-import",
       "name": "导入面板数据",
-      "description": "从 ark 下载本人 UID 上传的面板，存入面板交换档案",
+      "description": "从 ark 下载该 UID 上传的面板，存入已保存的面板",
       "usage": "#导入面板数据<UID>",
       "permission": "everyone",
       "trigger": {
