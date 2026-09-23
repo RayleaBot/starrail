@@ -39,7 +39,7 @@ func (a *App) staticCommand(ctx context.Context, event *rayleabot.EventContext, 
 		entry = &found
 	}
 	if !a.Artwork.Ready(static.Source) {
-		return event.SendText(strings.TrimSpace("暂无图片素材。" + a.pictureHint([]PictureSource{{Source: static.Source}})))
+		return event.SendText(strings.TrimSpace("暂无图片素材。" + a.pictureHint(static.Source)))
 	}
 	parts, ok := a.staticParts(static, entry)
 	if !ok {

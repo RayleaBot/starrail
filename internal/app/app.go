@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -212,7 +213,7 @@ type App struct {
 	rankStatsImage     RankStatsImageBuilder
 	poolImage          PoolImageBuilder
 	characterCardImage CharacterCardImageBuilder
-	atlases            atlasIndexes
+	atlases            atlasLibraries
 	guides             guideCache
 	emoticons          newsEmoticons
 	aliases            customAliases
@@ -312,13 +313,18 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	if event.Event.EventType != "message.private" && event.Event.EventType != "message.group" {
 		return event.Result(map[string]any{"handled": false})
 	}
+	command, args, known := a.commands.resolve(event.Event.Command(), event.Event.Args())
+	if !known || !slices.Contains(aheadOfAtlas, command) {
+		if handled, err := a.pictureMessage(ctx, event); handled {
+			return err
+		}
+	}
 	if handled, err := a.gachaLinkMessage(ctx, event); handled {
 		return err
 	}
 	if handled, err := a.gachaFileMessage(ctx, event); handled {
 		return err
 	}
-	command, args, known := a.commands.resolve(event.Event.Command(), event.Event.Args())
 	if !known {
 		return event.Result(map[string]any{"handled": false})
 	}
@@ -359,8 +365,21 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.artworkCommand(event, command, args)
 	case "photo", "image-library", "original-image":
 		return a.interactionCommand(ctx, event, command, args)
-	case "guides", "guide-help", "guide-default":
-		return a.guideCommand(ctx, event, command, args)
+	case "guides":
+		// StarRail-plugin's strategy passes the message on after answering,
+		// to Atlas, whose guide for role module takes the same words.
+		reply := a.guideReply(ctx, event)
+		if len(reply) > 0 {
+			if _, err := post(ctx, event, reply...); err != nil {
+				return err
+			}
+		}
+		if handled, err := a.pictureMessage(ctx, event); handled {
+			return err
+		}
+		return event.Result(map[string]any{"handled": len(reply) > 0})
+	case "guide-help", "guide-default":
+		return a.guideCommand(event, command, args)
 	case "subscribe", "unsubscribe", "content-push":
 		return a.subscriptionCommand(ctx, event, command, args)
 	case "news", "info", "events", "search", "estimate":
@@ -587,21 +606,12 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	case "catalog":
 		query := strings.Join(args, " ")
 		entries := a.Catalog.Search(query, "", 20, a.aliasMap(event))
-		names := []string{query}
 		if len(entries) == 1 {
 			view = EntryView(a.Game, entries[0])
 			view.Image = a.entryImage(ctx, event, command, entries[0])
-			names = []string{entries[0].Name, query}
-		}
-		// Without a drawn page, the downloaded 图鉴 libraries answer as Atlas
-		// and xiaoyao do.
-		if view.Image == nil {
-			if file, ok := a.atlasPicture(names); ok {
-				return a.sendArtwork(event, file)
-			}
-		}
-		if len(entries) == 1 {
-			if hint := a.pictureHint(a.Game.Pictures.Atlas); view.Image == nil && hint != "" {
+			// The Atlas library answered what it has before any command; a
+			// page not drawn tells how to download it.
+			if hint := a.pictureHint(a.Game.Pictures.catalogSources()...); view.Image == nil && hint != "" {
 				view.Note = strings.TrimSpace(view.Note + " " + hint)
 			}
 		} else {

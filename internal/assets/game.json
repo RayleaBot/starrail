@@ -273,10 +273,34 @@
       {
         "source": "star-rail-atlas",
         "index": "path.json",
-        "skip": [
-          "guide for role",
-          "material for role"
-        ]
+        "rules": {
+          "config": {
+            "condition": 3,
+            "pick": [
+              "图鉴"
+            ],
+            "prefix_for_reg": "(\\*|#星铁)"
+          },
+          "guide for role": {
+            "condition": 5,
+            "pick": [
+              "攻略0",
+              "攻略",
+              "指南"
+            ],
+            "prefix_for_reg": "(\\*|#星铁)"
+          },
+          "material for role": {
+            "condition": 5,
+            "pick": [
+              "素材",
+              "突破",
+              "材料",
+              "培养"
+            ],
+            "prefix_for_reg": "(\\*|#星铁)"
+          }
+        }
       }
     ],
     "static": {

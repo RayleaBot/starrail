@@ -127,6 +127,14 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"希儿圣遗物100000001", "score", []string{"希儿", "100000001"}},
 			{"希儿伤害100000001", "build", []string{"希儿", "100000001"}},
 			{"面板100000001", "panel-list", []string{"100000001"}},
+			// Atlas answers these before the commands they reach. On
+			// Miao-Yunzai StarRail-plugin's rogue rule, having no end anchor,
+			// takes 宇宙布洛妮娅 first; the rogue command ends with its words.
+			{"宇宙布洛妮娅", "character-card", nil},
+			{"于夜色中图鉴", "catalog", []string{"于夜色中"}},
+			{"希儿培养", "materials", []string{"希儿"}},
+			// Atlas's guide for role module takes 攻略0 after the guide.
+			{"希儿攻略0", "guides", []string{"希儿"}},
 		},
 	}
 	for game, list := range cases {
@@ -211,8 +219,8 @@ func TestFallbackCommandsResolveAfterOrdinaryOnes(t *testing.T) {
 	}
 }
 
-// A hint or static picture answers a command by ID, so each must name one
-// the manifest has.
+// A hint or static picture answers a command by ID, and the commands ahead
+// of Atlas are named by ID, so each must name one the manifest has.
 func TestShippedHintsNameManifestCommands(t *testing.T) {
 	manifest, err := pluginmeta.Read(pluginFile(t, "info.json"))
 	if err != nil {
@@ -223,7 +231,7 @@ func TestShippedHintsNameManifestCommands(t *testing.T) {
 		t.Fatal(err)
 	}
 	ids := slices.AppendSeq(slices.Collect(maps.Keys(data.Hints)), maps.Keys(data.Pictures.Static))
-	for _, id := range ids {
+	for _, id := range append(ids, aheadOfAtlas...) {
 		if !slices.ContainsFunc(manifest.Commands, func(command pluginmeta.Command) bool { return command.ID == id }) {
 			t.Errorf("answer %s names no command", id)
 		}

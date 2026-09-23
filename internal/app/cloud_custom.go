@@ -346,12 +346,11 @@ func (a *App) sendKept(ctx context.Context, event *rayleabot.EventContext, view 
 	if path := a.renderView(ctx, event, view); path != "" {
 		segment = rayleabot.Image(path)
 	}
-	result, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, TargetType: event.Event.Target.Type, TargetID: event.Event.Target.ID,
-		Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{segment}}})
+	id, err := post(ctx, event, segment)
 	if err != nil {
 		return nil
 	}
-	return []string{asText(result["message_id"])}
+	return []string{id}
 }
 
 // customRankHelp is ark's ark自定义排行帮助: the advanced help for a super

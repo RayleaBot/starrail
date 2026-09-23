@@ -84,6 +84,13 @@ func (a *App) aliasOwner(word string, aliases map[string]string) (entry Entry, c
 	return Entry{}, "", false
 }
 
+// miaoCharacter is miao's Character.get: the character a name or alias,
+// built-in or custom, names.
+func (a *App) miaoCharacter(name string, aliases map[string]string) (Entry, bool) {
+	entry, _, ok := a.aliasOwner(name, aliases)
+	return entry, ok && entry.Kind == "character"
+}
+
 // aliasesOf are a character's built-in aliases, then its custom ones.
 func aliasesOf(entry Entry, aliases map[string]string) []string {
 	out := slices.Clone(entry.Aliases)

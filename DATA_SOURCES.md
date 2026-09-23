@@ -24,6 +24,8 @@ Apache-2.0 许可保留在 `LICENSES/StarRail-plugin-Apache-2.0.txt`，对应的
 
 云面板装备解释沿用同一固定 miao 快照的 artifact 元数据与 ArtisAttr 公式，包含 768 项遗器映射。转换脚本为 `scripts/import-cloud-panel-data.mjs`，不加载上游机器人运行时；缺失档位明确显示未覆盖。
 
+图鉴按 [Atlas 固定提交](https://github.com/Nwflower/atlas/tree/016e49357666e0823791abdf28fbb3b2efe68225) 的 `apps/atlas.js` 查找，各模块的规则取自其 `resource/Forlibrary/star-rail-atlas/rule_default/`，写在 `internal/assets/game.json`（GPL-3.0，见 `LICENSES/Atlas-GPL-3.0.txt`）。星铁图鉴库由管理员下载，不随插件分发；Atlas 自带的星铁别名文件以名称为键，而图鉴库以编号为键并自带全部模块的别名，因此不使用。
+
 ## 补充的强化公式
 
 规则源文件在 `scripts/calc-supplements/`，打包后写入 `internal/assets/calc/characters/`。

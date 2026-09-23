@@ -105,39 +105,49 @@ func (c *guideCache) put(key, value string) {
 	c.items[key] = guideCached{value, time.Now()}
 }
 
-// guideCommand answers 攻略, 攻略帮助 and 设置默认攻略.
-func (a *App) guideCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
+// guideCommand answers 攻略帮助 and 设置默认攻略.
+func (a *App) guideCommand(event *rayleabot.EventContext, command string, args []string) error {
 	sources := guideSources
 	config, err := a.GuideSettings.Manage("guides.settings", nil)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
 	settings := config["settings"].(GuideConfig)
-	switch command {
-	case "guide-help":
+	if command == "guide-help" {
 		sample := guideSamples
 		lines := []string{a.Game.Name + "攻略帮助:", a.Game.Prefix + sample + "攻略[来源序号]", a.Game.Prefix + "更新" + sample + "攻略[来源序号]", a.Game.Prefix + "设置默认攻略[来源序号]", "示例: " + a.Game.Prefix + sample + "攻略2", "", "攻略来源:"}
 		for _, source := range sources {
 			lines = append(lines, source.ID+"——"+source.Name)
 		}
 		return event.SendText(strings.Join(lines, "\n"))
-	case "guide-default":
-		if len(args) == 0 {
-			return event.SendText("默认攻略设置方式为: \n" + a.Game.Prefix + "设置默认攻略[1-" + strconv.Itoa(len(sources)) + "]")
-		}
-		if _, err := a.GuideSettings.Manage("guides.configure", map[string]any{"revision": settings.Revision, "default_source": args[0]}); err != nil {
-			return event.SendText(friendlyError(err))
-		}
-		return event.SendText("默认攻略已设置为: " + args[0])
 	}
+	if len(args) == 0 {
+		return event.SendText("默认攻略设置方式为: \n" + a.Game.Prefix + "设置默认攻略[1-" + strconv.Itoa(len(sources)) + "]")
+	}
+	if _, err := a.GuideSettings.Manage("guides.configure", map[string]any{"revision": settings.Revision, "default_source": args[0]}); err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	return event.SendText("默认攻略已设置为: " + args[0])
+}
+
+// guideReply is what StarRail-plugin's strategy sends for a character's 攻略:
+// the guide images of the sources asked for, or why there are none; nothing
+// when the word names no character.
+func (a *App) guideReply(ctx context.Context, event *rayleabot.EventContext) []rayleabot.Segment {
+	sources := guideSources
+	config, err := a.GuideSettings.Manage("guides.settings", nil)
+	if err != nil {
+		return []rayleabot.Segment{rayleabot.Text(friendlyError(err))}
+	}
+	settings := config["settings"].(GuideConfig)
 	match := guideWord.FindStringSubmatch(strings.TrimSpace(event.Event.Command()))
 	if match == nil {
-		return event.Result(map[string]any{"handled": false})
+		return nil
 	}
 	refresh, raw, group := match[1] != "", strings.TrimSpace(match[2]), match[3]
 	entry, ok := a.Catalog.Resolve(raw, "character", a.aliasMap(event))
 	if !ok {
-		return event.Result(map[string]any{"handled": false})
+		return nil
 	}
 	name := entry.Name
 	// Upstream writes 托帕 alone, and the paths with a middle dot.
@@ -153,7 +163,7 @@ func (a *App) guideCommand(ctx context.Context, event *rayleabot.EventContext, c
 	} else {
 		index, _ := strconv.Atoi(cmpOr(group, settings.Default))
 		if index < 1 || index > len(sources) {
-			return event.SendText("超过攻略数量（" + strconv.Itoa(len(sources)) + "）")
+			return []rayleabot.Segment{rayleabot.Text("超过攻略数量（" + strconv.Itoa(len(sources)) + "）")}
 		}
 		picked = []int{index - 1}
 	}
@@ -164,7 +174,7 @@ func (a *App) guideCommand(ctx context.Context, event *rayleabot.EventContext, c
 		link, cached := a.guides.get(key)
 		if !cached || refresh {
 			if link, err = a.Content.guidePicture(ctx, source, name); err != nil {
-				return event.SendText("暂无攻略数据，请稍后再试")
+				return []rayleabot.Segment{rayleabot.Text("暂无攻略数据，请稍后再试")}
 			}
 			if link != "" {
 				a.guides.put(key, link)
@@ -174,10 +184,10 @@ func (a *App) guideCommand(ctx context.Context, event *rayleabot.EventContext, c
 		case link != "":
 			segments = append(segments, rayleabot.Image(link))
 		case len(picked) == 1:
-			return event.SendText("暂无" + name + "攻略（" + source.Name + "）\n请尝试其他的攻略来源查询\n" + a.Game.Prefix + "攻略帮助，查看说明")
+			return []rayleabot.Segment{rayleabot.Text("暂无" + name + "攻略（" + source.Name + "）\n请尝试其他的攻略来源查询\n" + a.Game.Prefix + "攻略帮助，查看说明")}
 		default:
 			segments = append(segments, rayleabot.Text("暂无"+name+"攻略（"+source.Name+"）\n"))
 		}
 	}
-	return event.Send(event.Event.Target.Type, event.Event.Target.ID, segments...)
+	return segments
 }

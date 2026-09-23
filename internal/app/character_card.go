@@ -41,8 +41,8 @@ var (
 // other plugins.
 func (a *App) characterCard(ctx context.Context, event *rayleabot.EventContext, args []string) error {
 	name, uid := cardQuery(strings.Join(append([]string{event.Event.Command()}, args...), ""))
-	entry, _, found := a.aliasOwner(name, a.aliasMap(event))
-	if !found || entry.Kind != "character" {
+	entry, found := a.miaoCharacter(name, a.aliasMap(event))
+	if !found {
 		return event.Result(map[string]any{"handled": false})
 	}
 	if _, _, _, ref := a.cardPicture(ctx, entry); ref == "" {
@@ -88,6 +88,25 @@ func (a *App) characterCardFor(ctx context.Context, event *rayleabot.EventContex
 func cardQuery(text string) (name, uid string) {
 	uid = cardUID.FindString(text)
 	return strings.TrimSpace(cardWords.ReplaceAllString(strings.Replace(text, uid, "", 1), "")), uid
+}
+
+// wikiWords is miao's wikiReg, which CharWiki.check reads a message with.
+var wikiWords = regexp.MustCompile(`^(?:#|喵喵)?(?:星铁)?(.*)(天赋|技能|行迹|命座|命之座|星魂|资料|图鉴|照片|写真|图片|图像)$`)
+
+// miaoAccept is a message as miao's accept checks, which run before every
+// plugin's rules, leave it (e.msg): one naming a character before a wiki word
+// becomes #喵喵WIKI (CharWiki.check). miao also finds Genshin's characters
+// there, which this plugin does not know. AvatarCard.check takes a message
+// starting with # whose rest, without 老婆, 老公, 卡片 and a UID, names a
+// character: never a Star Rail command, which starts with #星铁 by then, nor
+// any message a star-rail-atlas rule takes, so it is left out.
+func (a *App) miaoAccept(msg string, aliases func() map[string]string) string {
+	if match := wikiWords.FindStringSubmatch(msg); match != nil && match[1] != "" {
+		if _, ok := a.miaoCharacter(match[1], aliases()); ok {
+			return "#喵喵WIKI"
+		}
+	}
+	return msg
 }
 
 // cardPicture picks the card's photo from the same pool as 照片: imported
