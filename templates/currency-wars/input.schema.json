@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "season_level", "weekly_score", "rank_icon", "rank_badge", "rank", "handbook", "trait", "quest"],
+  "properties": {
+    "uid": { "type": "string" },
+    "season_level": { "type": "string" },
+    "weekly_score": { "type": "string" },
+    "rank_icon": { "type": "string" },
+    "rank_badge": { "type": "string" },
+    "rank": { "type": "string" },
+    "handbook": { "type": "string" },
+    "trait": { "type": "string" },
+    "quest": { "type": "string" },
+    "latest": { "type": "object" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

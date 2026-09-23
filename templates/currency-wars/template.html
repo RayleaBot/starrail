@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+<div class="header">
+  <div class="header-title">货币战争</div>
+  <div class="header-uid">uid {{ .uid }}</div>
+  <div class="header-content">
+    <div class="header-content-block"><div class="header-content-block-value">{{ .season_level }}</div><div class="header-content-block-title">晋升等级</div></div>
+    <div class="header-content-block"><div class="header-content-block-value">{{ .weekly_score }}</div><div class="header-content-block-title">本期积分</div></div>
+    <div class="header-content-block">
+      <div class="header-content-block-value rank-column">
+        <img class="rank-icon-bg"{{ with .rank_icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+        <div class="rank-badge">{{ .rank_badge }}</div>
+        <span class="rank-name">{{ .rank }}</span>
+      </div>
+      <div class="header-content-block-title">职级</div>
+    </div>
+  </div>
+</div>
+<div class="brief-section">
+  <div class="brief-item"><div class="brief-label">数据银行</div><div class="brief-value">{{ .handbook }}%</div></div>
+  <div class="brief-item"><div class="brief-label">羁绊链路</div><div class="brief-value">{{ .trait }}%</div></div>
+  <div class="brief-item"><div class="brief-label">预期收益</div><div class="brief-value">{{ .quest }}</div></div>
+</div>
+<div class="section">
+  <div class="section-header-title">最新通关战绩</div>
+  {{ with .latest }}
+  <div class="record-meta-bar">
+    <div class="meta-inner-container">
+      <div class="meta-left">
+        <div class="meta-row-1">
+          <div class="rank-badge-mini">{{ .badge }}</div>
+          <img class="mini-division-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+          <span class="division-name-text">{{ .division }}</span>
+          <span class="game-mode-tag">{{ .mode }}</span>
+        </div>
+        <div class="meta-row-2">{{ .time }}</div>
+      </div>
+      <div class="meta-right">{{ .grade }}</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="stats-grid">
+      <div class="stat-card"><img class="stat-img" data-render-resource="grid-fight-heart" alt=""><div class="stat-info"><div class="stat-name">小队生命值</div><div class="stat-val">{{ .hp }}</div></div></div>
+      <div class="stat-card"><img class="stat-img" data-render-resource="grid-fight-money" alt=""><div class="stat-info"><div class="stat-name">总经济</div><div class="stat-val">{{ .coin }}</div></div></div>
+      <div class="stat-card"><img class="stat-img" data-render-resource="grid-fight-money" alt=""><div class="stat-info"><div class="stat-name">阵容价值</div><div class="stat-val">{{ .lineup_coin }}</div></div></div>
+    </div>
+    <div class="roles-area">
+      <div class="roles-group">
+        <div class="roles-group-header"><img class="group-logo" data-render-resource="grid-fight-front" alt=""><span class="group-name">前台</span></div>
+        <div class="roles-grid">{{ range .front }}{{ template "chess" . }}{{ end }}</div>
+      </div>
+      <div class="roles-group">
+        <div class="roles-group-header"><img class="group-logo inverted" data-render-resource="grid-fight-front" alt=""><span class="group-name">后台</span></div>
+        <div class="roles-grid">{{ range .back }}{{ template "chess" . }}{{ end }}</div>
+      </div>
+    </div>
+  </div>
+  {{ else }}
+  <div class="no-record">暂无战绩</div>
+  {{ end }}
+</div>
+<div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>
+{{ define "chess" }}<div class="chess-box" data-rarity="{{ .rarity }}"><div class="chess-main"><img class="chess-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">{{ if .trial }}<div class="trial-flag">试用</div>{{ end }}<div class="chess-stars">{{ range .stars }}<img class="star-mini" data-render-resource="{{ . }}" alt="">{{ end }}</div></div><div class="chess-bar"></div></div>{{ end }}

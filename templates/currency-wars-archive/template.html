@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+<div class="header">
+  <div class="header-title">货币战争·战绩回顾</div>
+  <div class="header-uid">uid {{ .uid }}</div>
+  <div class="header-content">
+    <div class="header-content-block"><div class="header-content-block-value">{{ .season_level }}</div><div class="header-content-block-title">晋升等级</div></div>
+    <div class="header-content-block"><div class="header-content-block-value">{{ .weekly_score }}</div><div class="header-content-block-title">本期积分</div></div>
+    <div class="header-content-block">
+      <div class="header-content-block-value rank-column">
+        <img class="rank-icon-bg"{{ with .rank_icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+        <div class="rank-badge">{{ .rank_badge }}</div>
+        <span class="rank-name">{{ .rank }}</span>
+      </div>
+      <div class="header-content-block-title">职级</div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <div class="section-header-title">挑战记录 {{ .index }}</div>
+  {{ with .record }}
+  <div class="record-meta-bar">
+    <div class="meta-inner-container">
+      <div class="meta-left">
+        <div class="meta-row-1">
+          <div class="rank-badge-mini">{{ .badge }}</div>
+          <img class="mini-division-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+          <span class="division-name-text">{{ .division }}</span>
+          <span class="game-mode-tag">{{ .mode }}</span>
+        </div>
+        <div class="meta-row-2">{{ .time }}</div>
+      </div>
+      <div class="meta-right">{{ .grade }}</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="stats-grid">
+      <div class="stat-card"><img class="stat-img" data-render-resource="grid-fight-heart" alt=""><div class="stat-info"><div class="stat-name">小队生命值</div><div class="stat-val">{{ .hp }}</div></div></div>
+      <div class="stat-card"><img class="stat-img" data-render-resource="grid-fight-money" alt=""><div class="stat-info"><div class="stat-name">总经济</div><div class="stat-val">{{ .coin }}</div></div></div>
+      <div class="stat-card"><img class="stat-img" data-render-resource="grid-fight-money" alt=""><div class="stat-info"><div class="stat-name">阵容价值</div><div class="stat-val">{{ .lineup_coin }}</div></div></div>
+    </div>
+    <div class="roles-area">
+      <div class="roles-group">
+        <div class="roles-group-header"><img class="group-logo" data-render-resource="grid-fight-front" alt=""><span class="group-name">前台</span></div>
+        <div class="roles-grid">{{ range .front }}<div class="chess-card-container">{{ template "chess" . }}</div>{{ end }}</div>
+      </div>
+      <div class="roles-group">
+        <div class="roles-group-header"><img class="group-logo inverted" data-render-resource="grid-fight-front" alt=""><span class="group-name">后台</span></div>
+        <div class="roles-grid">{{ range .back }}<div class="chess-card-container">{{ template "chess" . }}</div>{{ end }}</div>
+      </div>
+    </div>
+  </div>
+  {{ end }}
+</div>
+<div class="archive-section">
+  <div class="archive-section-title">羁绊信息</div>
+  <div class="item-list">
+    {{ range .traits }}
+    <div class="bond-info-item">{{ template "bond" . }}<div class="item-info"><div class="item-name">{{ .name }}</div></div></div>
+    {{ end }}
+  </div>
+</div>
+<div class="archive-section">
+  <div class="archive-section-title">投资环境</div>
+  <div class="item-list flex-column">
+    {{ range .portals }}
+    <div class="investment-environment-item"><div class="environment-icon-container"><img class="item-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div><div class="item-name">{{ .name }}</div></div>
+    {{ end }}
+  </div>
+</div>
+<div class="archive-section">
+  <div class="archive-section-title">投资策略</div>
+  <div class="item-list">
+    {{ range .augments }}
+    <div class="investment-strategy-item"><div class="strategy-icon-container quality-{{ .quality }}"><img class="item-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div><div class="item-info"><div class="item-name">{{ .name }}</div></div></div>
+    {{ end }}
+  </div>
+</div>
+{{ with .damage }}
+<div class="archive-section">
+  <div class="archive-section-title">伤害统计</div>
+  <div class="damage-chart">
+    {{ range . }}
+    <div class="damage-row">
+      <div class="damage-entity-container">
+        {{ if .trait }}{{ with .entity }}<div class="damage-scale">{{ template "bond" . }}</div>{{ end }}{{ else }}{{ with .entity }}<div class="chess-card-container damage-scale">{{ template "chess" . }}</div>{{ end }}{{ end }}
+      </div>
+      <div class="damage-bar-container">
+        <div class="damage-value">{{ .value }}</div>
+        <div class="damage-bar" style="width: {{ .percent }}%;"></div>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}
+<div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>
+{{ define "chess" }}<div class="chess-box" data-rarity="{{ .rarity }}"><div class="chess-main"><img class="chess-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">{{ if .trial }}<div class="trial-flag">试用</div>{{ end }}<div class="chess-stars">{{ range .stars }}<img class="star-mini" data-render-resource="{{ . }}" alt="">{{ end }}</div></div><div class="chess-bar"></div></div><div class="chess-equipments">{{ range .equips }}<div class="equip-icon-box"><img class="equip-icon"{{ with . }} data-render-resource="{{ . }}"{{ end }} alt=""></div>{{ end }}</div>{{ end }}
+{{ define "bond" }}<div class="bond-icon-container quality-{{ .quality }}"><img class="item-icon"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""><div class="bond-count">{{ .count }}</div></div>{{ end }}

@@ -1,0 +1,11 @@
+{
+  "id": "currency-wars",
+  "name": "星铁货币战争",
+  "description": "货币战争命令的图片，布局参照 StarRail-plugin gridFight",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1098,
+  "height": 4000
+}
