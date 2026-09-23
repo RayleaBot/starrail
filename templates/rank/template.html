@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
-<body class="elem-{{ .elem }} {{ .mode }}-mode{{ if .wide }} wide{{ end }}">
-<div class="container elem-bg" id="container">
+<body class="elem-{{ .elem }} {{ .mode }}-mode" style="width:{{ .width }}px">
+<div class="container elem-bg" id="container" style="width:{{ .width }}px">
 <div class="head-box">
   <div class="title">{{ .title }}</div>
 </div>

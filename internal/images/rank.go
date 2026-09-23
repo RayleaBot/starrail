@@ -26,83 +26,44 @@ var rankArtwork = [][2]string{
 	{"common-item-bg5", "resources/common/item/bg5.png"},
 }
 
-// rankTalents are the talents miao's rank list shows by path: memosprite
-// skills for Remembrance, the Elation skill for Elation.
+// rankTalents are the talents miao's rank list shows for the ranked
+// character's path: memosprite skills for Remembrance, the Elation skill for
+// Elation, on a page 970 pixels wide; other paths, and the list of every
+// character's best, show four on a page 900 wide.
 var rankTalents = map[string][]string{"记忆": {"a", "e", "t", "q", "me", "mt"}, "欢愉": {"a", "e", "t", "q", "xe"}}
 
 // Rank draws a group ranking the way miao's character/rank-profile-list
 // does in its Star Rail mode: the title and ranking notes, then a row per
 // entry with its place (or, listing every character's best, the character),
 // the member's avatar, Eidolon, name and UID, the talents, light cone, relic
-// sets with their score and grade, and the default detail's damage. miao
-// widens the page for Remembrance and Elation characters, whose rows show
-// more talents.
+// sets with their score and grade, and the default detail's damage.
 func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 	if context.Game.Calc == nil || len(rank.Entries) == 0 {
 		return app.Image{}, false
 	}
-	metadata := context.Game.Calc.Metadata()
-	records, weapons := map[string]reference.Character{}, map[string]reference.Weapon{}
-	for _, record := range metadata.Characters {
-		records[record.ID] = record
-	}
-	for _, weapon := range metadata.Weapons {
-		weapons[weapon.ID] = weapon
-	}
-	resources := &app.ImageResources{Context: context}
-	for _, item := range rankArtwork {
-		resources.Artwork(item[0], "miao-plugin", item[1])
-	}
-	miao := func(name string) string {
-		return resources.Artwork("miao-"+strconv.Itoa(len(resources.List)), "miao-plugin", name)
-	}
+	page := newRankPage(context)
+	ranked := page.records[rank.Character.ID]
 	elem := "hydro"
-	if record, ok := records[rank.Character.ID]; ok && elementClasses[record.Element] != "" {
-		elem = elementClasses[record.Element]
+	if elementClasses[ranked.Element] != "" {
+		elem = elementClasses[ranked.Element]
 	}
-	resources.Artwork("common-bg-bg-"+elem, "miao-plugin", "resources/common/bg/bg-"+elem+".webp")
-	rows, wide := []any{}, false
+	page.resources.Artwork("common-bg-bg-"+elem, "miao-plugin", "resources/common/bg/bg-"+elem+".webp")
+	keys, width := rankTalents[ranked.WeaponType], 970
+	if keys == nil {
+		keys, width = []string{"a", "e", "t", "q"}, 900
+	}
+	rows := []any{}
 	for index, entry := range rank.Entries {
-		record, panel := records[entry.CharacterID], *entry.Panel
-		base := "resources/meta-sr/character/" + record.Name + "/imgs/"
-		star := app.Int(record.Data["star"])
-		if star != 4 {
-			star = 5
-		}
-		name := record.Name
-		// miao's sName: the abbreviation for names of four or more characters.
-		if utf8.RuneCountInString(name) >= 4 {
-			name = abbreviation(context.Catalog, record)
-		}
-		face := miao(base + "face.webp")
-		// Upstream's rows class the talents by the character's element name,
-		// which no Star Rail style matches.
-		row := map[string]any{"place": index + 1, "uid": entry.UID, "star": star, "face": face, "cons": panel.Rank, "name": name, "elem": record.Element}
+		record, panel := page.records[entry.CharacterID], *entry.Panel
+		row := page.row(index+1, entry.UID, record, panel.Rank)
 		if entry.Avatar != "" {
-			row["avatar"] = resources.Remote("avatar-"+strconv.Itoa(index), entry.Avatar)
+			row["avatar"] = page.resources.Remote("avatar-"+strconv.Itoa(index), entry.Avatar)
 		}
-		keys := rankTalents[record.WeaponType]
-		if keys == nil {
-			keys = []string{"a", "e", "t", "q"}
-		}
-		wide = wide || len(keys) > 4
-		levels := app.PanelTalents(panel, record)
-		talents := []any{}
-		for _, key := range keys {
-			level := levels[key]
-			talents = append(talents, map[string]any{"level": level.Level, "plus": level.Level > level.Original, "crown": level.Original >= 10, "icon": miao(base + "talent-" + key + ".webp")})
-		}
-		row["talents"] = talents
+		row["talents"] = page.talents(record, keys, app.PanelTalents(panel, record))
 		if weapon := panel.Weapon; weapon != nil {
-			cone := weapons[weapon.ID]
-			label := weapon.Name
-			if catalogEntry, ok := context.Catalog.Get(weapon.ID); ok && utf8.RuneCountInString(label) > 4 && catalogEntry.Abbr != "" {
-				label = catalogEntry.Abbr
-			}
-			row["weapon"] = map[string]any{"icon": miao("resources/meta-sr/weapon/" + cone.Type + "/" + cone.Name + "/icon.webp"), "star": app.Int(weapon.Rarity),
-				"name": label, "affix": weapon.Refinement, "badge": weapon.Refinement + 1, "level": weapon.Level}
+			row["weapon"] = page.weapon(page.weapons[weapon.ID], weapon.Level, weapon.Refinement)
 		}
-		// miao shows each set worn as two or four pieces by its first piece.
+		// miao shows each set worn as two or four pieces.
 		counts, order := map[string]int{}, []string{}
 		for _, piece := range panel.Equipment {
 			if piece.SetName == "" {
@@ -115,14 +76,9 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		}
 		sets := []any{}
 		for _, set := range order {
-			if counts[set] < 2 || len(sets) == 2 {
-				continue
+			if counts[set] >= 2 && len(sets) < 2 {
+				sets = append(sets, page.setIcon(set))
 			}
-			icon := miao("resources/meta-sr/artifact/" + set + "/arti-1.webp")
-			if icon == "" {
-				icon = miao("resources/meta-sr/artifact/" + set + "/arti-5.webp")
-			}
-			sets = append(sets, icon)
 		}
 		grade := entry.Grade
 		if grade == "" {
@@ -154,6 +110,87 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		title = name + map[string]string{"mark": "遗器评分"}[rank.Mode] + "排行"
 	}
 	since := time.UnixMilli(rank.SinceMS).In(chinaTime).Format("01-02 15:04")
-	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "wide": wide, "since": since, "hash": context.Game.Prefix, "rows": rows}
-	return app.Image{Template: "rank", Data: data, Resources: resources.List}, true
+	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "since": since, "hash": context.Game.Prefix, "rows": rows, "width": width}
+	return app.Image{Template: "rank", Data: data, Resources: page.resources.List}, true
+}
+
+// rankPage is what a ranking page draws its rows from: the calculation
+// records and light cones by ID, and the page's resources.
+type rankPage struct {
+	context   app.ImageContext
+	resources *app.ImageResources
+	records   map[string]reference.Character
+	weapons   map[string]reference.Weapon
+}
+
+func newRankPage(context app.ImageContext) *rankPage {
+	metadata := context.Game.Calc.Metadata()
+	page := &rankPage{context: context, resources: &app.ImageResources{Context: context}, records: map[string]reference.Character{}, weapons: map[string]reference.Weapon{}}
+	for _, record := range metadata.Characters {
+		page.records[record.ID] = record
+	}
+	for _, weapon := range metadata.Weapons {
+		page.weapons[weapon.ID] = weapon
+	}
+	for _, item := range rankArtwork {
+		page.resources.Artwork(item[0], "miao-plugin", item[1])
+	}
+	return page
+}
+
+func (p *rankPage) miao(name string) string {
+	return p.resources.Artwork("miao-"+strconv.Itoa(len(p.resources.List)), "miao-plugin", name)
+}
+
+// row starts a row as miao lays it out: the place and UID, the character's
+// face and rarity, its Eidolon and name, abbreviated from four characters on
+// as miao's sName.
+func (p *rankPage) row(place int, uid string, record reference.Character, cons int) map[string]any {
+	star := app.Int(record.Data["star"])
+	if star != 4 {
+		star = 5
+	}
+	name := record.Name
+	if utf8.RuneCountInString(name) >= 4 {
+		name = abbreviation(p.context.Catalog, record)
+	}
+	// Upstream's rows class the talents by the character's element name,
+	// which no Star Rail style matches.
+	return map[string]any{"place": place, "uid": uid, "star": star, "face": p.miao("resources/meta-sr/character/" + record.Name + "/imgs/face.webp"), "cons": cons, "name": name, "elem": record.Element}
+}
+
+// talents are a row's talent cells: each talent's icon with its level and
+// miao's bonus and crown marks, no level for a talent without one.
+func (p *rankPage) talents(record reference.Character, keys []string, levels map[string]app.PanelTalent) []any {
+	cells := []any{}
+	for _, key := range keys {
+		cell := map[string]any{"icon": p.miao("resources/meta-sr/character/" + record.Name + "/imgs/talent-" + key + ".webp"), "level": ""}
+		if level, ok := levels[key]; ok {
+			cell["level"], cell["plus"], cell["crown"] = level.Level, level.Level > level.Original, level.Original >= 10
+		}
+		cells = append(cells, cell)
+	}
+	return cells
+}
+
+// weapon is the light cone cell: its icon and rarity, the name (its
+// abbreviation past four characters), superimposition and level.
+func (p *rankPage) weapon(cone reference.Weapon, level, affix int) map[string]any {
+	label, star := cone.Name, 0
+	if entry, ok := p.context.Catalog.Get(cone.ID); ok {
+		star = entry.Rarity
+		if utf8.RuneCountInString(label) > 4 && entry.Abbr != "" {
+			label = entry.Abbr
+		}
+	}
+	return map[string]any{"icon": p.miao("resources/meta-sr/weapon/" + cone.Type + "/" + cone.Name + "/icon.webp"), "star": star, "name": label, "affix": affix, "badge": affix + 1, "level": level}
+}
+
+// setIcon is miao's picture of a relic set: its first piece, the sphere for
+// planar ornaments.
+func (p *rankPage) setIcon(name string) string {
+	if icon := p.miao("resources/meta-sr/artifact/" + name + "/arti-1.webp"); icon != "" {
+		return icon
+	}
+	return p.miao("resources/meta-sr/artifact/" + name + "/arti-5.webp")
 }

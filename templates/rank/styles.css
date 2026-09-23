@@ -812,10 +812,6 @@ ul.cont-msg li strong,
   text-overflow: ellipsis;
 }
 
-body .container { width: 900px; }
-/* miao widens the page to 970px for characters with memosprite or Elation
-   skills; the image keeps its width and draws those pages smaller. */
-body.wide { zoom: calc(1.4 * 900 / 970); }
-body.wide .container { width: 970px; }
+/* miao sets the container width inline; the page does too. */
 /* Upstream sets each row's pictures as inline backgrounds. */
 [data-render-resource]:not(img) { background-image: var(--render-resource, none) !important; }
