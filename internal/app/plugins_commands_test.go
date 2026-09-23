@@ -28,6 +28,7 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"圣遗物列表100000001", "artifact-list", []string{"100000001"}},
 			{"希儿遗器", "score", []string{"希儿"}},
 			{"希儿伤害", "build", []string{"希儿"}},
+			{"希儿伤害2", "build", []string{"希儿", "2"}},
 			{"上期忘却之庭", "challenge", []string{"上期"}},
 			{"上期模拟宇宙", "rogue", []string{"上期"}},
 			{"差分宇宙", "divergent", nil},

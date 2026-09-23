@@ -55,6 +55,8 @@ type PanelImage struct {
 	Damage *BuildResult
 	// Change is the 面板换装 word of a changed panel, which is not real data.
 	Change string
+	// DamageMode draws miao's 伤害 page.
+	DamageMode bool
 }
 
 // PanelImageBuilder draws a single-character panel with the plugin's

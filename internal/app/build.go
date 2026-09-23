@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -33,6 +34,9 @@ type BuildProfile struct {
 	Equipment          []BuildGear        `json:"equipment"`
 	EnemyLevel         int                `json:"enemy_level"`
 	CandidateWeapon    *BuildWeapon       `json:"candidate_weapon,omitempty"`
+	// DmgIndex asks for miao's 伤害 mode: the detail numbered from 1, or 0
+	// for the rule's default.
+	DmgIndex *int `json:"dmg_index,omitempty"`
 }
 type BuildStat struct {
 	ID      string  `json:"id,omitempty"`
@@ -68,6 +72,36 @@ type BuildScenario struct {
 	Weapon     BuildWeapon        `json:"weapon"`
 	Attributes map[string]float64 `json:"attributes"`
 	Results    []BuildSkillResult `json:"results"`
+	// EnemyName and CreatedBy are the rule's enemy and author, as miao's
+	// damage table names them.
+	EnemyName string `json:"enemy_name,omitempty"`
+	CreatedBy string `json:"created_by,omitempty"`
+	// Matrix is miao's 词条伤害计算 in 伤害 mode.
+	Matrix *DamageMatrix `json:"matrix,omitempty"`
+}
+
+// DamageMatrix is the damage of one detail with one substat of each row's
+// attribute traded for one of each column's.
+type DamageMatrix struct {
+	Index int            `json:"index"`
+	Title string         `json:"title"`
+	Avg   float64        `json:"avg"`
+	Dmg   *float64       `json:"dmg"`
+	Attrs []DamageAttr   `json:"attrs"`
+	Rows  [][]DamageCell `json:"rows"`
+}
+
+type DamageAttr struct {
+	Title string `json:"title"`
+	Text  string `json:"text"`
+}
+
+// DamageCell is one trade; Type is na on the diagonal, else avg, gt or lt
+// against the detail's own average.
+type DamageCell struct {
+	Type string   `json:"type"`
+	Avg  float64  `json:"avg"`
+	Dmg  *float64 `json:"dmg"`
 }
 type BuildSkillResult struct {
 	ID       string   `json:"id"`
@@ -209,6 +243,11 @@ func buildProfile(panel CharacterPanel, record reference.Character) (BuildProfil
 	p.Equipment, err = buildGearSet(panel)
 	return p, err
 }
+
+// damageIndexRange is the runner's answer to a damage number past the rule's
+// details.
+var damageIndexRange = regexp.MustCompile(`dmg\.index_range\.([0-9]+)`)
+
 func referenceBuild(ctx context.Context, engine *reference.Engine, record reference.Character, input BuildProfile) (BuildResult, error) {
 	var raw map[string]any
 	if decodeObject(input, &raw) != nil {
@@ -216,6 +255,9 @@ func referenceBuild(ctx context.Context, engine *reference.Engine, record refere
 	}
 	result, err := engine.Run(ctx, record, raw)
 	if err != nil {
+		if match := damageIndexRange.FindStringSubmatch(err.Error()); match != nil {
+			return BuildResult{}, gameError("build_input_invalid", "序号输入错误："+record.Name+"最多只支持"+match[1]+"种伤害计算哦")
+		}
 		return BuildResult{}, buildUnavailable("reference_calculation")
 	}
 	var output BuildResult
@@ -332,7 +374,7 @@ func applyBuildIdentity(result *BuildResult, panel CharacterPanel, record refere
 
 // panelDamage calculates the reference damage of a panel already read from the
 // account, so a panel reply does not query it twice.
-func (a *App) panelDamage(ctx context.Context, panel CharacterPanel) (BuildResult, error) {
+func (a *App) panelDamage(ctx context.Context, panel CharacterPanel, dmgIndex *int) (BuildResult, error) {
 	record, err := findBuildCharacter(a.Game.Calc, panel)
 	if err != nil {
 		return BuildResult{}, err
@@ -341,6 +383,7 @@ func (a *App) panelDamage(ctx context.Context, panel CharacterPanel) (BuildResul
 	if err != nil {
 		return BuildResult{}, err
 	}
+	profile.DmgIndex = dmgIndex
 	result, err := referenceBuild(ctx, a.Game.Calc, record, profile)
 	if err != nil {
 		return BuildResult{}, err
@@ -356,6 +399,13 @@ func (a *App) panelDamage(ctx context.Context, panel CharacterPanel) (BuildResul
 // group also enters the group ranking; change is the 面板换装 word of a
 // changed panel.
 func (a *App) fullPanelView(ctx context.Context, event *rayleabot.EventContext, panel CharacterPanel, uid string, record bool, change string) View {
+	return a.panelView(ctx, event, panel, uid, record, change, nil)
+}
+
+// panelView is fullPanelView, in miao's 伤害 mode when damage, calculated in
+// that mode, is given: the damage table numbered, the chosen detail's
+// substat trades and its buffs in place of the relics.
+func (a *App) panelView(ctx context.Context, event *rayleabot.EventContext, panel CharacterPanel, uid string, record bool, change string, damage *BuildResult) View {
 	missing := []string{}
 	if scored, err := a.scorePanel(ctx, panel); err == nil {
 		panel = scored
@@ -363,11 +413,17 @@ func (a *App) fullPanelView(ctx context.Context, event *rayleabot.EventContext, 
 		missing = append(missing, "评分："+friendlyError(err))
 	}
 	view := PanelView(a.Game, []CharacterPanel{panel}, uid)
-	image := PanelImage{Panel: panel, UID: uid, Change: change}
+	image := PanelImage{Panel: panel, UID: uid, Change: change, DamageMode: damage != nil}
 	if change != "" {
 		view.Note = "该面板为非实际数据。当前替换命令：" + change
 	}
-	if result, err := a.panelDamage(ctx, panel); err == nil {
+	result, err := BuildResult{}, error(nil)
+	if damage != nil {
+		result = *damage
+	} else {
+		result, err = a.panelDamage(ctx, panel, nil)
+	}
+	if err == nil {
 		damage := BuildView(a.Game, result)
 		view.Sections = append(view.Sections, Section{Title: "参考伤害 · " + result.Version, Rows: damage.Rows})
 		image.Damage = &result

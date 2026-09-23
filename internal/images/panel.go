@@ -118,7 +118,7 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 		updated = time.UnixMilli(panel.UpdatedAtMS)
 	}
 	data := map[string]any{
-		"elem": elem, "name": record.Name, "uid": image.UID, "level": panel.Level, "cons": panel.Rank,
+		"mode": "profile", "elem": elem, "name": record.Name, "uid": image.UID, "level": panel.Level, "cons": panel.Rank,
 		"memosprite": len(talentKeys) > 4, "talents": talents, "trees": traces(panel, record, images, add),
 		"attrs": attributes(panel, record), "cons_icons": cons,
 		"data_source": panelSources[panel.Source], "update_time": updated.In(chinaTime).Format("2006-01-02 15:04:05"),
@@ -133,6 +133,21 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	}
 	if image.Damage != nil {
 		data["damage"] = damage(image.Damage)
+		if matrix := image.Damage.Baseline.Matrix; image.DamageMode {
+			data["mode"] = "dmg"
+			if matrix != nil {
+				data["matrix"] = damageMatrixData(*matrix)
+				// The buffs are those of the detail the trades are for.
+				buffs := []any{}
+				if detail := matrix.Index - 1; detail >= 0 && detail < len(image.Damage.Baseline.Results) {
+					for _, buff := range image.Damage.Baseline.Results[detail].Buffs {
+						title, text, _ := strings.Cut(strings.Replace(buff, ":", "：", 1), "：")
+						buffs = append(buffs, map[string]any{"title": title, "text": text})
+					}
+				}
+				data["buffs"] = buffs
+			}
+		}
 	}
 	if image.Change != "" {
 		data["change"] = image.Change
@@ -327,7 +342,39 @@ func damage(result *app.BuildResult) map[string]any {
 		}
 		rows = append(rows, row)
 	}
-	return map[string]any{"rows": rows, "enemy_level": result.EnemyLevel}
+	enemy := result.Baseline.EnemyName
+	if enemy == "" {
+		enemy = "小宝"
+	}
+	return map[string]any{"rows": rows, "enemy_level": result.EnemyLevel, "enemy_name": enemy, "created_by": result.Baseline.CreatedBy}
+}
+
+// damageMatrixData is miao's 词条伤害计算 as ProfileDetail formats it: each
+// trade's change of the average, and its average and critical damage.
+func damageMatrixData(matrix app.DamageMatrix) map[string]any {
+	critical := func(value *float64) string {
+		if value == nil {
+			return ""
+		}
+		return comma(*value)
+	}
+	rows := []any{}
+	for index, row := range matrix.Rows {
+		cells := []any{}
+		for _, cell := range row {
+			if cell.Type == "na" {
+				cells = append(cells, map[string]any{"type": "na"})
+				continue
+			}
+			change := comma(cell.Avg - matrix.Avg)
+			if cell.Avg > matrix.Avg {
+				change = "+" + change
+			}
+			cells = append(cells, map[string]any{"type": cell.Type, "val": change, "avg": comma(cell.Avg), "dmg": critical(cell.Dmg)})
+		}
+		rows = append(rows, map[string]any{"title": matrix.Attrs[index].Title, "text": matrix.Attrs[index].Text, "cells": cells})
+	}
+	return map[string]any{"index": matrix.Index, "title": matrix.Title, "avg": comma(matrix.Avg), "dmg": critical(matrix.Dmg), "attrs": matrix.Attrs, "rows": rows}
 }
 
 // statText shows official numbers the way miao does: thousands separators on
