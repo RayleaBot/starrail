@@ -69,6 +69,7 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"喵喵别名删除", "alias-remove", nil},
 			{"希儿昵称", "aliases", []string{"希儿"}},
 			{"喵喵别名帮助", "alias-help", nil},
+			{"希儿", "character-card", nil},
 		},
 	}
 	for game, list := range cases {
