@@ -110,3 +110,36 @@ func TestCustomRankEntriesAddEidolonTalents(t *testing.T) {
 		t.Fatalf("second row %+v", second)
 	}
 }
+
+func TestCustomRankAvatarReadsArkPlayerData(t *testing.T) {
+	answer := cloudObject(t, `{"retcode":0,"data":{"info":{"uid":"10@@@@543","avatars":{"1102":{"name":"希儿","id":1102,"elem":"quantum","level":80,"promote":6,"cons":2,
+		"talent":{"a":6,"e":10,"t":10,"q":10},"trees":["1102101","1102201"],"weapon":{"id":23001,"level":80,"promote":6,"affix":1},
+		"artis":{"1":{"level":15,"star":5,"id":61011,"mainId":1,"attrIds":["5,2,2","6,1,0"]}},"_source":"homo"}}}}}`)
+	uid, avatar, failure := customRankAvatar(answer, "1102")
+	if failure != "" || uid != "10@@@@543" || avatar["name"] != "希儿" {
+		t.Fatalf("read %q %v %q", uid, avatar, failure)
+	}
+	// A character the answer does not hold falls back to its first one.
+	if _, other, _ := customRankAvatar(answer, "1208"); other["name"] != "希儿" {
+		t.Fatalf("fallback %v", other)
+	}
+	_, raw, err := cleanCloudAvatar(avatar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	panel, err := pluginApp(t).cloudAvatarPanel(t.Context(), raw)
+	if err != nil || panel.ID != "1102" || panel.Rank != 2 || panel.Weapon == nil || panel.Weapon.Name != "于夜色中" || len(panel.Equipment) != 1 {
+		t.Fatalf("panel %+v %v", panel, err)
+	}
+	for raw, want := range map[string]string{
+		`{"retcode":-1}`: "未知错误",
+		`{"retcode":1,"message":"query expired"}`:         "query expired",
+		`{"retcode":0,"data":{"playerData":{"uid":"1"}}}`: "返回数据异常",
+		`{"retcode":0,"data":{"uid":"1","avatars":{}}}`:   "未找到对应角色面板",
+		`{"retcode":0,"data":{"avatars":{"1":{"id":1}}}}`: "返回数据异常",
+	} {
+		if _, _, failure := customRankAvatar(cloudObject(t, raw), "1102"); failure != want {
+			t.Errorf("%s: %q, want %q", raw, failure, want)
+		}
+	}
+}
