@@ -2,7 +2,10 @@ package app
 
 import (
 	"encoding/json"
+	"reflect"
 	"slices"
+	"strconv"
+	"strings"
 	"testing"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -120,6 +123,23 @@ func atlasReply(a *App, msg string) string {
 	return run.answers[0].picture.Path
 }
 
+// atlasAnswers are the replies Atlas sends for a sender's message, a picture
+// as its path and a list joined, with whether Atlas ends the message.
+func atlasAnswers(a *App, sender, msg string) ([]string, bool) {
+	aliases := func() map[string]string { return nil }
+	run := atlasRun{app: a, owner: Subject{ActorID: sender}}
+	ended := run.atlas(a.miaoAccept(msg, aliases))
+	replies := []string{}
+	for _, answer := range run.answers {
+		if answer.list != nil {
+			replies = append(replies, strings.Join(answer.list, " "))
+		} else {
+			replies = append(replies, answer.picture.Path)
+		}
+	}
+	return replies, ended
+}
+
 func TestAtlasAnswersMessagesByTheLibraryRules(t *testing.T) {
 	a, _ := atlasApp(t)
 	for msg, want := range map[string]string{
@@ -223,5 +243,76 @@ func TestAtlasAnswersBetweenStarRailPluginAndTheOtherCommands(t *testing.T) {
 		if got := atlasReply(a, yunzaiMessage(event)); got != want.picture {
 			t.Errorf("Atlas answered %s with %q, want %q", word, got, want.picture)
 		}
+	}
+}
+
+func TestAtlasIndexListsAndPicksByNumber(t *testing.T) {
+	a, root := atlasApp(t)
+	writeArtwork(t, root, "star-rail-atlas/index/lightcone.yaml", "光锥:\n  - 五星光锥\n  - 四星光锥\n五星光锥:\n  - 于夜色中\n  - 希儿专武\n  - 银河铁道之夜\n")
+	writeArtwork(t, root, "star-rail-atlas/index/relic.yaml", "遗器:\n  - 云无留迹的过客\n")
+	steps := []struct {
+		sender, msg string
+		replies     []string
+		ended       bool
+	}{
+		// A key of the index answers with its list, led by the prefix the
+		// module's rule writes, and the message goes on to the others.
+		{"a", "#星铁五星光锥", []string{"*于夜色中 *希儿专武 *银河铁道之夜"}, false},
+		// A number picks an entry, which answers and ends the message; the
+		// pick counts twice, once more as the entry runs through Atlas, and
+		// an answer resets the count.
+		{"a", "1", []string{"lightcone/23001.png"}, true},
+		{"b", "1", []string{}, false},
+		{"a", "2", []string{"lightcone/23001.png"}, true},
+		// An entry without a picture answers nothing.
+		{"a", "3", []string{}, false},
+		{"a", "你好", []string{}, false},
+		// The fourth count without an answer drops the list.
+		{"a", "1", []string{}, false},
+		{"a", "1", []string{}, false},
+		// An entry that is itself a key answers with its list and ends the
+		// message; its count is left at two, so the next pick drops the list
+		// as it answers.
+		{"b", "*光锥", []string{"*五星光锥 *四星光锥"}, false},
+		{"b", "1", []string{"*于夜色中 *希儿专武 *银河铁道之夜"}, true},
+		{"b", "1", []string{"lightcone/23001.png"}, true},
+		{"b", "1", []string{}, false},
+		{"c", "#星铁遗器", []string{"*云无留迹的过客"}, false},
+		{"c", "1", []string{"relic/101.png"}, true},
+		// miao's check leaves Atlas its own command word, which still counts.
+		{"d", "#星铁五星光锥", []string{"*于夜色中 *希儿专武 *银河铁道之夜"}, false},
+		{"d", "#星铁希儿图鉴", []string{}, false},
+		{"d", "#星铁希儿天赋", []string{}, false},
+		{"d", "#星铁蝴蝶资料", []string{}, false},
+		{"d", "1", []string{}, false},
+	}
+	for _, step := range steps {
+		replies, ended := atlasAnswers(a, step.sender, step.msg)
+		if !reflect.DeepEqual(replies, step.replies) || ended != step.ended {
+			t.Fatalf("%s %q: %q %v, want %q %v", step.sender, step.msg, replies, ended, step.replies, step.ended)
+		}
+	}
+}
+
+func TestAtlasPagesFollowReplyMessageArray(t *testing.T) {
+	lines := []string{"请直接发送数字序号或对应指令："}
+	for index := range 200 {
+		lines = append(lines, strconv.Itoa(index+1)+"、*五星光锥")
+	}
+	pages := atlasPages(lines)
+	// Lines join until a message reaches 100 characters.
+	if first := pages[0][0]; strings.Count(first, "\n") != 11 || !strings.HasPrefix(first, "请直接发送数字序号或对应指令：\n1、*五星光锥") {
+		t.Fatalf("%q", first)
+	}
+	if len(pages) != 1 || pages[0][len(pages[0])-1] != "第1页，共1页" {
+		t.Fatal(pages)
+	}
+	many := []string{}
+	for range 2000 {
+		many = append(many, strings.Repeat("长", 100))
+	}
+	pages = atlasPages(many)
+	if len(pages) != 22 || len(pages[0]) != 96 || pages[0][95] != "第1页...未完待续" || pages[21][len(pages[21])-1] != "第22页，共22页" {
+		t.Fatal(len(pages), len(pages[0]), pages[21][len(pages[21])-1])
 	}
 }

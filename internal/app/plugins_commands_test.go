@@ -133,6 +133,10 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"宇宙布洛妮娅", "character-card", nil},
 			{"于夜色中图鉴", "catalog", []string{"于夜色中"}},
 			{"希儿培养", "materials", []string{"希儿"}},
+			// Atlas's index lists answer these before the fallback card.
+			{"光锥", "character-card", nil},
+			{"五星光锥", "character-card", nil},
+			{"遗器", "character-card", nil},
 			// Atlas's guide for role module takes 攻略0 after the guide.
 			{"希儿攻略0", "guides", []string{"希儿"}},
 		},

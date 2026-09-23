@@ -279,6 +279,7 @@
             "pick": [
               "图鉴"
             ],
+            "prefix": "*",
             "prefix_for_reg": "(\\*|#星铁)"
           },
           "guide for role": {
@@ -288,6 +289,7 @@
               "攻略",
               "指南"
             ],
+            "prefix": "*",
             "prefix_for_reg": "(\\*|#星铁)"
           },
           "material for role": {
@@ -298,6 +300,7 @@
               "材料",
               "培养"
             ],
+            "prefix": "*",
             "prefix_for_reg": "(\\*|#星铁)"
           }
         }

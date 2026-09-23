@@ -46,6 +46,8 @@ Apache-2.0 许可保留在 `LICENSES/StarRail-plugin-Apache-2.0.txt`，对应的
 
 `templates/rank-stats/` 按 ark-plugin 的 graph/stats 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），页面框架沿用 miao-plugin 的 common/layout/default 与 common/common.css，同 ark 的 1.4 倍缩放。上游在浏览器中用 ECharts 绘制折线，这里按 ECharts 的刻度与平滑算法输出相同的 SVG，不随插件分发该库；背景图取自“ark 插件图片”素材来源的 `resources/graph/`。
 
+`templates/atlas-index/` 按 Atlas 的 resource/massage/text.html 与 text.css 改写（GPL-3.0，见 `LICENSES/Atlas-GPL-3.0.txt`），同上游的 1.5 倍缩放，数字字体取自 Yunzai 的 tttgbnumber；上游的 Source Han Sans CN Bold 字体超过宿主单个渲染资源 16 MiB 的上限，不随附，其余文字使用渲染器的字体。
+
 `templates/charge/` 与 `templates/online/` 按 StarRail-plugin 的 charge 与 online 页面改写（Apache-2.0），“星琼记录”等与“在线时长”同上游 apps/hkrpg.js：资产记录读取官方自助查询的一页（每页 10 条）并只保留获取的记录（开拓力只保留多于 1 点的）；上游的“光锥记录”“武器记录”被跃迁记录的规则先匹配而从不出图，这里同样交给跃迁记录。在线时长读取开拓力记录中的“随时间回复开拓力”，按上游 statisticsOnlineDateGeneral 与 statisticOnlinePeriods 把每次单独回复的 1 点记为之前 6 分钟在线，逐日统计小时数并画出近七天的在线时段（上游逐分钟扫描使每段少记一分钟，这里照做；上游把零点后六分钟内的记录算到前一天时取错了日期，这里按其本意记到前一天）；每页 50 条，为在事件时限内回复最多读取 40 秒。两张 ECharts 图（近七天柱状图与日历热力图）按 ECharts 的默认布局、配色与分段输出 SVG，热力图上游固定为 2023 年，这里显示当前年份。
 
 参考面板、收益曲线、强度榜、攻略、深渊攻略与商店光锥推荐同 StarRail-plugin 的 apps/srxx.js，直接发送该仓库 `resources/srsr/` 中的米游社作者整理图（Apache-2.0，见 `LICENSES/StarRail-plugin-Apache-2.0.txt`；上游在文件头注明各图作者），多图命令与上游一样以合并转发发送，平台不支持合并转发时改为一条消息。图片内容停在上游收录时的 1.x 版本，取自“星铁插件图片”素材来源；参考面板按角色的各个名字查找上游文件名，例如本插件的“穹·存护”对应上游的“开拓者•存护”。面板帮助同 miao-plugin 对“星铁面板帮助”的回复，发送该仓库的 `resources/character/imgs/help.jpg`（MIT），取自 miao 素材来源。

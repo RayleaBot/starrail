@@ -112,10 +112,15 @@ func (a *App) pictureMessage(ctx context.Context, event *rayleabot.EventContext)
 	aliases := sync.OnceValue(func() map[string]string { return a.aliasMap(event) })
 	// miao's accept checks run before every rule and hand the message on as
 	// their own command word, which Atlas does not take.
-	run := atlasRun{app: a}
+	run := atlasRun{app: a, owner: chatOwner(event)}
 	ended := run.atlas(a.miaoAccept(yunzaiMessage(event), aliases))
 	for _, answer := range run.answers {
-		if _, err := post(ctx, event, a.artworkReply(event, answer.picture)); err != nil {
+		if answer.list != nil {
+			err = a.postAtlasList(ctx, event, answer)
+		} else {
+			_, err = post(ctx, event, a.artworkReply(event, answer.picture))
+		}
+		if err != nil {
 			return true, err
 		}
 	}
