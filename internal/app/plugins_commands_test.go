@@ -118,6 +118,15 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"常规演算二100000001", "divergent-normal", []string{"100000001"}},
 			{"上周差分宇宙记录三100000001", "divergent-week", []string{"100000001"}},
 			{"本期演算100000001", "divergent-week", []string{"100000001"}},
+			// miao's profileDetail takes a UID after 面板, 详情, 遗器 and
+			// the like; after 伤害 the index group holds it, and nine digits
+			// or more are a UID, as in miao.
+			{"希儿面板100000001", "character", []string{"希儿", "100000001"}},
+			{"希儿详情100000001", "character", []string{"希儿", "100000001"}},
+			{"希儿遗器100000001", "score", []string{"希儿", "100000001"}},
+			{"希儿圣遗物100000001", "score", []string{"希儿", "100000001"}},
+			{"希儿伤害100000001", "build", []string{"希儿", "100000001"}},
+			{"面板100000001", "panel-list", []string{"100000001"}},
 		},
 	}
 	for game, list := range cases {
