@@ -243,7 +243,7 @@ func (a *App) monthlyCommand(ctx context.Context, event *rayleabot.EventContext,
 // this.
 func (a *App) ledgerCommand(ctx context.Context, event *rayleabot.EventContext, args []string) error {
 	word := ""
-	if len(args) > 0 && !uidPattern.MatchString(args[0]) {
+	if gluedMonth(event.Event.Command(), args) || len(args) > 0 && !uidPattern.MatchString(args[0]) {
 		word, args = args[0], args[1:]
 	}
 	if len(args) > 1 {
@@ -278,6 +278,14 @@ func (a *App) ledgerCommand(ctx context.Context, event *rayleabot.EventContext, 
 	// A month that cannot be saved has still been answered.
 	_ = a.keepMonthly(ctx, client, choice, result)
 	return err
+}
+
+// gluedMonth reports whether the first argument is the month written with
+// the command word, as 星琼7 or 星琼100000001: Yunzai's ledger rule reads any
+// digits there as the month, and a number no month has as this month, never
+// as a UID.
+func gluedMonth(word string, args []string) bool {
+	return len(args) > 0 && strings.HasSuffix(strings.TrimRight(word, "月"), args[0])
 }
 
 // ledgerMonths are the Chinese month words Yunzai's getMonth reads.

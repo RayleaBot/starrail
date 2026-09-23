@@ -174,3 +174,21 @@ func TestLedgerMonthFollowsYunzai(t *testing.T) {
 		}
 	}
 }
+
+func TestGluedMonthIsReadAsTheMonth(t *testing.T) {
+	for _, tc := range []struct {
+		word string
+		args []string
+		want bool
+	}{
+		{"星琼7", []string{"7"}, true},
+		{"星琼七月", []string{"七"}, true},
+		{"星琼100000001", []string{"100000001"}, true},
+		{"星琼", []string{"100000001"}, false},
+		{"星琼月", nil, false},
+	} {
+		if got := gluedMonth(tc.word, tc.args); got != tc.want {
+			t.Errorf("%s %v = %v", tc.word, tc.args, got)
+		}
+	}
+}

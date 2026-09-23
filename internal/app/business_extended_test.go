@@ -58,8 +58,8 @@ func TestExtendedCommandInputs(t *testing.T) {
 		}
 	}
 	// A UID alone, as in 深渊100000001 or 模拟宇宙100000001, is the UID.
-	for _, mode := range []string{"period", "rogue_period", "peak_period"} {
-		if input, uid, err := app.commandInput(Operation{Input: mode}, []string{"100000001"}, nil); err != nil || uid != "100000001" || input["schedule_type"] != nil {
+	for _, mode := range []string{"period", "rogue_period", "peak_period", "year_month"} {
+		if input, uid, err := app.commandInput(Operation{Input: mode}, []string{"100000001"}, nil); err != nil || uid != "100000001" || input["schedule_type"] != nil || input["month"] != nil {
 			t.Errorf("%s with a UID alone = %v %q %v", mode, input, uid, err)
 		}
 	}

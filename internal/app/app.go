@@ -784,7 +784,8 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 			args = args[1:]
 		}
 	case "year_month":
-		if len(args) > 0 {
+		// Only YYYYMM is a month; a UID is left for the role.
+		if len(args) > 0 && len(args[0]) == 6 {
 			month, err := strconv.Atoi(args[0])
 			if err != nil || month < 202001 || month > 210012 || month%100 < 1 || month%100 > 12 {
 				return nil, "", gameError("input_invalid", "月份使用 YYYYMM，例如 202609。")
