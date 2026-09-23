@@ -48,7 +48,7 @@ func TestGachaSummaryNeverClaimsCompleteHistory(t *testing.T) {
 }
 func TestExtendedCommandInputs(t *testing.T) {
 	app := &App{}
-	for _, tc := range []struct{ mode, valid, invalid, key string }{{"year_month", "202609", "202613", "month"}, {"rogue_period", "3", "4", "schedule_type"}, {"peak_period", "往期", "4", "schedule_type"}, {"starrail_pool", "21", "100", "gacha_type"}} {
+	for _, tc := range []struct{ mode, valid, invalid, key string }{{"year_month", "202609", "202613", "month"}, {"starrail_pool", "21", "100", "gacha_type"}} {
 		input, uid, err := app.commandInput(Operation{Input: tc.mode}, []string{tc.valid, "100000001"}, nil)
 		if err != nil || uid != "100000001" || input[tc.key] == nil {
 			t.Fatal("valid selector failed")
@@ -57,16 +57,8 @@ func TestExtendedCommandInputs(t *testing.T) {
 			t.Fatal("invalid selector accepted")
 		}
 	}
-	// A UID alone, as in 深渊100000001 or 模拟宇宙100000001, is the UID.
-	for _, mode := range []string{"period", "rogue_period", "peak_period", "year_month"} {
-		if input, uid, err := app.commandInput(Operation{Input: mode}, []string{"100000001"}, nil); err != nil || uid != "100000001" || input["schedule_type"] != nil || input["month"] != nil {
-			t.Errorf("%s with a UID alone = %v %q %v", mode, input, uid, err)
-		}
-	}
-	// 往期 is the last period, and the recent runs for Anomaly Arbitration.
-	for mode, want := range map[string]int{"period": 2, "peak_period": 3} {
-		if input, _, err := app.commandInput(Operation{Input: mode}, []string{"往期"}, nil); err != nil || input["schedule_type"] != want {
-			t.Errorf("%s 往期 = %v, %v", mode, input["schedule_type"], err)
-		}
+	// A UID alone, as in 月历100000001, is the UID.
+	if input, uid, err := app.commandInput(Operation{Input: "year_month"}, []string{"100000001"}, nil); err != nil || uid != "100000001" || input["month"] != nil {
+		t.Errorf("a UID alone = %v %q %v", input, uid, err)
 	}
 }

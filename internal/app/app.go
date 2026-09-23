@@ -708,7 +708,14 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		if !matched {
 			return event.Result(map[string]any{"handled": false})
 		}
-		input, uid, parseErr := a.commandInput(operation, args, a.aliasMap(event))
+		var input map[string]any
+		var uid string
+		var parseErr error
+		if slices.Contains(challengeCommands, operation.Name) {
+			input, uid, parseErr = challengeInput(operation, event.Event.Command(), args)
+		} else {
+			input, uid, parseErr = a.commandInput(operation, args, a.aliasMap(event))
+		}
 		if parseErr != nil {
 			err = parseErr
 			break
@@ -758,29 +765,6 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 			default:
 				return nil, "", gameError("input_invalid", "卡池使用 1、2、11、12、21 或 22。")
 			}
-			args = args[1:]
-		}
-	case "period", "rogue_period", "peak_period":
-		// Without a period, as in "深渊100000001", the UID comes first.
-		if len(args) > 0 && !uidPattern.MatchString(args[0]) {
-			// Upstream names the period in words, as in "上期深渊"; Anomaly
-			// Arbitration's 往期 is the three most recent runs together.
-			words := map[string]string{"本期": "1", "上期": "2", "往期": "2"}
-			if operation.Input == "peak_period" {
-				words["往期"] = "3"
-			}
-			if word, ok := words[args[0]]; ok {
-				args = append([]string{word}, args[1:]...)
-			}
-			period, err := strconv.Atoi(args[0])
-			maximum := 2
-			if operation.Input != "period" {
-				maximum = 3
-			}
-			if err != nil || period < 1 || period > maximum {
-				return nil, "", gameError("input_invalid", fmt.Sprintf("期数使用 1 至 %d。", maximum))
-			}
-			input["schedule_type"] = period
 			args = args[1:]
 		}
 	case "year_month":

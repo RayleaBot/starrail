@@ -1114,66 +1114,66 @@
       "id": "abyss",
       "name": "全部深渊",
       "description": "混沌回忆、末日幻影与虚构叙事并排",
-      "usage": "#[上期]深渊 [UID]",
+      "usage": "#[上期][简易]深渊 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期)?(?:简易)?深渊(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:本期|上期)?(?:简易)?深渊(?:(?:本期|上期)(?:简易)?|简易(?:本期|上期)?)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
       "id": "abyss-latest",
       "name": "最新深渊",
       "description": "最近开启的一种深渊",
-      "usage": "#最新深渊 [UID]",
+      "usage": "#最新[简易]深渊 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:最新|当期)(?:简易)?深渊(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:最新|当期)(?:简易)?深渊(?:(?:本期|上期)(?:简易)?|简易(?:本期|上期)?)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
       "id": "challenge",
       "name": "忘却之庭",
       "description": "忘却之庭（混沌回忆）战绩",
-      "usage": "#[上期]忘却之庭 [UID]",
+      "usage": "#[上期][简易]忘却之庭 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:忘却之庭|忘却|混沌回忆|混沌)(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:本期|上期)?(?:简易)?(?:忘却之庭|忘却|混沌回忆|混沌)(?:(?:本期|上期)(?:简易)?|简易(?:本期|上期)?)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
       "id": "story",
       "name": "虚构叙事",
       "description": "虚构叙事战绩",
-      "usage": "#[上期]虚构叙事 [UID]",
+      "usage": "#[上期][简易]虚构叙事 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:虚构叙事|虚构)(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:本期|上期)?(?:简易)?(?:虚构叙事|虚构)(?:(?:本期|上期)(?:简易)?|简易(?:本期|上期)?)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
       "id": "boss",
       "name": "末日幻影",
       "description": "末日幻影战绩",
-      "usage": "#[上期]末日幻影 [UID]",
+      "usage": "#[上期][简易]末日幻影 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:末日幻影|末日)(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:本期|上期)?(?:简易)?(?:末日幻影|末日)(?:(?:本期|上期)(?:简易)?|简易(?:本期|上期)?)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
       "id": "peak",
       "name": "异相仲裁",
       "description": "异相仲裁战绩",
-      "usage": "#[上期|往期]异相仲裁 [UID]",
+      "usage": "#[上期|往期][简易]异相仲裁 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:异相仲裁|异相|异乡|异向|仲裁)(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:往期|上期|本期)?(?:简易)?(?:异相仲裁|异相|异乡|异向|仲裁)(?:(?:往期|上期|本期)(?:简易)?|简易(?:往期|上期|本期)?)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1184,7 +1184,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:模拟)?宇宙(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:上期|本期)?(?:模拟)?宇宙(?:上期|本期)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
