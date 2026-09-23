@@ -146,7 +146,8 @@ func LedgerCount(context app.ImageContext, stats app.MonthlyStats) (app.Image, b
 		"best_passes_month": strconv.Itoa(bestPasses.month), "top": top, "legend": legend, "sum": strconv.Itoa(sum),
 		"columns": app.G2Column(labels, values, 470, 300, [4]float64{40, 10, 30, 52}),
 		// The ring's box is 115% as wide, 280px high and shifted 60px left.
-		"ring": app.G2Ring(amounts, colors, 195, 140, 130, 91),
+		// Upstream labels a share of 2% or more.
+		"ring": app.G2Ring(amounts, colors, 195, 140, 130, 91, 2),
 		// Upstream notes it shows only twelve months once that many are saved.
 		"more": year == 0 && len(stats.Months) >= 12,
 	}, Resources: resources.List}, true

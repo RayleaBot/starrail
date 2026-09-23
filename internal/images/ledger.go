@@ -74,7 +74,7 @@ func Ledger(context app.ImageContext, result app.QueryResult) (app.Image, bool) 
 		"current_hcoin": amount(month["current_hcoin"], 2), "gacha": pulls(month["current_hcoin"]), "current_rails_pass": amount(month["current_rails_pass"], 1),
 		"last_hcoin": amount(month["last_hcoin"], 2), "last_gacha": pulls(month["last_hcoin"]), "last_rails_pass": amount(month["last_rails_pass"], 1),
 		// G2Plot's ring spans radius 0.7 to 1 of the 440px chart less its
-		// 10px padding.
-		"legend": legend, "slices": app.G2Ring(values, colors, 220, 220, 210, 147), "total": strconv.Itoa(total),
+		// 10px padding; upstream labels a share over 2%.
+		"legend": legend, "slices": app.G2Ring(values, colors, 220, 220, 210, 147, 3), "total": strconv.Itoa(total),
 	}, Resources: resources.List}, true
 }
