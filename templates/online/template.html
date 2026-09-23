@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container">
+  <div class="user">
+    <div class="user-inner">
+      <div class="srlogo"><img data-render-resource="online-logo" alt=""></div>
+      <div class="role-name">{{ .nickname }} <span class="uid">{{ .game_uid }}</span></div>
+      <div class="region">{{ .region_name }} {{ .level }}级</div>
+      <div class="pamu"><img class="pamu-img" data-render-resource="online-pamu" alt=""></div>
+    </div>
+  </div>
+  <div id="bar" style="width: 800px;height:400px;">
+    {{ with .bar }}<svg xmlns="http://www.w3.org/2000/svg" width="{{ .width }}" height="{{ .height }}" viewBox="0 0 {{ .width }} {{ .height }}">
+      <text class="chart-title" x="400" y="20">近期每日在线时长</text>
+      {{ $b := . }}{{ range .ticks }}<line x1="{{ $b.left }}" x2="{{ $b.right }}" y1="{{ .y }}" y2="{{ .y }}" stroke="#E0E6F1"></line>
+      <text class="axis-label" x="{{ $b.left }}" dx="-8" y="{{ .y }}" text-anchor="end" dominant-baseline="central">{{ .label }}</text>{{ end }}
+      {{ range .bars }}<rect x="{{ .x }}" y="{{ $b.top }}" width="{{ .width }}" height="{{ $b.background_height }}" fill="rgba(152,151,151,0.2)"></rect>
+      <rect x="{{ .x }}" y="{{ .y }}" width="{{ .width }}" height="{{ .height }}" fill="{{ .color }}"></rect>{{ end }}
+      <line x1="{{ .left }}" x2="{{ .right }}" y1="{{ .bottom }}" y2="{{ .bottom }}" stroke="#6E7079"></line>
+      {{ range .separators }}<line x1="{{ .x }}" x2="{{ .x }}" y1="{{ $b.bottom }}" y2="{{ $b.tick_bottom }}" stroke="#6E7079"></line>{{ end }}
+      {{ range .bars }}<text class="axis-label" x="{{ .center }}" y="{{ $b.label_y }}" text-anchor="middle" dominant-baseline="hanging">{{ .date }}</text>
+      <text class="bar-label" x="{{ .center }}" y="{{ .middle }}" stroke="{{ .color }}">{{ .label }}</text>{{ end }}
+    </svg>{{ end }}
+  </div>
+  <div id="heatmap" style="width: 700px;height:300px;margin-left: 50px">
+    {{ with .calendar }}<svg xmlns="http://www.w3.org/2000/svg" width="700" height="300" viewBox="0 0 700 300">
+      <text class="chart-title" x="350" y="20">每日在线时长热力图</text>
+      {{ range .pieces }}<rect x="{{ .x }}" y="70" width="20" height="14" rx="3.5" fill="{{ .color }}"></rect>
+      <text class="piece-label" x="{{ .text_x }}" y="77">{{ .label }}</text>{{ end }}
+      {{ $c := . }}{{ range .cells }}<rect x="{{ .x }}" y="{{ .y }}" width="{{ $c.cell_width }}" height="{{ $c.cell_height }}" fill="#fff" stroke="#ccc" stroke-width="0.5"></rect>{{ end }}
+      {{ range .filled }}<rect x="{{ .x }}" y="{{ .y }}" width="{{ $c.cell_width }}" height="{{ $c.cell_height }}" fill="{{ .color }}" stroke="#ccc" stroke-width="0.5"></rect>{{ end }}
+      {{ range .outlines }}<line x1="{{ .x1 }}" y1="{{ .y1 }}" x2="{{ .x2 }}" y2="{{ .y2 }}" stroke="#000" stroke-width="1" stroke-linecap="square"></line>{{ end }}
+      {{ range .month_labels }}<text class="calendar-label" x="{{ .x }}" y="{{ $c.month_y }}">{{ .label }}</text>{{ end }}
+      {{ range .day_labels }}<text class="calendar-label" x="{{ .x }}" y="{{ .y }}" text-anchor="end" dominant-baseline="central">{{ .label }}</text>{{ end }}
+      <text class="year-label" x="{{ .year_x }}" y="{{ .year_y }}" transform="rotate(-90 {{ .year_x }} {{ .year_y }})">{{ .year }}</text>
+    </svg>{{ end }}
+  </div>
+  <div id="detail" style="width: 700px;margin-left: 50px">
+    <div class="detail-title">近期在线可视化</div>
+    <div class="label-x">
+      <div>0</div>
+      <div>6</div>
+      <div>12</div>
+      <div>18</div>
+      <div style="width: 10px">24</div>
+    </div>
+    {{ range .details }}<div class="detail-daily">
+      <div class="detail-daily-label">{{ .date }}</div>
+      <div class="detail-daily-blocks">
+        {{ range .blocks }}{{ if eq .status "online" }}<div class="detail-daily-block-online" style="width: {{ .width }}px"></div>{{ else }}<div class="detail-daily-block-offline" style="width: {{ .width }}px"></div>{{ end }}{{ end }}
+      </div>
+    </div>
+    {{ end }}
+  </div>
+  <div class="hint">数据由米游社开拓力回复推算估计，不保证准确性，仅供参考</div>
+  <div class="logo">{{ .render_footer }}</div>
+</div>
+</body>
+</html>

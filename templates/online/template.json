@@ -1,0 +1,11 @@
+{
+  "id": "online",
+  "name": "星铁在线时长",
+  "description": "在线时长命令的图片，布局参照 StarRail-plugin online",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 816,
+  "height": 2000
+}

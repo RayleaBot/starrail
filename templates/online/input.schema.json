@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "nickname",
+    "game_uid",
+    "region_name",
+    "level",
+    "bar",
+    "calendar",
+    "details"
+  ],
+  "properties": {
+    "nickname": {
+      "type": "string"
+    },
+    "game_uid": {
+      "type": "string"
+    },
+    "region_name": {
+      "type": "string"
+    },
+    "level": {
+      "type": "string"
+    },
+    "bar": {
+      "type": "object"
+    },
+    "calendar": {
+      "type": "object"
+    },
+    "details": {
+      "type": "array"
+    },
+    "render_footer": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

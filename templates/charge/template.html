@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+  <div class="bkg"><img data-render-resource="charge-bg" alt=""></div>
+  <div class="bkg"><img data-render-resource="charge-deco" alt=""></div>
+  <div class="header">
+    <div class="uid">UID {{ .uid }}</div>
+    <div class="title">{{ .type }}记录</div>
+    <div class="subtitle">{{ .typeen }} History</div>
+  </div>
+  <div class="lists">
+    <div class="s-list">
+      <table class="list-table">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>获取数量</th>
+            <th>变化原因</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .list }}<tr>
+            <td>{{ .time }}</td>
+            <td>{{ .add_num }}</td>
+            <td>{{ .action }}</td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+      <div class="page">当前第{{ .page }}页</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
