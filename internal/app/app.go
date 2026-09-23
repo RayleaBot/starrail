@@ -102,6 +102,9 @@ type Settings struct {
 	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
 	// administrators.
 	AliasPermission int `json:"alias_permission"`
+	// MiaoGacha is miao's gachaStat: 抽卡记录 and 抽卡统计 words without 喵喵
+	// that StarRail-plugin does not take draw miao's pages.
+	MiaoGacha bool `json:"miao_gacha"`
 }
 type App struct {
 	Manifest pluginmeta.Manifest
@@ -561,13 +564,23 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		view = a.fullPanelView(ctx, event, panel, uid, true, "")
 	case "accounts", "select", "uid-remove":
 		return a.uidCommand(ctx, event, command, args)
-	case "gacha", "gacha-versions":
+	case "gacha", "gacha-versions", "gacha-detail", "gacha-stat":
+		// miao's words start with 喵喵; others it has only with its setting.
+		word := event.Event.Command()
+		miao := a.commands.miaoGacha(word, settings(event).MiaoGacha)
+		if !miao && (command == "gacha-detail" || command == "gacha-stat") {
+			return event.Result(map[string]any{"handled": false})
+		}
 		uid := ""
 		if len(args) > 0 {
 			uid = args[0]
 		}
 		archive, role, readErr := a.chatArchive(ctx, event, uid)
+		missing := "UID:" + role.UID + " 本地暂无抽卡信息，请通过【" + prefix + "抽卡帮助】获得绑定帮助..."
 		if readErr != nil {
+			if miao && PublicError(readErr).Code == "archive_missing" {
+				return event.SendText(missing)
+			}
 			err = readErr
 			break
 		}
@@ -577,8 +590,16 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			view = versionDrawView(game, versionDraws(game, archive))
 		}
 		if a.gacha != nil {
-			if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: role.UID, Role: role, Word: event.Event.Command(), Archive: archive, Count: command == "gacha-versions", Group: event.Event.Target.Type == "group"}); ok {
+			image := GachaImage{UID: role.UID, Role: role, Word: word, Archive: archive, Count: command == "gacha-versions", Group: event.Event.Target.Type == "group", Miao: miao}
+			if miao {
+				saved, _ := a.Profiles.Read(role.UID)
+				image.Nickname = saved.Nickname
+			}
+			drawn, ok := a.gacha(a.imageContext(ctx), image)
+			if ok {
 				view.Image = &drawn
+			} else if miao {
+				return event.SendText(missing)
 			}
 		}
 	default:

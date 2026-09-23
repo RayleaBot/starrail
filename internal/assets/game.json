@@ -166,7 +166,8 @@
         "resources/character/",
         "resources/profile/",
         "resources/help/",
-        "resources/wiki/"
+        "resources/wiki/",
+        "resources/gacha/"
       ],
       "extensions": [
         ".webp",

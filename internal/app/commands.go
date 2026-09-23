@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/RayleaBot/plugin-starrail/internal/pluginmeta"
@@ -75,6 +76,30 @@ func (s commandSet) resolve(word string, args []string) (string, []string, bool)
 		return command.id, append(leading, args...), true
 	}
 	return "", args, false
+}
+
+// matches is whether a word matches a declared command's trigger.
+func (s commandSet) matches(id, word string) bool {
+	for _, command := range s.commands {
+		if command.id == id {
+			return command.pattern != nil && command.pattern.MatchString(word) || slices.Contains(command.names, word)
+		}
+	}
+	return false
+}
+
+// starRailGacha is StarRail-plugin's gatcha rule, which upstream runs before
+// miao's and Yunzai's gacha rules. The 跃迁记录 trigger adds Yunzai's words to
+// it, so it is kept here for miaoGacha.
+var starRailGacha = regexp.MustCompile(`^(?:角色|光锥|武器|常驻|新手)?(?:跃迁|抽卡)?(?:记录|分析|统计)$`)
+
+// miaoGacha is whether a gacha word draws miao's page: its 喵喵 words, and
+// with miao's setting on the plain words StarRail-plugin's rule leaves.
+func (s commandSet) miaoGacha(word string, setting bool) bool {
+	if !s.matches("gacha-detail", word) && !s.matches("gacha-stat", word) {
+		return false
+	}
+	return strings.HasPrefix(word, "喵喵") || setting && !starRailGacha.MatchString(word)
 }
 
 // usage writes a declared usage with the prefix replies use. Manifests start

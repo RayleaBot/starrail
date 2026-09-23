@@ -28,6 +28,7 @@ BUNDLES = {
         "resources/common/item/*",
         "resources/character/imgs/*",
         "resources/wiki/imgs/*",
+        "resources/gacha/imgs/*",
         "resources/meta-sr/public/icons/*",
         # Panels, rankings, the roster and the wiki draw every character's
         # splash, face, trace and eidolon icons.
