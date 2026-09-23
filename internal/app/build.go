@@ -22,8 +22,6 @@ type BuildWeapon struct {
 }
 type BuildProfile struct {
 	Conditions         *BuildConditions   `json:"conditions,omitempty"`
-	SubElement         *int               `json:"sub_element,omitempty"`
-	WeaponMain         []BuildStat        `json:"weapon_main,omitempty"`
 	CandidateEquipment *[]BuildGear       `json:"candidate_equipment,omitempty"`
 	Level              int                `json:"level"`
 	Promote            *int               `json:"promote"`
@@ -282,15 +280,12 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 			metadata := a.Game.Calc.Metadata()
 			valid := false
 			for _, weapon := range metadata.Weapons {
-				if weapon.Game == record.Game && weapon.ID == w.ID && weapon.Type == record.WeaponType {
+				if weapon.ID == w.ID && weapon.Type == record.WeaponType {
 					valid = true
 					break
 				}
 			}
-			steps := []int{1, 20, 40, 50, 60, 70, 80, 90}
-			if record.Game == "sr" {
-				steps = []int{1, 20, 30, 40, 50, 60, 70, 80}
-			}
+			steps := []int{1, 20, 30, 40, 50, 60, 70, 80}
 			if !valid || w.Level < steps[*w.Promote] || w.Level > steps[*w.Promote+1] {
 				return nil, gameError("build_input_invalid", "候选武器类型或突破阶段与所选角色、等级不符。")
 			}
@@ -329,7 +324,7 @@ func (a *App) buildAction(ctx context.Context, client AccountsClient, action str
 func applyBuildIdentity(result *BuildResult, panel CharacterPanel, record reference.Character) {
 	result.CharacterID = panel.ID
 	result.Character = panel.Name
-	if record.Game == "sr" && record.ID != panel.ID {
+	if record.ID != panel.ID {
 		result.Variant = "enhanced"
 		result.Character += "（强化形态）"
 	}

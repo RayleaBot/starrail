@@ -257,7 +257,7 @@ func calcRecord(game app.Game, id string) (reference.Character, bool) {
 		return reference.Character{}, false
 	}
 	for _, record := range game.Calc.Metadata().Characters {
-		if record.Game == "sr" && record.ID == id {
+		if record.ID == id {
 			return record, true
 		}
 	}

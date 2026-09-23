@@ -91,11 +91,11 @@ func TestDailyMonthlyCollectionPersistsAdmissionAndKeepsNotifyOff(t *testing.T) 
 		return QueryResult{Data: map[string]any{"data_month": 202609}}, nil
 	}
 	send := func(Reminder, string) error { sends++; return nil }
-	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "starrail"}); err != nil {
+	if err := s.Tick(task.Ref, now, query, send, Game{ID: "starrail"}); err != nil {
 		t.Fatal(err)
 	}
 	s = &ReminderStore{taskFiles[Reminder]{Directory: s.Directory}}
-	if err := s.Tick(t.Context(), task.Ref, now, query, send, Game{ID: "starrail"}); err != nil {
+	if err := s.Tick(task.Ref, now, query, send, Game{ID: "starrail"}); err != nil {
 		t.Fatal(err)
 	}
 	items, _ := s.List()
@@ -128,10 +128,10 @@ func TestRefreshMonthlyKeepsOfferedMonthsNotYetFinal(t *testing.T) {
 	a := App{Game: Game{ID: "starrail"}, Monthly: &MonthlyStore{Directory: filepath.Join(t.TempDir(), "monthly")}}
 	// July was saved after it ended, August while it ran.
 	august := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
-	if _, err := a.Monthly.Keep("p", choice, month(202607), august); err != nil {
+	if err := a.Monthly.Keep("p", choice, month(202607), august); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.Monthly.Keep("p", choice, month(202608), august); err != nil {
+	if err := a.Monthly.Keep("p", choice, month(202608), august); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.refreshMonthly(t.Context(), client, choice); err != nil {

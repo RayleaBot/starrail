@@ -32,20 +32,17 @@ type PanelEquipment struct {
 	Score      *EquipmentScore `json:"score,omitempty"`
 }
 type PanelSkill struct {
-	HasSkillType bool   `json:"has_skill_type,omitempty"`
-	Kind         string `json:"kind,omitempty"`
-	PointType    int    `json:"point_type,omitempty"`
-	SkillType    int    `json:"skill_type,omitempty"`
-	ID           string `json:"id,omitempty"`
-	ExtraLevel   int    `json:"extra_level,omitempty"`
-	Name         string `json:"name"`
-	Level        int    `json:"level,omitempty"`
-	Active       bool   `json:"active"`
-	Description  string `json:"description,omitempty"`
+	Kind        string `json:"kind,omitempty"`
+	PointType   int    `json:"point_type,omitempty"`
+	ID          string `json:"id,omitempty"`
+	ExtraLevel  int    `json:"extra_level,omitempty"`
+	Name        string `json:"name"`
+	Level       int    `json:"level,omitempty"`
+	Active      bool   `json:"active"`
+	Description string `json:"description,omitempty"`
 }
 type CharacterPanel struct {
 	EquipmentKnown  bool             `json:"equipment_known"`
-	SubElement      *int             `json:"sub_element,omitempty"`
 	WeaponKnown     bool             `json:"weapon_known"`
 	Promote         *int             `json:"promote,omitempty"`
 	ID              string           `json:"id"`
@@ -53,7 +50,6 @@ type CharacterPanel struct {
 	Level           int              `json:"level"`
 	Rank            int              `json:"rank"`
 	RankKnown       bool             `json:"rank_known"`
-	Profession      int              `json:"profession,omitempty"`
 	Element         string           `json:"element"`
 	Source          string           `json:"source"`
 	Stats           []PanelStat      `json:"stats"`
@@ -61,7 +57,6 @@ type CharacterPanel struct {
 	Equipment       []PanelEquipment `json:"equipment"`
 	Skills          []PanelSkill     `json:"skills"`
 	Ranks           []PanelSkill     `json:"ranks"`
-	OfficialScore   string           `json:"official_score,omitempty"`
 	ScoreRule       string           `json:"score_rule,omitempty"`
 	ScoreNote       string           `json:"score_note,omitempty"`
 	TotalScore      *float64         `json:"total_score,omitempty"`
@@ -86,24 +81,18 @@ func plainGameText(value string) string {
 
 var srStatKeys = map[string]string{"1": "hpPlus", "2": "atkPlus", "3": "defPlus", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "12": "physical", "14": "fire", "16": "ice", "18": "lightning", "20": "wind", "22": "quantum", "24": "imaginary", "27": "hp", "29": "atk", "31": "def", "32": "hpPlus", "33": "atkPlus", "34": "defPlus", "51": "speed", "52": "cpct", "53": "cdmg", "54": "recharge", "55": "heal", "56": "effPct", "57": "effDef", "58": "stance", "59": "stance"}
 
-func panelStats(raw []any, metadata map[string]any, defaultValue string) []PanelStat {
+func panelStats(raw []any, metadata map[string]any, valueKey string) []PanelStat {
 	result := []PanelStat{}
 	for _, value := range raw {
 		item := asObject(value)
-		id := firstText(item, "property_type", "property_id")
-		if id == "" {
+		id := asText(item["property_type"])
+		display := asText(item[valueKey])
+		if id == "" || display == "" {
 			continue
 		}
-		name := firstText(item, "property_name", "name")
-		if name == "" {
-			name = firstText(asObject(metadata[id]), "name", "property_name_relic", "filter_name")
-		}
+		name := firstText(asObject(metadata[id]), "name", "property_name_relic")
 		if name == "" {
 			name = "属性 " + id
-		}
-		display := firstText(item, defaultValue, "value", "final", "base")
-		if display == "" {
-			continue
 		}
 		key := srStatKeys[id]
 		// The record API has used both ID families for flat and percent
@@ -127,145 +116,92 @@ func oneStat(value any) []any {
 	return nil
 }
 
+// NormalizePanels reads the characters of the official avatar info into
+// panels. Property names come from its property_info.
 func NormalizePanels(result QueryResult, catalog Catalog) []CharacterPanel {
-	data := result.Data
-	metadata := asObject(data["property_info"])
-	list := asList(data["list"])
-	if list == nil {
-		list = asList(data["avatar_list"])
-	}
-	if list == nil {
-		list = asList(data["avatars"])
-	}
+	metadata := asObject(result.Data["property_info"])
 	panels := []CharacterPanel{}
-	for _, raw := range list {
+	for _, raw := range asList(result.Data["avatar_list"]) {
 		item := asObject(raw)
-		base := asObject(item["base"])
-		if base == nil {
-			base = item
-		}
-		id := asText(base["id"])
+		id := asText(item["id"])
 		if id == "" {
 			continue
 		}
-		name := firstText(base, "name", "full_name_mi18n", "name_mi18n")
 		entry, hasEntry := catalog.Get(id)
+		name := asText(item["name"])
 		if name == "" && hasEntry {
 			name = entry.Name
 		}
 		if name == "" {
 			name = "角色 " + id
 		}
-		panel := CharacterPanel{ID: id, Name: plainGameText(name), Level: number(base["level"]), Rank: number(base["rank"]), Element: asText(base["element"]), Source: "mihoyo", Stats: []PanelStat{}, Equipment: []PanelEquipment{}, Skills: []PanelSkill{}, Ranks: []PanelSkill{}, Official: item}
-		_, panel.EquipmentKnown = item["relics"]
-		_, known := item["ornaments"]
-		panel.EquipmentKnown = panel.EquipmentKnown && known
-
-		if value, exists := base["promote_level"]; exists {
-			n := number(value)
-			panel.Promote = &n
-		}
-		_, panel.RankKnown = base["rank"]
-
+		panel := CharacterPanel{ID: id, Name: plainGameText(name), Level: number(item["level"]), Rank: number(item["rank"]), Element: asText(item["element"]), Source: "mihoyo", Stats: panelStats(asList(item["properties"]), metadata, "final"), Equipment: []PanelEquipment{}, Skills: []PanelSkill{}, Ranks: []PanelSkill{}, Official: item}
 		if panel.Element == "" && hasEntry {
 			panel.Element = entry.Element
 		}
-		seen := map[string]bool{}
-		for _, field := range []string{"base_properties", "extra_properties", "element_properties", "properties"} {
-			for _, stat := range panelStats(asList(item[field]), metadata, "final") {
-				if !seen[stat.ID] {
-					panel.Stats = append(panel.Stats, stat)
-					seen[stat.ID] = true
-				}
-			}
+		if value, exists := item["promote_level"]; exists {
+			n := number(value)
+			panel.Promote = &n
 		}
-		weapon := asObject(item["equip"])
+		_, panel.RankKnown = item["rank"]
 		_, panel.WeaponKnown = item["equip"]
-		if weapon == nil {
-			weapon = asObject(base["weapon"])
-			if _, ok := base["weapon"]; ok {
-				panel.WeaponKnown = true
-			}
-		}
-		if weapon != nil && firstText(weapon, "name", "id") != "" {
-			w := PanelEquipment{ID: asText(weapon["id"]), Name: plainGameText(asText(weapon["name"])), Level: number(weapon["level"]), Rarity: asText(weapon["rarity"]), Refinement: number(weapon["affix_level"])}
+		_, relics := item["relics"]
+		_, ornaments := item["ornaments"]
+		panel.EquipmentKnown = relics && ornaments
+		if weapon := asObject(item["equip"]); weapon != nil && firstText(weapon, "name", "id") != "" {
+			w := PanelEquipment{ID: asText(weapon["id"]), Name: plainGameText(asText(weapon["name"])), Level: number(weapon["level"]), Rarity: asText(weapon["rarity"]), Refinement: number(weapon["rank"]), Main: []PanelStat{}, Sub: []PanelStat{}}
 			if value, exists := weapon["promote_level"]; exists {
 				n := number(value)
 				w.Promote = &n
 			}
-			w.Refinement = number(weapon["rank"])
-
-			w.Main = panelStats(oneStat(weapon["main_property"]), metadata, "final")
-			w.Sub = panelStats(oneStat(weapon["sub_property"]), metadata, "final")
 			panel.Weapon = &w
 		}
-		gearFields := []string{"relics", "ornaments"}
-		for _, field := range gearFields {
+		for _, field := range []string{"relics", "ornaments"} {
 			for _, raw := range asList(item[field]) {
 				gear := asObject(raw)
-				equipment := PanelEquipment{ID: asText(gear["id"]), Name: plainGameText(asText(gear["name"])), Slot: number(gear["pos"]), Level: number(gear["level"]), Rarity: asText(gear["rarity"]), SetName: asText(asObject(gear["set"])["name"])}
+				equipment := PanelEquipment{ID: asText(gear["id"]), Name: plainGameText(asText(gear["name"])), Slot: number(gear["pos"]), Level: number(gear["level"]), Rarity: asText(gear["rarity"])}
+				equipment.SetName = catalog.ArtifactSets[equipment.ID]
 				if equipment.SetName == "" {
-					equipment.SetName = catalog.ArtifactSets[equipment.ID]
-					if equipment.SetName == "" {
-						equipment.SetName = catalog.ArtifactSets[equipment.Name]
-					}
+					equipment.SetName = catalog.ArtifactSets[equipment.Name]
 				}
 				equipment.Main = panelStats(oneStat(gear["main_property"]), metadata, "value")
-				subKey := "properties"
-				equipment.Sub = panelStats(asList(gear[subKey]), metadata, "value")
-				_, subPresent := gear[subKey]
+				equipment.Sub = panelStats(asList(gear["properties"]), metadata, "value")
+				_, subPresent := gear["properties"]
 				equipment.Complete = subPresent && len(equipment.Main) > 0
 				panel.Equipment = append(panel.Equipment, equipment)
 			}
 		}
-		skills := append(append([]any{}, asList(item["skills"])...), asList(item["servant_skills"])...)
-		skills = append(skills, asList(asObject(item["servant_detail"])["servant_skills"])...)
-		for i, raw := range skills {
+		// Traces and memosprite skills name themselves in their stages.
+		skills := append(asList(item["skills"]), asList(asObject(item["servant_detail"])["servant_skills"])...)
+		for _, raw := range skills {
 			skill := asObject(raw)
-			name := asText(skill["name"])
-			description := firstText(skill, "desc", "description")
-			if name == "" {
-				for _, raw := range append(asList(skill["items"]), asList(skill["skill_stages"])...) {
-					stage := asObject(raw)
-					if name == "" {
-						name = firstText(stage, "name", "title")
-					}
-					if description == "" {
-						description = firstText(stage, "desc", "description", "text")
-					}
+			name, description := "", ""
+			for _, raw := range asList(skill["skill_stages"]) {
+				stage := asObject(raw)
+				if name == "" {
+					name = asText(stage["name"])
+				}
+				if description == "" {
+					description = asText(stage["desc"])
 				}
 			}
 			if name == "" {
-				var _ int = i
-				name = fmtSkillLabel(skill)
+				name = "行迹 " + asText(skill["point_id"])
 			}
 			active := true
-			for _, key := range []string{"is_unlock", "is_activated"} {
-				if flag, ok := skill[key].(bool); ok {
-					active = flag
-				}
+			if flag, ok := skill["is_activated"].(bool); ok {
+				active = flag
 			}
-			_, hasSkillType := skill["skill_type"]
-			panel.Skills = append(panel.Skills, PanelSkill{HasSkillType: hasSkillType, Kind: firstText(skill, "remake"), PointType: number(skill["point_type"]), SkillType: number(skill["skill_type"]), ID: firstText(skill, "skill_id", "point_id", "id"), ExtraLevel: number(skill["extra_level"]), Name: plainGameText(name), Level: number(skill["level"]), Active: active, Description: plainGameText(description)})
+			panel.Skills = append(panel.Skills, PanelSkill{Kind: asText(skill["remake"]), PointType: number(skill["point_type"]), ID: asText(skill["point_id"]), ExtraLevel: number(skill["extra_level"]), Name: plainGameText(name), Level: number(skill["level"]), Active: active, Description: plainGameText(description)})
 		}
-		ranks := asList(item["ranks"])
-		for _, raw := range ranks {
+		for _, raw := range asList(item["ranks"]) {
 			rank := asObject(raw)
 			active, _ := rank["is_unlocked"].(bool)
-			panel.Ranks = append(panel.Ranks, PanelSkill{Name: plainGameText(asText(rank["name"])), Active: active, Description: plainGameText(firstText(rank, "desc", "effect"))})
-		}
-		if plan := asObject(item["equip_plan_info"]); plan != nil {
-			panel.OfficialScore = firstText(plan, "equip_rating_score")
-			if rating := asText(plan["equip_rating"]); rating != "" {
-				panel.OfficialScore += " · " + rating
-			}
+			panel.Ranks = append(panel.Ranks, PanelSkill{Name: plainGameText(asText(rank["name"])), Active: active, Description: plainGameText(asText(rank["desc"]))})
 		}
 		panels = append(panels, panel)
 	}
 	return panels
-}
-func fmtSkillLabel(item map[string]any) string {
-	return "行迹 " + firstText(item, "point_id")
 }
 
 func PanelView(game Game, panels []CharacterPanel, uid string) View {
@@ -331,9 +267,6 @@ func PanelView(game Game, panels []CharacterPanel, uid string) View {
 	}
 	if len(rows) > 0 {
 		v.Sections = append(v.Sections, Section{Title: "星魂", Rows: rows})
-	}
-	if p.OfficialScore != "" {
-		v.Rows = append(v.Rows, Row{Label: "官方配装评分", Value: p.OfficialScore})
 	}
 	if p.TotalScore != nil {
 		v.Rows = append(v.Rows, Row{Label: "装备评分合计", Value: strconv.FormatFloat(*p.TotalScore, 'f', 1, 64) + " · 已评分 " + strconv.Itoa(p.ScoredEquipment) + " / " + strconv.Itoa(len(p.Equipment)) + " 件"})

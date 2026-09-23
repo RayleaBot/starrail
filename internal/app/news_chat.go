@@ -19,8 +19,8 @@ import (
 // plugin's news and news-list; their images come from the Yunzai 原神插件
 // source.
 
-// newsGameNames are mysNews's names of the games.
-var newsGameNames = "崩坏星穹铁道"
+// newsGameName is mysNews's name of the game.
+const newsGameName = "崩坏星穹铁道"
 
 var newsKinds = map[string]struct {
 	Type int
@@ -42,7 +42,7 @@ type newsEmoticons struct {
 
 func (a *App) newsCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	gid := bbsGID
-	game := newsGameNames
+	game := newsGameName
 	word := strings.Join(args, "")
 	switch command {
 	case "news", "info", "events":

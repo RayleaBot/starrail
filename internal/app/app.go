@@ -77,10 +77,8 @@ type Assets struct {
 	// PanelList draws 面板列表.
 	Showcase  ShowcaseSource
 	PanelList PanelListImageBuilder
-	// ArtifactList draws 遗器列表; DailyMaterial draws
-	// 今日素材.
-	ArtifactList  ArtifactListImageBuilder
-	DailyMaterial DailyMaterialImageBuilder
+	// ArtifactList draws 遗器列表.
+	ArtifactList ArtifactListImageBuilder
 	// UIDList draws 我的uid; RankStats draws 排名统计.
 	UIDList   UIDListImageBuilder
 	RankStats RankStatsImageBuilder
@@ -123,28 +121,27 @@ type App struct {
 	Cloud          CloudClient
 	BuildPresets   *BuildPresetStore
 
-	commands           commandSet
-	images             map[string]ImageBuilder
-	queries            map[string]func(now time.Time) string
-	panel              PanelImageBuilder
-	gacha              GachaImageBuilder
-	helpImage          HelpImageBuilder
-	monthlyStats       MonthlyStatsImageBuilder
-	calendarImage      CalendarImageBuilder
-	entryPage          EntryImageBuilder
-	simulationImage    SimulationImageBuilder
-	rankImage          RankImageBuilder
-	showcase           ShowcaseSource
-	panelList          PanelListImageBuilder
-	artifactListImage  ArtifactListImageBuilder
-	dailyMaterialImage DailyMaterialImageBuilder
-	uidListImage       UIDListImageBuilder
-	rankStatsImage     RankStatsImageBuilder
-	atlases            atlasIndexes
-	guides             guideCache
-	emoticons          newsEmoticons
-	aliases            customAliases
-	usageOnce          sync.Once
+	commands          commandSet
+	images            map[string]ImageBuilder
+	queries           map[string]func(now time.Time) string
+	panel             PanelImageBuilder
+	gacha             GachaImageBuilder
+	helpImage         HelpImageBuilder
+	monthlyStats      MonthlyStatsImageBuilder
+	calendarImage     CalendarImageBuilder
+	entryPage         EntryImageBuilder
+	simulationImage   SimulationImageBuilder
+	rankImage         RankImageBuilder
+	showcase          ShowcaseSource
+	panelList         PanelListImageBuilder
+	artifactListImage ArtifactListImageBuilder
+	uidListImage      UIDListImageBuilder
+	rankStatsImage    RankStatsImageBuilder
+	atlases           atlasIndexes
+	guides            guideCache
+	emoticons         newsEmoticons
+	aliases           customAliases
+	usageOnce         sync.Once
 }
 
 func New(assets Assets, directory string) (*App, error) {
@@ -176,7 +173,7 @@ func New(assets Assets, directory string) (*App, error) {
 	if directory == "" {
 		return nil, fmt.Errorf("plugin data directory is required")
 	}
-	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, dailyMaterialImage: assets.DailyMaterial, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
+	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, uidListImage: assets.UIDList, rankStatsImage: assets.RankStats, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{}}
@@ -331,8 +328,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.panelChangeCommand(ctx, event)
 	case "cloud-reforge":
 		return a.reforgeCommand(ctx, event)
-	case "daily-material":
-		return a.dailyMaterial(ctx, event)
 	case "cloud-character-rank", "cloud-total-rank", "cloud-rank-stats":
 		return a.cloudChatCommand(ctx, event, command, args)
 	case "cloud-export", "cloud-import":
@@ -344,8 +339,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			break
 		}
 		view = resourceView(a.Game, "calendar.query", result)
-	case "materials", "banner-current", "calendar":
-		if (command == "banner-current" || command == "calendar") && len(args) == 0 {
+	case "materials", "calendar":
+		if command == "calendar" && len(args) == 0 {
 			result, queryErr := a.bannerQuery(map[string]any{"date": time.Now().In(time.FixedZone("UTC+8", 28800)).Format("2006-01-02")})
 			if queryErr != nil {
 				err = queryErr
@@ -359,7 +354,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		}
 		action := "materials.query"
 		input := map[string]any{"query": strings.Join(args, " ")}
-		if command == "banner-current" || command == "calendar" {
+		if command == "calendar" {
 			action = "calendar.query"
 			input = map[string]any{"version": args[0]}
 			if len(args) > 1 {
@@ -599,7 +594,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		if query == a.Game.ID+".monthly" {
 			// Upstream keeps every month it reads; a month that cannot be kept
 			// still answers.
-			_, _ = a.Monthly.Keep(a.accountClient(event).Provider, choice, result.Data, time.Now())
+			_ = a.Monthly.Keep(a.accountClient(event).Provider, choice, result.Data, time.Now())
 		}
 		view = BusinessView(a.Game, textOperation, result, a.Catalog)
 		view.Image = a.featureImage(ctx, a.accountClient(event), choice, operation.Name, event.Event.Command(), input, result)

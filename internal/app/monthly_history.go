@@ -19,10 +19,9 @@ import (
 )
 
 type MonthlySnapshot struct {
-	Month         string          `json:"month"`
-	YearEstimated bool            `json:"year_estimated"`
-	SavedMS       int64           `json:"saved_ms"`
-	Data          json.RawMessage `json:"data"`
+	Month   string          `json:"month"`
+	SavedMS int64           `json:"saved_ms"`
+	Data    json.RawMessage `json:"data"`
 }
 type MonthlyArchive struct {
 	Revision uint64            `json:"revision"`
@@ -62,13 +61,13 @@ func (s *MonthlyStore) Update(provider string, choice Selection, revision uint64
 	out.Revision++
 	return localdata.Write(file, out)
 }
-func monthlyKey(data map[string]any) (string, bool, error) {
+func monthlyKey(data map[string]any) (string, error) {
 	raw := asText(data["data_month"])
 	month, err := strconv.Atoi(raw)
 	if err == nil && month >= 202001 && month <= 210012 && month%100 >= 1 && month%100 <= 12 {
-		return fmt.Sprintf("%04d-%02d", month/100, month%100), false, nil
+		return fmt.Sprintf("%04d-%02d", month/100, month%100), nil
 	}
-	return "", false, gameError("monthly_invalid", "官方月报未提供可辨识的月份，未保存。")
+	return "", gameError("monthly_invalid", "官方月报未提供可辨识的月份，未保存。")
 }
 func decodeMonthly(raw json.RawMessage) (map[string]any, error) {
 	var data map[string]any
@@ -103,7 +102,7 @@ func monthlySummaries(archive MonthlyArchive) map[string]any {
 			totals[k] += n
 			coverage[k]++
 		}
-		items = append(items, map[string]any{"month": v.Month, "year_estimated": v.YearEstimated, "saved_ms": v.SavedMS, "amounts": amounts})
+		items = append(items, map[string]any{"month": v.Month, "saved_ms": v.SavedMS, "amounts": amounts})
 	}
 	return map[string]any{"items": items, "totals": totals, "coverage": coverage, "revision": archive.Revision}
 }
@@ -260,7 +259,7 @@ func (a *App) refreshMonthly(ctx context.Context, client AccountsClient, choice 
 		return err
 	}
 	now := time.Now()
-	if _, err := a.Monthly.Keep(client.Provider, choice, current.Data, now); err != nil {
+	if err := a.Monthly.Keep(client.Provider, choice, current.Data, now); err != nil {
 		return err
 	}
 	archive, err := a.Monthly.Read(client.Provider, choice)
@@ -272,7 +271,7 @@ func (a *App) refreshMonthly(ctx context.Context, client AccountsClient, choice 
 		if month == asText(current.Data["data_month"]) {
 			continue
 		}
-		key, _, err := monthlyKey(map[string]any{"data_month": month})
+		key, err := monthlyKey(map[string]any{"data_month": month})
 		if err != nil || monthlyFinal(archive, key) {
 			continue
 		}
@@ -280,7 +279,7 @@ func (a *App) refreshMonthly(ctx context.Context, client AccountsClient, choice 
 		if err != nil {
 			continue
 		}
-		_, _ = a.Monthly.Keep(client.Provider, choice, result.Data, now)
+		_ = a.Monthly.Keep(client.Provider, choice, result.Data, now)
 	}
 	return nil
 }
@@ -298,19 +297,20 @@ func monthlyFinal(archive MonthlyArchive, key string) bool {
 
 // Keep saves a month over whatever archive is current, for reads the user did
 // not start from the archive page.
-func (s *MonthlyStore) Keep(provider string, choice Selection, data map[string]any, now time.Time) (string, error) {
+func (s *MonthlyStore) Keep(provider string, choice Selection, data map[string]any, now time.Time) error {
 	archive, err := s.Read(provider, choice)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return s.Save(provider, choice, archive.Revision, data, now)
+	_, err = s.Save(provider, choice, archive.Revision, data, now)
+	return err
 }
 
 func (s *MonthlyStore) Save(provider string, choice Selection, revision uint64, data map[string]any, now time.Time) (string, error) {
 	if asObject(data["month_data"]) == nil {
 		return "", gameError("monthly_invalid", "官方月报没有月度内容，未保存。")
 	}
-	key, estimated, err := monthlyKey(data)
+	key, err := monthlyKey(data)
 	if err != nil {
 		return "", err
 	}
@@ -318,7 +318,7 @@ func (s *MonthlyStore) Save(provider string, choice Selection, revision uint64, 
 	if err != nil || len(raw) > 64*1024 {
 		return "", gameError("history_limit", "单月月报超出保存上限。")
 	}
-	snapshot := MonthlySnapshot{key, estimated, now.UnixMilli(), raw}
+	snapshot := MonthlySnapshot{key, now.UnixMilli(), raw}
 	err = s.Update(provider, choice, revision, func(v *MonthlyArchive) error {
 		i := slices.IndexFunc(v.Items, func(item MonthlySnapshot) bool { return item.Month == key })
 		if i >= 0 {

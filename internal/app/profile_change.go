@@ -447,24 +447,24 @@ func talentBonus(record reference.Character, key string, rank int) int {
 func changedStats(element string, attrs map[string]float64) []PanelStat {
 	flat := func(v float64) string { return strconv.FormatFloat(math.Round(v), 'f', 0, 64) }
 	percent := func(v float64) string { return strconv.FormatFloat(v, 'f', 1, 64) + "%" }
-	stat := func(id, key string, value, base float64, pct bool) PanelStat {
+	stat := func(id string, value, base float64, pct bool) PanelStat {
 		if pct {
-			return PanelStat{ID: id, Key: key, Value: percent(value), Base: percent(base), Added: percent(value - base)}
+			return PanelStat{ID: id, Value: percent(value), Base: percent(base), Added: percent(value - base)}
 		}
-		return PanelStat{ID: id, Key: key, Value: flat(value), Base: flat(base), Added: flat(value - base)}
+		return PanelStat{ID: id, Value: flat(value), Base: flat(base), Added: flat(value - base)}
 	}
-	speed := stat("4", "", attrs["speed"], attrs["speedBase"], false)
+	speed := stat("4", attrs["speed"], attrs["speedBase"], false)
 	speed.Value = strconv.FormatFloat(math.Floor(attrs["speed"]*10+1e-6)/10, 'f', -1, 64)
 	// miao counts Star Rail energy regeneration without its base 100%.
-	stats := []PanelStat{stat("1", "", attrs["hp"], attrs["hpBase"], false), stat("2", "", attrs["atk"], attrs["atkBase"], false), stat("3", "", attrs["def"], attrs["defBase"], false), speed,
-		stat("5", "", attrs["cpct"], 5, true), stat("6", "", attrs["cdmg"], 50, true), stat("7", "", attrs["heal"], 0, true), stat("9", "", attrs["recharge"]+100, 100, true),
-		stat("10", "", attrs["effPct"], 0, true), stat("11", "", attrs["effDef"], 0, true), stat("58", "", attrs["stance"], 0, true)}
+	stats := []PanelStat{stat("1", attrs["hp"], attrs["hpBase"], false), stat("2", attrs["atk"], attrs["atkBase"], false), stat("3", attrs["def"], attrs["defBase"], false), speed,
+		stat("5", attrs["cpct"], 5, true), stat("6", attrs["cdmg"], 50, true), stat("7", attrs["heal"], 0, true), stat("9", attrs["recharge"]+100, 100, true),
+		stat("10", attrs["effPct"], 0, true), stat("11", attrs["effDef"], 0, true), stat("58", attrs["stance"], 0, true)}
 	for key, id := range map[string]string{"physical": "12", "fire": "14", "ice": "16", "lightning": "18", "wind": "20", "quantum": "22", "imaginary": "24"} {
 		value := 0.0
 		if normalizedElement(element) == key || canonicalBuildElement(element) == canonicalBuildElement(key) {
 			value = attrs["dmg"]
 		}
-		stats = append(stats, stat(id, "", value, 0, true))
+		stats = append(stats, stat(id, value, 0, true))
 	}
 	slices.SortFunc(stats, func(a, b PanelStat) int { x, _ := strconv.Atoi(a.ID); y, _ := strconv.Atoi(b.ID); return x - y })
 	return stats

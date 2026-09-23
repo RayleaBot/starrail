@@ -36,12 +36,10 @@ type Catalog struct {
 	// SetAbbrs are upstream's short names for some equipment sets, by set
 	// name.
 	SetAbbrs map[string]string `json:"set_abbrs,omitempty"`
-	// MaterialAbbrs are upstream's short names for some materials, by name.
-	MaterialAbbrs map[string]string `json:"material_abbrs,omitempty"`
-	Version       string            `json:"version"`
-	Source        string            `json:"source"`
-	Entries       []Entry           `json:"entries"`
-	byID          map[string]int
+	Version  string            `json:"version"`
+	Source   string            `json:"source"`
+	Entries  []Entry           `json:"entries"`
+	byID     map[string]int
 }
 
 func ParseCatalog(raw []byte) (Catalog, error) {

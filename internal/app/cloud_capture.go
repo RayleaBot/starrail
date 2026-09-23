@@ -234,17 +234,10 @@ func (a *App) captureCloudPanel(ctx context.Context, client AccountsClient, choi
 		return nil, gameError("character_missing", "官方未返回此角色。")
 	}
 	var raw map[string]any
-	for _, field := range []string{"list", "avatar_list"} {
-		for _, v := range asList(result.Data[field]) {
-			item := asObject(v)
-			base := asObject(item["base"])
-			if base == nil {
-				base = item
-			}
-			if asText(base["id"]) == id {
-				raw = item
-				break
-			}
+	for _, v := range asList(result.Data["avatar_list"]) {
+		if item := asObject(v); asText(item["id"]) == id {
+			raw = item
+			break
 		}
 	}
 	exportID, data, err := officialCloudAvatar(ctx, a.Game, *panel, raw)
