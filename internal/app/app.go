@@ -115,6 +115,7 @@ type App struct {
 	Interactions   *InteractionStore
 	GuideSettings  *GuideSettings
 	Subscriptions  *ContentSubscriptions
+	pushLists      pushLists
 	ContentJobs    ContentJobs
 	Billing        *BillingStore
 	BillingJobs    BillingJobs
@@ -314,7 +315,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.interactionCommand(ctx, event, command, args)
 	case "guides", "guide-help", "guide-default":
 		return a.guideCommand(ctx, event, command, args)
-	case "subscribe", "unsubscribe":
+	case "subscribe", "unsubscribe", "content-push":
 		return a.subscriptionCommand(ctx, event, command, args)
 	case "news", "info", "events", "search", "post", "estimate":
 		return a.newsCommand(ctx, event, command, args)
