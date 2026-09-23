@@ -104,6 +104,16 @@ type Settings struct {
 	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
 	// administrators.
 	AliasPermission int `json:"alias_permission"`
+	// Ark holds the ark-plugin settings (config/system/cfg_system.js) that
+	// apply here.
+	Ark ArkSettings `json:"ark"`
+}
+
+// ArkSettings are ark-plugin's settings under its names, with its defaults.
+type ArkSettings struct {
+	// NewUserPanel is newUserPanel: 更新面板 of a UID without kept panels
+	// first takes the panels ark keeps for it.
+	NewUserPanel bool `json:"new_user_panel"`
 }
 type App struct {
 	Manifest pluginmeta.Manifest

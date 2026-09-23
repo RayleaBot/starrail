@@ -180,6 +180,10 @@
 
 ark 群查询按返回顺序对应请求 UID，单角色批量排名按返回顺序对应请求角色，不自行探测其他用户。不把不同赛季或算法混成一个名次。异常长度、缺失对应项和格式变化明确失败，数据未知不当零。
 
+### 更新面板时的 ark 请求
+
+沿用 ark-plugin 的 refreshPanel：聊天“更新面板”（不含米游社更新面板）在处理之前，取发送者当前使用的 UID（与命令中写的 UID 无关，没有时跳过）。管理页的 `ark.new_user_panel` 开启且该 UID 没有保存的面板时，OneBot11 发送者以 `{uid, type, qq}`（`type` 为 sr）请求 `panel/data`，`retcode` 为 100 时按导入面板数据的方式重新计算其中能读取的角色、以来源 share 存入该 UID，并回复“[ark-plugin]已自动从API获取N个数据”（N 为 ark 返回的角色数）。随后以 `{uid, type}` 请求 `panel/refresh`，最多等待五秒，结果不影响更新面板。两者在已配置令牌时携带令牌。
+
 ### 装备 OCR 与试算
 
 `cloud.start` 的 `mode=ocr` 接收公开 HTTPS `image_url`、装备 `slot` 和 `forge`（是否识别前后两件），并要求明确外发同意。图片 URL 发给固定 `ark.ivny.cn/ocr/profilechange/sr`；不接受 localhost、字面私有 IP、URL 认证或含 CK/AuthKey 字段的 URL。本地不下载图片，也不把 QQ/CK 发给 OCR 服务。结果只保留已校验装备字段和固定资料能解释的主副词条；缺失或不兼容装备保持明确失败。

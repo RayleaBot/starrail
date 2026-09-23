@@ -44,7 +44,10 @@
       "铁道",
       "sr"
     ],
-    "alias_permission": 0
+    "alias_permission": 0,
+    "ark": {
+      "new_user_panel": false
+    }
   },
   "commands": [
     {
