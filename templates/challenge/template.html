@@ -79,7 +79,7 @@
                   {{ .label }} <span>{{ .time }}</span>
                   {{ end }}
                 </div>
-                <div class="detail-node-score">{{ if .score }}<p>积分： <span>{{ .score }}</span></p>{{ end }}</div>
+                <div class="detail-node-score">{{ if .has_score }}<p>积分： <span>{{ .score }}</span></p>{{ end }}</div>
               </div>
               <div class="detail-avatars">
                 {{ range .avatars }}

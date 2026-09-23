@@ -180,7 +180,9 @@ func challengeRecordData(context app.ImageContext, kind challengeKind, data map[
 	if upper, _ := group["upper_boss"].(map[string]any); upper != nil {
 		for index, key := range []string{"upper_boss", "lower_boss", "tierce_boss"} {
 			boss, _ := group[key].(map[string]any)
-			if boss == nil {
+			// Upstream draws the second node's box whenever the first has a
+			// boss, and the third only when there is one.
+			if boss == nil && index == 2 {
 				continue
 			}
 			bosses = append(bosses, map[string]any{"label": "节点" + strconv.Itoa(index+1), "name": app.Text(boss["name_mi18n"]),
@@ -215,8 +217,11 @@ func challengeRecordData(context app.ImageContext, kind challengeKind, data map[
 			if node == nil && index > 0 {
 				continue
 			}
+			// Upstream shows a node's score line whenever the record has the
+			// key, empty when it is null.
 			nodeScore := ""
-			if value := node["score"]; value != nil {
+			value, hasScore := node["score"]
+			if value != nil {
 				nodeScore = app.Text(value)
 				// Upstream totals the nodes when the first has a score, and
 				// counts the third only on floors that have one.
@@ -228,7 +233,7 @@ func challengeRecordData(context app.ImageContext, kind challengeKind, data map[
 			_, boss := node["boss_defeated"]
 			defeated, _ := node["boss_defeated"].(bool)
 			nodes = append(nodes, map[string]any{"label": "节点" + strconv.Itoa(index+1), "third": index == 2, "time": challengeClock(node),
-				"boss": boss, "defeated": defeated, "score": nodeScore, "avatars": resources.team(node), "buff": resources.buff(node)})
+				"boss": boss, "defeated": defeated, "score": nodeScore, "has_score": hasScore, "avatars": resources.team(node), "buff": resources.buff(node)})
 		}
 		_, hasRound := floor["round_num"]
 		total := ""

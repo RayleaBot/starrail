@@ -127,3 +127,26 @@ func TestChallengeRoutesFollowStarRailPlugin(t *testing.T) {
 		t.Error("a failed record leaves the reply in text")
 	}
 }
+
+func TestChallengeDrawsNodesAsTheTemplateTestsThem(t *testing.T) {
+	data := map[string]any{
+		"groups": []any{map[string]any{"status": "New", "begin_time": clock(2026, 9, 7), "end_time": clock(2026, 10, 19),
+			"upper_boss": map[string]any{"name_mi18n": "上半首领"}}},
+		"all_floor_detail": []any{map[string]any{"name": "难度4", "star_num": json.Number("3"),
+			"node_1": map[string]any{"challenge_time": clock(2026, 9, 10), "score": nil}, "node_2": map[string]any{"challenge_time": clock(2026, 9, 10)}}},
+	}
+	context := app.ImageContext{Now: time.Date(2026, 9, 12, 12, 0, 0, 0, chinaTime), Input: map[string]any{"schedule_type": 1}}
+	image, ok := challengeImage(apocalypticShadow)(context, app.QueryResult{Data: data})
+	if !ok {
+		t.Fatal("boss record")
+	}
+	// Upstream draws the second node's box once the first has a boss.
+	if bosses := image.Data["bosses"].([]any); len(bosses) != 2 || bosses[1].(map[string]any)["name"] != "" {
+		t.Errorf("bosses = %v", bosses)
+	}
+	// A score key shows the line even when it is null; no key shows none.
+	nodes := image.Data["floors"].([]any)[0].(map[string]any)["nodes"].([]any)
+	if first, second := nodes[0].(map[string]any), nodes[1].(map[string]any); first["has_score"] != true || first["score"] != "" || second["has_score"] != false {
+		t.Errorf("nodes = %v", nodes)
+	}
+}
