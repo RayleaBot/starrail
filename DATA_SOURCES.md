@@ -10,7 +10,9 @@
 
 ## StarRail-plugin 面板服务
 
-“面板”“面板更新”等按 [StarRail-plugin 固定提交](https://github.com/TsukinaKasumi/StarRail-plugin/tree/090e411cf9be28b1644721fab54eab0ad283668f)的 `apps/panel.js` 查询其自带的第三方面板服务，服务列表取自同一提交的 `defSet/panelApi.yaml`；查询时向所选服务发送 UID 与签名，返回的面板属于该服务。签名由 `internal/panelapi/sign.b64` 计算，它是该提交 `resources/fuck/fuck` 的原样副本（由 `scripts/bundle-panel-api.mjs` 复制，未改写），与上游 `utils/auth.js` 的 getSign 一样解码 base64 后作为函数求值，只提供其模块引入的 md5。`templates/api-card/` 按同一提交的 `panel/new_card` 与 `common/common.css` 改写，同上游 1.6 倍缩放，角色头像取自“星铁插件图片”素材来源的 `resources/panel/resources/avatar/`。以上均为 Apache-2.0，见 `LICENSES/StarRail-plugin-Apache-2.0.txt`。
+“面板”“面板更新”等按 [StarRail-plugin 固定提交](https://github.com/TsukinaKasumi/StarRail-plugin/tree/090e411cf9be28b1644721fab54eab0ad283668f)的 `apps/panel.js` 查询其自带的第三方面板服务，服务列表取自同一提交的 `defSet/panelApi.yaml`；查询时向所选服务发送 UID 与签名，返回的面板属于该服务。签名由 `internal/panelapi/sign.b64` 计算，它是该提交 `resources/fuck/fuck` 的原样副本（由 `scripts/bundle-panel-api.mjs` 复制，未改写），与上游 `utils/auth.js` 的 getSign 一样解码 base64 后作为函数求值，只提供其模块引入的 md5。`templates/api-card/` 按同一提交的 `panel/new_card` 与 `common/common.css` 改写，同上游 1.6 倍缩放，角色头像取自“星铁插件图片”素材来源的 `resources/panel/resources/avatar/`。
+
+角色面板的伤害表运行 `internal/panelapi/damage.js`：`scripts/bundle-panel-api.mjs` 把同一提交的 `utils/damage`（main.js 与 effect/ 下的角色、光锥、遗器效果）按原文转译为一个表达式，并内嵌其 data.js 读取的 SkillData、weapon_effect、Equipment、RelicSetSkill 与 character 表（character 表只保留 main.js 读取的各行迹第一级属性），logger.debug 不输出；技能的星魂提升读取原样复制的 `internal/panelapi/rank-skill-up.json`（`utils/damage/json/avatarRankSkillUp.json`）。`templates/api-panel/` 按 `panel/new_panel` 与 `common/common.css` 改写，同上游 1.6 倍缩放；页面脚本在 canvas 上画的行迹树改为同坐标的 SVG，背景 SVG 以 data 地址内嵌，图标按上游的 source-in 着色改用 SVG 滤镜。立绘、属性图标、星级、技能、遗器与光锥图片、行迹树背景和 `resources/panel/data/` 下的命途、遗器图标与行迹布局资料取自“星铁插件图片”素材来源（为此该来源也保留 `.svg` 文件；立绘共约 170 MB），行迹图标在出图时从 avocado.wiki 按需下载。修正上游的问题：服务给出的图标路径不以“/”开头时，上游拼出的地址缺少“/”而全部显示加载失败，这里补上；插件资料没有该角色（如记忆、欢愉命途与 1315 之后的角色）或命途没有行迹布局时，上游整页报错，这里照常出图，不画行迹树、不写命途；伤害模块的共享表会被计算改写（如瓦尔特六魂的战技段数每出一次图加一），这里每次重新载入；强化次数为 0 的副词条上游因 repeat(-1) 无法出图，这里不加标记。未移植其 PanelSetting 的面板原图开关、原图撤回与屏蔽面板图的群，原图沿用插件的“原图”规则。以上均为 Apache-2.0，见 `LICENSES/StarRail-plugin-Apache-2.0.txt`。
 
 ## 装备评分
 

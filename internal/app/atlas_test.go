@@ -223,7 +223,7 @@ func TestAtlasAnswersBetweenStarRailPluginAndTheOtherCommands(t *testing.T) {
 		// on, so Atlas answers after the guide.
 		"希儿攻略": {"guides", true, "guide for role/1102.png"},
 		// Its other rules end the messages they answer.
-		"希儿面板": {"character", true, ""},
+		"希儿面板": {"api-panel", true, ""},
 		"宇宙":   {"rogue", true, ""},
 		"角色":   {"profile", true, ""},
 		"体力":   {"note", true, ""},

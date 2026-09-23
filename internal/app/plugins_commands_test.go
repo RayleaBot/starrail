@@ -19,7 +19,8 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 		args     []string
 	}{
 		"starrail": {
-			{"希儿面板", "character", []string{"希儿"}},
+			{"希儿面板", "api-panel", []string{"希儿"}},
+			{"希儿面版", "character", []string{"希儿"}},
 			{"面板", "api-panel-list", nil},
 			{"面板列表", "api-panel-list", nil},
 			{"角色面板", "panel-list", nil},
@@ -150,7 +151,8 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			// miao's profileDetail takes a UID after 面板, 详情, 遗器 and
 			// the like; after 伤害 the index group holds it, and nine digits
 			// or more are a UID, as in miao.
-			{"希儿面板100000001", "character", []string{"希儿", "100000001"}},
+			{"希儿面板100000001", "api-panel", []string{"希儿", "100000001"}},
+			{"希儿面版100000001", "character", []string{"希儿", "100000001"}},
 			{"希儿详情100000001", "character", []string{"希儿", "100000001"}},
 			{"希儿遗器100000001", "score", []string{"希儿", "100000001"}},
 			{"希儿圣遗物100000001", "score", []string{"希儿", "100000001"}},
@@ -199,6 +201,41 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			if !ok || id != tc.id || !reflect.DeepEqual(args, tc.args) {
 				t.Errorf("%s %s resolved to %q %v %v, want %s %v", game, tc.word, id, args, ok, tc.id, tc.args)
 			}
+		}
+	}
+}
+
+// MiaoOrStarrail hands the words ending in 面板 to miao; StarRail-plugin's
+// panel rule answers a UID after 面板, glued or spaced, with its own page.
+// Other text after 面板 is not a UID, and the 面板图 words stay miao's.
+func TestPanelWordsReachStarRailPluginWithAUID(t *testing.T) {
+	manifest, err := pluginmeta.Read(pluginFile(t, "info.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	set, err := newCommandSet(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		word string
+		args []string
+		page bool
+	}{
+		{"希儿面板100000001", nil, true},
+		{"希儿面板", []string{"100000001"}, true},
+		{"希儿面板", nil, false},
+		{"希儿面板", []string{"12"}, false},
+		{"希儿详情100000001", nil, false},
+	} {
+		id, args, _ := set.resolve(tc.word, tc.args)
+		if page := id == "api-panel" && len(args) == 2 && apiUID.MatchString(args[1]); page != tc.page {
+			t.Errorf("%s %v resolved to %s %v", tc.word, tc.args, id, args)
+		}
+	}
+	for _, word := range []string{"希儿面板图列表", "上传希儿面板图", "希儿面板更新"} {
+		if id, _, _ := set.resolve(word, nil); id == "api-panel" {
+			t.Errorf("%s reached the panel service", word)
 		}
 	}
 }

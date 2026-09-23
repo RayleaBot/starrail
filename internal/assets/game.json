@@ -206,7 +206,8 @@
         ".otf",
         ".woff",
         ".woff2",
-        ".json"
+        ".json",
+        ".svg"
       ]
     },
     {
@@ -267,6 +268,13 @@
     {
       "id": "mihoyo",
       "name": "官方图片缓存",
+      "mirrors": [
+        "https://"
+      ]
+    },
+    {
+      "id": "panel-api",
+      "name": "面板服务图标缓存",
       "mirrors": [
         "https://"
       ]

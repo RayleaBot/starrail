@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["picture", "name", "element", "path", "level", "rank", "attributes", "skills", "uid", "api", "relics", "damaged", "damages"],
+  "properties": {
+    "picture": { "type": "string" },
+    "name": { "type": "string" },
+    "element": { "type": "string" },
+    "path": { "type": "string" },
+    "level": { "type": "integer" },
+    "rank": { "type": "integer" },
+    "attributes": { "type": "array" },
+    "equipment": { "type": "object" },
+    "skills": { "type": "array" },
+    "uid": { "type": "string" },
+    "api": { "type": "string" },
+    "relics": { "type": "array" },
+    "tree": { "type": ["object", "null"] },
+    "damaged": { "type": "boolean" },
+    "damages": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

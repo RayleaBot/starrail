@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+<div class="header">
+  <div class="left">
+    <img{{ with .picture }} data-render-resource="{{ . }}"{{ end }} alt="">
+  </div>
+  <div class="right">
+    <div class="info">
+      <div class="role-name">{{ .name }}</div>
+      <div class="element">
+        <img{{ with .element }} data-render-resource="{{ . }}"{{ end }} alt="">
+      </div>
+      <div class="path">{{ .path }}</div>
+      <div class="level">Lv.{{ .level }}</div>
+      <div class="star-soul const-rank-{{ .rank }}">星魂 {{ .rank }}</div>
+    </div>
+    <div class="dividing-line"></div>
+    <div class="attribute-box">
+      {{ range .attributes }}
+      <div class="attribute-item">
+        <div class="icon">
+          <img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+        </div>
+        <div class="name">{{ .name }}</div>
+        <div class="value">{{ .value }}</div>
+        {{ if .added }}<div class="add-value">
+          <div>{{ .base }}</div>
+          <div class="delta">+{{ .delta }}</div>
+        </div>{{ end }}
+      </div>
+      {{ end }}
+    </div>
+  </div>
+</div>
+<div class="arms-box">
+  {{ with .equipment }}
+  <div class="arms">
+    <div class="arms-img">
+      <img{{ with .image }} data-render-resource="{{ . }}"{{ end }} alt="">
+    </div>
+    <div class="info">
+      <div>{{ .name }}</div>
+      <div class="level-box">
+        <div class="level">Lv.{{ .level }}</div>
+        <div class="rank">叠影{{ .rank }}</div>
+      </div>
+      <div class="star">
+        <img{{ with .star }} data-render-resource="{{ . }}"{{ end }} alt="">
+      </div>
+    </div>
+    <div class="attribute">
+      <div class="item">
+        <div class="icon"><img{{ with .hp_icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        <div class="text">生命值：{{ .hp }}</div>
+      </div>
+      <div class="item">
+        <div class="icon"><img{{ with .atk_icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        <div class="text">攻击力：{{ .atk }}</div>
+      </div>
+      <div class="item">
+        <div class="icon"><img{{ with .def_icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+        <div class="text">防御力：{{ .def }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="hr"></div>
+  {{ end }}
+  <div class="talent">
+    {{ range .skills }}
+    <div class="item">
+      <div class="img">
+        <img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+      </div>
+      <div class="level">{{ .level }}</div>
+      <div class="type">{{ .type }}</div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+<div class="other-info">
+  <div class="uid">UID：{{ .uid }}</div>
+  <div class="api">当前面版服务：{{ .api }}</div>
+</div>
+<div class="relic-list">
+  {{ range .relics }}
+  <div class="item" data-rank="{{ .rank }}">
+    <div class="info">
+      <div class="relic-icon">
+        <img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+        <div class="level">+{{ .level }}</div>
+      </div>
+      <div class="star">
+        <img{{ with .star }} data-render-resource="{{ . }}"{{ end }} alt="">
+      </div>
+      <div class="relic-name">{{ .name }}</div>
+      <div class="score">{{ .score }}分</div>
+    </div>
+    <div class="attribute">
+      <div class="attribute-item main_affix">
+        <div class="name">{{ .main_name }}</div>
+        <div class="add-attribute">+{{ .main_value }}</div>
+      </div>
+      {{ range .affixes }}
+      <div class="attribute-item {{ .weight }}">
+        <div class="name">{{ .name }}</div>
+        <div class="cont">{{ .rolls }}</div>
+        <div class="add-attribute">+{{ .value }}</div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  {{ end }}
+</div>
+{{ with .tree }}
+<div class="skill_tree">
+  <svg id="skillTreeCanvas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {{ .width }} {{ .height }}">
+    <defs>
+      <filter id="tree-black" color-interpolation-filters="sRGB"><feFlood flood-color="rgb(0, 0, 0)"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+      <filter id="tree-cream" color-interpolation-filters="sRGB"><feFlood flood-color="rgb(254, 239, 204)"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+      <filter id="tree-white" color-interpolation-filters="sRGB"><feFlood flood-color="rgb(255, 255, 255)"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+    </defs>
+    {{ safeHTML .background }}
+    {{ range .nodes }}{{ if .level }}<text class="tree-level" x="{{ .cx }}" y="{{ .text_y }}">{{ .level }}</text>{{ end }}{{ if .locked }}<circle class="tree-lock" cx="{{ .cx }}" cy="{{ .cy }}" r="{{ .r }}"/><circle class="tree-lock" cx="{{ .lock_cx }}" cy="{{ .lock_cy }}" r="18"/>{{ end }}
+    {{ end }}
+    {{ range .nodes }}{{ if and .locked $.tree.lock }}<foreignObject x="{{ .lock_x }}" y="{{ .lock_y }}" width="20" height="20"><img class="tree-icon lock" data-render-resource="{{ $.tree.lock }}" alt=""></foreignObject>
+    {{ end }}{{ end }}
+    {{ range .nodes }}{{ if .icon }}<foreignObject x="{{ .icon_at }}" y="{{ .icon_top }}" width="{{ .icon_size }}" height="{{ .icon_size }}"><img class="tree-icon{{ if .skill }} skill{{ end }}" data-render-resource="{{ .icon }}" alt=""></foreignObject>
+    {{ else }}{{ if .locked }}<circle class="tree-failed-lock" cx="{{ .cx }}" cy="{{ .cy }}" r="{{ .r }}"/>{{ end }}<text class="tree-failed" x="{{ .cx }}" y="{{ .cy }}"{{ if .squeeze }} textLength="{{ .size }}" lengthAdjust="spacingAndGlyphs"{{ end }}>加载失败</text>
+    {{ end }}{{ end }}
+  </svg>
+</div>
+{{ end }}
+{{ if .damaged }}
+<div class="damage">
+  <table>
+    <thead>
+      <tr>
+        <th colspan="3">伤害计算</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td width="30%">动作</td>
+        <td>暴击伤害</td>
+        <td>期望伤害</td>
+      </tr>
+      {{ range .damages }}
+      <tr>
+        <td>{{ .title }}</td>
+        <td>{{ .critical }}</td>
+        <td>{{ .expect }}</td>
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
+</div>
+{{ else }}
+<div class="damage">
+  <table>
+    <tbody>
+      <tr>
+        <th colspan="3" style="border: none;">
+          该角色未推出伤害计算或者数据过旧不支持计算
+        </th>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{{ end }}
+<div class="copyright">{{ .render_footer }}</div>
+</div>
+</body>
+</html>

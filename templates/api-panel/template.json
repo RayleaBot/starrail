@@ -1,0 +1,11 @@
+{
+  "id": "api-panel",
+  "name": "星铁面板服务角色面板",
+  "description": "角色名后接面板与 UID 的命令的图片，布局参照 StarRail-plugin panel/new_panel",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1440,
+  "height": 6000
+}

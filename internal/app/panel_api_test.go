@@ -163,3 +163,24 @@ func TestPanelAPIClientSignsAndKeepsTheGap(t *testing.T) {
 		t.Errorf("%d requests were sent", len(asked))
 	}
 }
+
+// handleBehaviorList lists the first five traces, raised by each eidolon up
+// to the character's, with their icons, and drops the technique.
+func TestAPISkillsFollowHandleBehaviorList(t *testing.T) {
+	character := APICharacter{AvatarID: 1001, Rank: 3, Behaviors: []APIBehavior{
+		{ID: 1001001, Level: 6, Type: "普攻"}, {ID: 1001002, Level: 10, Type: "战技"}, {ID: 1001003, Level: 10, Type: "终结技"},
+		{ID: 1001004, Level: 10, Type: "天赋"}, {ID: 1001007, Level: 1, Type: "秘技"}, {ID: 1001101, Level: 1, Type: "天赋"}}}
+	raises := map[string][]RankSkillUp{"100103": {{ID: "100103", Num: 2}, {ID: "100101", Num: 1}}, "100105": {{ID: "100102", Num: 2}}}
+	skills := apiSkills(character, raises)
+	if len(skills) != 4 {
+		t.Fatalf("skills = %+v", skills)
+	}
+	for i, want := range []struct {
+		level int
+		file  string
+	}{{7, "1001_basic_atk.png"}, {10, "1001_skill.png"}, {12, "1001_ultimate.png"}, {10, "1001_talent.png"}} {
+		if skills[i].Level != want.level || skills[i].File != want.file {
+			t.Errorf("skill %d = %d %s, want %d %s", i, skills[i].Level, skills[i].File, want.level, want.file)
+		}
+	}
+}

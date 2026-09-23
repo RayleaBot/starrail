@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,11 +16,33 @@ import (
 	"unicode"
 )
 
-// PanelAPIScripts are the pinned StarRail-plugin scripts its panel service
-// commands run.
+// PanelAPIScripts are the pinned StarRail-plugin scripts and data its panel
+// service commands run on.
 type PanelAPIScripts struct {
 	// Sign computes a UID's x-request-sr header with getSign's script.
 	Sign func(ctx context.Context, uid string) (string, error)
+	// Damage runs the damage module on a character as the panel page passes
+	// it; it fails for characters the module does not calculate.
+	Damage func(ctx context.Context, character any) ([]APIDamage, error)
+	// RankSkillUp lists the skills each eidolon raises, by the eidolon's ID.
+	RankSkillUp map[string][]RankSkillUp
+}
+
+// RankSkillUp is a skill an eidolon raises by Num levels; ID names the skill
+// by the first five digits of its trace ID and the last.
+type RankSkillUp struct {
+	ID  string `json:"id"`
+	Num int    `json:"num"`
+}
+
+// APIDamage is a row of the panel page's damage table. A value the module
+// could not calculate (NaN) is nil.
+type APIDamage struct {
+	Title string `json:"title"`
+	Value struct {
+		Expect   *float64 `json:"expect"`
+		Critical *float64 `json:"critical"`
+	} `json:"value"`
 }
 
 // PanelAPIClient queries StarRail-plugin's panel service. As upstream, a UID
@@ -163,19 +186,10 @@ func parseAPIAnswer(answer map[string]any, uid string) ([]APICharacter, error) {
 			characters = append(characters, character)
 		}
 	}
-	if assist, ok := parseAPICharacter(asObject(info["assistAvatar"])); ok && !containsAPICharacter(characters, assist.AvatarID) {
+	if assist, ok := parseAPICharacter(asObject(info["assistAvatar"])); ok && !slices.ContainsFunc(characters, func(character APICharacter) bool { return character.AvatarID == assist.AvatarID }) {
 		characters = append([]APICharacter{assist}, characters...)
 	}
 	return characters, nil
-}
-
-func containsAPICharacter(characters []APICharacter, id int) bool {
-	for _, character := range characters {
-		if character.AvatarID == id {
-			return true
-		}
-	}
-	return false
 }
 
 // apiProperties are the totals the panel page and damage module read: the
@@ -190,8 +204,11 @@ var (
 	apiIcon   = regexp.MustCompile(`^/?(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_-]+\.(?:png|webp|jpg)$`)
 )
 
+// parseAPICharacter reads a character of the answer. The eidolons, which the
+// panel page loops over, are bounded to 0–6, and a substat's rolls, which it
+// repeats as marks, to 16.
 func parseAPICharacter(item map[string]any) (APICharacter, bool) {
-	character := APICharacter{AvatarID: apiInt(item["avatarId"]), Name: apiText(item["name"], 32), Level: apiInt(item["level"]), Rank: apiInt(item["rank"]),
+	character := APICharacter{AvatarID: apiInt(item["avatarId"]), Name: apiText(item["name"], 32), Level: apiInt(item["level"]), Rank: min(max(apiInt(item["rank"]), 0), 6),
 		Properties: map[string]float64{}, Relics: []APIRelic{}, RelicSets: []APIRelicSet{}, Behaviors: []APIBehavior{}}
 	if character.AvatarID <= 0 {
 		return APICharacter{}, false
@@ -223,7 +240,7 @@ func parseAPICharacter(item map[string]any) (APICharacter, bool) {
 		parsed.Score, _ = apiNumber(relic["score"])
 		for _, raw := range limitList(relic["sub_affix_id"], 8) {
 			affix := asObject(raw)
-			sub := APIAffix{Name: apiText(affix["name"], 32), Tag: apiTag(affix["tag"]), Count: apiInt(affix["cnt"])}
+			sub := APIAffix{Name: apiText(affix["name"], 32), Tag: apiTag(affix["tag"]), Count: min(max(apiInt(affix["cnt"]), 0), 16)}
 			sub.Value, _ = apiNumber(affix["value"])
 			sub.Weight, _ = apiNumber(affix["weight"])
 			parsed.Affixes = append(parsed.Affixes, sub)

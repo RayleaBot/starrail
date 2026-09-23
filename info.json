@@ -1733,14 +1733,25 @@
       }
     },
     {
-      "id": "character",
+      "id": "api-panel",
       "name": "面板",
-      "description": "查看角色面板",
+      "description": "查看角色面板；角色名后接面板与 UID 时按 StarRail-plugin 读取其面板服务",
       "usage": "#<角色>面板 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<character>.+?)(?:面板|面版|详情|详细)(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?P<character>.+?)面板(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
+      "id": "character",
+      "name": "详情",
+      "description": "查看角色面板",
+      "usage": "#<角色>详情 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?P<character>.+?)(?:面版|详情|详细)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1791,6 +1802,7 @@
       "id": "panel",
       "title": "角色面板",
       "commands": [
+        "api-panel",
         "character",
         "character-card",
         "panel-refresh",

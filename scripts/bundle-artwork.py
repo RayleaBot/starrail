@@ -71,8 +71,19 @@ BUNDLES = {
         "resources/gachasimulation/resources/images/*",
         "resources/gatcha/images/char/*",
         "resources/panel/resources/weapon/*",
-        # The panel service's character list.
+        # The panel service's character list and panel: the pictures, skill,
+        # relic and stat icons, the skill tree backgrounds and the data
+        # naming the paths, relic icons and tree layouts.
         "resources/panel/resources/avatar/*.png",
+        "resources/panel/resources/char_image/*",
+        "resources/profile/normal-character/*",
+        "resources/panel/resources/dividing-line.png",
+        "resources/panel/resources/icon/value/*",
+        "resources/panel/resources/star/*",
+        "resources/panel/resources/skill/*",
+        "resources/panel/resources/relic/*",
+        "resources/panel/resources/skill_tree/*",
+        "resources/panel/data/*.json",
         "resources/baseData/characters.json",
         "resources/baseData/light_cones.json",
         # Strategy pictures sent by the static picture commands.
