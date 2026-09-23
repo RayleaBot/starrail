@@ -12,11 +12,13 @@ import (
 )
 
 // ledgerCountArtwork maps the images the ledger-count page names to their
-// sources: Yunzai's Star Rail logo and StarRail-plugin's copy of the number
-// font Yunzai uses.
+// sources: Yunzai's Star Rail logo, StarRail-plugin's copy of the number font
+// Yunzai uses, and the banner miao gives every Star Rail character, which
+// genshinLayout's header shows for 黑天鹅.
 var ledgerCountArtwork = [][3]string{
 	{"tttgbnumber", "starrail-plugin", "resources/common/font/tttgbnumber.ttf"},
 	{"starrail-logo", "yunzai-genshin", "resources/StarRail/img/other/logo.png"},
+	{"head-banner", "miao-plugin", "resources/meta-sr/character/common/imgs/banner.webp"},
 }
 
 // ledgerColors are Yunzai's source colours, by the action IDs its ledger

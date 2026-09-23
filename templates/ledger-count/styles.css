@@ -1,5 +1,5 @@
 /* Converted from Yunzai html/ledger/ledger-count-sr, with genshinLayout's header
-   style; miao has no banner for the header's 黑天鹅, so upstream shows none. */
+   style. */
 /* resources/html/ledger/ledger-count-sr.css */
 * {
   margin: 0;
@@ -109,6 +109,7 @@ body {
 
 /* html/layout/genshin.html */
 .head_box {
+  background-image: var(--render-resource-head-banner, none);
   background-position: right;
   background-size: auto 100%;
   background-repeat: no-repeat;
