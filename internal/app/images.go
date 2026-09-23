@@ -59,6 +59,8 @@ type PanelImage struct {
 	DamageMode bool
 	// Splash is the picture drawn: an uploaded 面板图 or miao's splash.
 	Splash rayleabot.RenderImageResource
+	// Rank is where ark ranks the panel, nil when it is not shown.
+	Rank *PanelRank
 }
 
 // PanelImageBuilder draws a single-character panel with the plugin's

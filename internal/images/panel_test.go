@@ -1,6 +1,7 @@
 package images_test
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -52,5 +53,48 @@ func TestPanelFollowsMiaoRules(t *testing.T) {
 	}
 	if drawn.Data["artifact_hint"] != "*花火圣遗物" {
 		t.Errorf("hint = %v", drawn.Data["artifact_hint"])
+	}
+}
+
+func TestPanelDrawsArkRanks(t *testing.T) {
+	application, err := app.New(assets.Load(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var image app.PanelImage
+	for _, record := range application.Game.Calc.Metadata().Characters {
+		if record.Key == "sr_1102" {
+			image.Record = record
+		}
+	}
+	expected := 45892.0
+	image.Panel = app.CharacterPanel{ID: "1102", Level: 80, Element: "量子"}
+	image.Damage = &app.BuildResult{Baseline: app.BuildScenario{Results: []app.BuildSkillResult{{Title: "战技伤害", Expected: &expected}}}}
+	game := application.Game
+	game.Prefix = "*"
+	context := app.ImageContext{Game: game, Catalog: application.Catalog, Now: time.Now()}
+	// ark's ranks follow the damage rows, numbered on.
+	image.Rank = &app.PanelRank{Rows: []app.Row{{Label: "总伤害排名", Value: "1148 / 60392 (1.90%)"}}}
+	drawn, _ := images.Panel(context, image)
+	rows := drawn.Data["damage"].(map[string]any)["rows"].([]any)
+	if last := rows[len(rows)-1].(map[string]any); len(rows) != 2 || last["index"] != 2 || last["title"] != "总伤害排名" || last["full"] != "1148 / 60392 (1.90%)" {
+		t.Fatalf("rows = %v", rows)
+	}
+	scores := []float64{99, 90, 80, 70, 60, 50, 40, 30, 20, 10}
+	image.Rank = &app.PanelRank{Chart: &app.PanelRankChart{Damage: &app.RankCurve{Scores: scores, Top: 100, Percent: 1.9, Score: 74.172}, Places: [2]string{"1148 / 60392 (1.90%)", ""}}}
+	drawn, _ = images.Panel(context, image)
+	chart := drawn.Data["rank_chart"].(map[string]any)
+	damage, artis := chart["charts"].([]any)[0].(map[string]any), chart["charts"].([]any)[1].(map[string]any)
+	if chart["hint"] != "*希儿排名统计" || len(artis) != 0 || damage["line"] == "" {
+		t.Fatalf("chart = %v", chart)
+	}
+	// x reads 100 - x, and the panel is marked at 100 - its percent with its
+	// score to two places.
+	ticks := damage["x_ticks"].([]any)
+	if ticks[0].(map[string]any)["label"] != "100" || ticks[5].(map[string]any)["label"] != "0" || damage["mark"].(map[string]any)["text"] != "74.17" {
+		t.Fatalf("damage = %v", damage)
+	}
+	if stops := damage["stops"].([]any); stops[2].(map[string]any)["color"] != "rgb(255, 0, 0)" || math.Abs(stops[1].(map[string]any)["offset"].(float64)-0.981) > 1e-9 {
+		t.Fatalf("stops = %v", stops)
 	}
 }

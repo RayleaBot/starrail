@@ -40,6 +40,8 @@ Apache-2.0 许可保留在 `LICENSES/StarRail-plugin-Apache-2.0.txt`，对应的
 
 `templates/rank/` 按 miao-plugin 的 character/rank-profile-list 星铁模式改写（MIT），容器宽度同上游在页面内设置；ark-plugin 的自定义排行沿用这一页面（MIT，见 `LICENSES/ark-plugin-MIT.txt`），同 `apps/customRank.js` 写入“全服数据”、排序与筛选说明及请求行数，页面宽 930（欢愉命途 960、记忆命途 1000），评级按六件遗器的平均分阈值（56 分以上为 MAX）。
 
+`templates/panel/` 另按 ark-plugin 备份的 `miao-plugin-rank/resources/character/profile-detail.html`（MIT，见 `LICENSES/ark-plugin-MIT.txt`）加入面板排名：名次行接在伤害表后，排名统计块照搬其布局与内联样式，两张图按其 ECharts 选项（默认网格、smooth、面积渐变与标注）输出为 SVG，渐变的色标按上游的原顺序输出（上游把红色色标写在前一色标之前，浏览器因此从本面板的位置起画 2.5 个百分点的红带，这里保持一致）；上游在星铁中同样写“圣遗物排名”“圣遗物评分”。
+
 `templates/rank-stats/` 按 ark-plugin 的 graph/stats 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），页面框架沿用 miao-plugin 的 common/layout/default 与 common/common.css，同 ark 的 1.4 倍缩放。上游在浏览器中用 ECharts 绘制折线，这里按 ECharts 的刻度与平滑算法输出相同的 SVG，不随插件分发该库；背景图取自“ark 插件图片”素材来源的 `resources/graph/`。
 
 `templates/charge/` 与 `templates/online/` 按 StarRail-plugin 的 charge 与 online 页面改写（Apache-2.0），“星琼记录”等与“在线时长”同上游 apps/hkrpg.js：资产记录读取官方自助查询的一页（每页 10 条）并只保留获取的记录（开拓力只保留多于 1 点的）；上游的“光锥记录”“武器记录”被跃迁记录的规则先匹配而从不出图，这里同样交给跃迁记录。在线时长读取开拓力记录中的“随时间回复开拓力”，按上游 statisticsOnlineDateGeneral 与 statisticOnlinePeriods 把每次单独回复的 1 点记为之前 6 分钟在线，逐日统计小时数并画出近七天的在线时段（上游逐分钟扫描使每段少记一分钟，这里照做；上游把零点后六分钟内的记录算到前一天时取错了日期，这里按其本意记到前一天）；每页 50 条，为在事件时限内回复最多读取 40 秒。两张 ECharts 图（近七天柱状图与日历热力图）按 ECharts 的默认布局、配色与分段输出 SVG，热力图上游固定为 2023 年，这里显示当前年份。

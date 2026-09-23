@@ -111,6 +111,20 @@ type Settings struct {
 
 // ArkSettings are ark-plugin's settings under its names, with its defaults.
 type ArkSettings struct {
+	// PanelRank is panelRank: a panel with a damage table shows ark's ranks.
+	PanelRank bool `json:"panel_rank"`
+	// QueryType is queryType, the panel's ranks: 0 damage, 1 relics, 2
+	// both, 3 both as 排名统计 charts.
+	QueryType int `json:"query_type"`
+	// RankType is RankType, how a rank is written: 0 the place, 1 the
+	// percent, 2 both.
+	RankType int `json:"rank_type"`
+	// LocalPanelRank is localPanelRank: ark ranks the panel itself rather
+	// than the UID's panel it keeps.
+	LocalPanelRank bool `json:"local_panel_rank"`
+	// MarkRankType is markRankType: ranks of local data are marked (本地),
+	// or (面板变换) for a changed panel.
+	MarkRankType bool `json:"mark_rank_type"`
 	// NewUserPanel is newUserPanel: 更新面板 of a UID without kept panels
 	// first takes the panels ark keeps for it.
 	NewUserPanel bool `json:"new_user_panel"`
@@ -213,7 +227,8 @@ func New(assets Assets, directory string) (*App, error) {
 	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, uidListImage: assets.UIDList, payLogImage: assets.PayLog, onlineImage: assets.Online, rankStatsImage: assets.RankStats, poolImage: assets.Pools, characterCardImage: assets.CharacterCard, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
-	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{}}
+	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{},
+		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true}}
 	_ = decodeObject(event.Config, &value)
 	return value
 }
