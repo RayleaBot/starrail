@@ -49,10 +49,7 @@ func PoolInfo(context app.ImageContext, page app.PoolImage) (app.Image, bool) {
 	for _, item := range poolArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
-	types := map[string]string{}
-	for _, weapon := range context.Game.Calc.Metadata().Weapons {
-		types[weapon.ID] = weapon.Type
-	}
+	types := lightConePaths(context)
 	pools := []any{}
 	for _, pool := range page.Pools {
 		groups := []any{}
@@ -87,6 +84,18 @@ func PoolInfo(context app.ImageContext, page app.PoolImage) (app.Image, bool) {
 		pools = append(pools, map[string]any{"version": pool.Version, "half": pool.Half, "from": pool.From, "to": pool.To, "mix": pool.Kind == "chronicled", "groups": groups})
 	}
 	return app.Image{Template: "pool-info", Data: map[string]any{"elem": poolElem, "pools": pools}, Resources: resources.List}, true
+}
+
+// lightConePaths are the light cones' paths by ID, the folders miao keeps
+// their pictures in.
+func lightConePaths(context app.ImageContext) map[string]string {
+	paths := map[string]string{}
+	if context.Game.Calc != nil {
+		for _, weapon := range context.Game.Calc.Metadata().Weapons {
+			paths[weapon.ID] = weapon.Type
+		}
+	}
+	return paths
 }
 
 // poolPicture is miao's face for a character and icon for a light cone.

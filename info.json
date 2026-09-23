@@ -601,18 +601,13 @@
     },
     {
       "id": "gacha-versions",
-      "name": "版本统计",
-      "description": "按版本统计抽数与出货",
-      "usage": "#版本统计 [UID]",
+      "name": "抽卡统计",
+      "description": "按 Yunzai 逐期列出卡池的抽数与所得四星、五星及次数",
+      "usage": "#up统计 / #角色池统计 / #光锥池统计 / #常驻池统计 [UID]",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "版本统计",
-          "全部统计",
-          "up统计",
-          "版本抽卡"
-        ]
+        "type": "pattern",
+        "pattern": "^(?:抽卡|抽奖|角色|武器|常驻|up|新手|光锥)池*统计$"
       }
     },
     {

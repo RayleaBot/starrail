@@ -72,6 +72,11 @@ type GachaImage struct {
 	Role    Role
 	Word    string
 	Archive gacha.Archive
+	// Count draws Yunzai's 抽卡统计 page, which gets the 统计 words
+	// StarRail-plugin's rule leaves.
+	Count bool
+	// Group is a group chat, where 抽卡统计 shows fewer pools.
+	Group bool
 }
 
 // GachaImageBuilder draws a gacha record reply with the plugin's template, or

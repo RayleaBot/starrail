@@ -33,8 +33,12 @@ var gachaArtwork = [][2]string{
 // Gacha draws warp records the way StarRail-plugin's gatcha/new does: the
 // overview (all pulls, this banner's pulls, pity on the limited pools and,
 // for the overview, holdings) and either every pool's five-stars or one
-// pool's four- and five-stars grouped by banner.
+// pool's four- and five-stars grouped by banner; Yunzai's 抽卡统计 is
+// GachaCount's page.
 func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
+	if image.Count {
+		return GachaCount(context, image)
+	}
 	kind := 0
 	switch gachaWords.ReplaceAllString(image.Word, "") {
 	case "角色":

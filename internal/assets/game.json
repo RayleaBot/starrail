@@ -230,9 +230,12 @@
       "include": [
         "resources/StarRail/img/other/",
         "resources/img/icon/",
+        "resources/img/other/bg4.png",
+        "resources/img/other/bg5.png",
         "resources/html/mysNews/",
         "resources/html/mysNews-list/",
-        "resources/font/tttgbnumber.ttf"
+        "resources/font/tttgbnumber.ttf",
+        "resources/font/HYWenHei-55W.ttf"
       ],
       "extensions": [
         ".png",

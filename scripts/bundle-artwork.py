@@ -73,14 +73,17 @@ BUNDLES = {
         # Strategy pictures sent by the static picture commands.
         "resources/srsr/*",
     ]),
-    # The ledger, the UID list and the news pages.
+    # The ledger, 抽卡统计, the UID list and the news pages.
     "yunzai-genshin": ("Yunzai-genshin", [
         "resources/StarRail/img/other/logo.png",
         "resources/img/icon/check.webp",
+        "resources/img/other/bg4.png",
+        "resources/img/other/bg5.png",
         "resources/html/mysNews/iconfont.fb3712d.woff2",
         "resources/html/mysNews/mys.png",
         "resources/html/mysNews-list/蒙德.png",
         "resources/font/tttgbnumber.ttf",
+        "resources/font/HYWenHei-55W.ttf",
     ]),
     "ark-plugin": ("ark-plugin", ["resources/graph/background.png"]),
 }
