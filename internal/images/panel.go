@@ -83,7 +83,12 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	add("common-bg-talent-"+elem, "resources/common/bg/talent-"+elem+".webp")
 
 	images := "resources/meta-sr/character/" + record.Name + "/imgs/"
-	add("splash", images+"splash.webp")
+	// An uploaded 面板图 the app picked replaces the splash, as miao's.
+	if image.Splash.Path != "" {
+		resources = append(resources, image.Splash)
+	} else {
+		add("splash", images+"splash.webp")
+	}
 	talentKeys := [][2]string{{"a", "普攻"}, {"e", "战技"}, {"t", "天赋"}, {"q", "爆发"}}
 	switch record.WeaponType {
 	case "记忆":

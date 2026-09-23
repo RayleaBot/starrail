@@ -57,6 +57,8 @@ type PanelImage struct {
 	Change string
 	// DamageMode draws miao's 伤害 page.
 	DamageMode bool
+	// Splash is the picture drawn: an uploaded 面板图 or miao's splash.
+	Splash rayleabot.RenderImageResource
 }
 
 // PanelImageBuilder draws a single-character panel with the plugin's

@@ -69,6 +69,10 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"喵喵别名删除", "alias-remove", nil},
 			{"希儿昵称", "aliases", []string{"希儿"}},
 			{"喵喵别名帮助", "alias-help", nil},
+			{"上传希儿照片", "photo-upload", []string{"希儿"}},
+			{"上传希儿面板图", "panel-image-upload", []string{"希儿"}},
+			{"删除希儿面板图1", "panel-image-remove", []string{"希儿", "1"}},
+			{"希儿面板图列表", "panel-image-list", []string{"希儿"}},
 			{"希儿", "character-card", nil},
 		},
 	}
