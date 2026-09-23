@@ -53,6 +53,6 @@ func (a *App) currencyWarsArchive(ctx context.Context, event *rayleabot.EventCon
 		return event.SendText("未找到货币战争第" + strconv.Itoa(index) + "条记录")
 	}
 	view := BusinessView(a.Game, operation, result, a.Catalog)
-	view.Image = a.featureImage(ctx, client, choice, a.Game.ID+".currency_wars_archive", word, nil, result)
+	view.Image = a.featureImage(ctx, event, choice, a.Game.ID+".currency_wars_archive", word, nil, result)
 	return a.sendView(ctx, event, view)
 }

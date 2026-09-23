@@ -273,7 +273,7 @@ func (a *App) ledgerCommand(ctx context.Context, event *rayleabot.EventContext, 
 		return event.SendText(friendlyError(err))
 	}
 	view := BusinessView(a.Game, operation, result, a.Catalog)
-	view.Image = a.featureImage(ctx, client, choice, a.Game.ID+".ledger", event.Event.Command(), input, result)
+	view.Image = a.featureImage(ctx, event, choice, a.Game.ID+".ledger", event.Event.Command(), input, result)
 	err = a.sendView(ctx, event, view)
 	// A month that cannot be saved has still been answered.
 	_ = a.keepMonthly(ctx, client, choice, result)

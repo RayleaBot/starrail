@@ -235,15 +235,16 @@ func (a *App) imageContext(ctx context.Context) ImageContext {
 }
 
 // featureImage draws a query result with the plugin's own template when the
-// plugin registered one for the operation.
-func (a *App) featureImage(ctx context.Context, client AccountsClient, choice Selection, operation, word string, input map[string]any, result QueryResult) *Image {
+// plugin registered one for the operation. The queries it runs for the image
+// ask as the chat command's own query does.
+func (a *App) featureImage(ctx context.Context, event *rayleabot.EventContext, choice Selection, operation, word string, input map[string]any, result QueryResult) *Image {
 	build := a.images[operation]
 	if build == nil {
 		return nil
 	}
 	imageContext := a.imageContext(ctx)
 	imageContext.Query = func(operation string, input map[string]any) (QueryResult, error) {
-		return client.Execute(ctx, choice, operation, input)
+		return a.query(ctx, event, choice, operation, input)
 	}
 	imageContext.Input, imageContext.Word = input, word
 	image, ok := build(imageContext, result)

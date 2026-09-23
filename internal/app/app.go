@@ -733,7 +733,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		// A routed command's text reply reads as the query that ran; its image
 		// is the command's own.
 		query, textOperation := a.routedQuery(operation, queryOperationName(operation.Name, input))
-		result, queryErr := a.accountClient(event).Execute(ctx, choice, query, input)
+		result, queryErr := a.query(ctx, event, choice, query, input)
 		if queryErr != nil {
 			err = queryErr
 			break
@@ -744,7 +744,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			_ = a.Monthly.Keep(a.accountClient(event).Provider, choice, result.Data, time.Now())
 		}
 		view = BusinessView(a.Game, textOperation, result, a.Catalog)
-		view.Image = a.featureImage(ctx, a.accountClient(event), choice, operation.Name, event.Event.Command(), input, result)
+		view.Image = a.featureImage(ctx, event, choice, operation.Name, event.Event.Command(), input, result)
 	}
 	if err != nil {
 		return event.SendText(friendlyError(err))
