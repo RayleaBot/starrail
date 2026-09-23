@@ -26,11 +26,20 @@ var rankArtwork = [][2]string{
 	{"common-item-bg5", "resources/common/item/bg5.png"},
 }
 
-// rankTalents are the talents miao's rank list shows for the ranked
-// character's path: memosprite skills for Remembrance, the Elation skill for
-// Elation, on a page 970 pixels wide; other paths, and the list of every
-// character's best, show four on a page 900 wide.
-var rankTalents = map[string][]string{"记忆": {"a", "e", "t", "q", "me", "mt"}, "欢愉": {"a", "e", "t", "q", "xe"}}
+// rankLayout is the talents miao's rank list shows for the ranked
+// character's path, and the page's width among widths for Remembrance,
+// Elation and the others: memosprite skills for Remembrance, the Elation
+// skill for Elation; other paths, and the list of every character's best,
+// show four.
+func rankLayout(path string, widths [3]int) ([]string, int) {
+	switch path {
+	case "记忆":
+		return []string{"a", "e", "t", "q", "me", "mt"}, widths[0]
+	case "欢愉":
+		return []string{"a", "e", "t", "q", "xe"}, widths[1]
+	}
+	return []string{"a", "e", "t", "q"}, widths[2]
+}
 
 // Rank draws a group ranking the way miao's character/rank-profile-list
 // does in its Star Rail mode: the title and ranking notes, then a row per
@@ -48,10 +57,7 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		elem = elementClasses[ranked.Element]
 	}
 	page.resources.Artwork("common-bg-bg-"+elem, "miao-plugin", "resources/common/bg/bg-"+elem+".webp")
-	keys, width := rankTalents[ranked.WeaponType], 970
-	if keys == nil {
-		keys, width = []string{"a", "e", "t", "q"}, 900
-	}
+	keys, width := rankLayout(ranked.WeaponType, [3]int{970, 970, 900})
 	rows := []any{}
 	for index, entry := range rank.Entries {
 		record, panel := page.records[entry.CharacterID], *entry.Panel
@@ -110,8 +116,64 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		title = name + map[string]string{"mark": "遗器评分"}[rank.Mode] + "排行"
 	}
 	since := time.UnixMilli(rank.SinceMS).In(chinaTime).Format("01-02 15:04")
-	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "since": since, "hash": context.Game.Prefix, "rows": rows, "width": width}
+	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "time": since, "hash": context.Game.Prefix, "rows": rows, "width": width}
 	return app.Image{Template: "rank", Data: data, Resources: page.resources.List}, true
+}
+
+// CloudRank draws ark-plugin's custom ranking as ark fills miao's
+// rank-profile-list for Star Rail: the character's face in each row with the
+// UID ark shows, the Eidolon, talents, light cone, sets and score it returns
+// and the ranked detail's average damage; the notes read 全服数据, ark's order
+// and filters and the rows asked for. ark draws the page 930 pixels wide,
+// 960 for Elation and 1000 for Remembrance characters.
+func CloudRank(context app.ImageContext, rank app.CloudRankImage) (app.Image, bool) {
+	if context.Game.Calc == nil || len(rank.Entries) == 0 {
+		return app.Image{}, false
+	}
+	page := newRankPage(context)
+	record, ok := page.records[rank.Character.ID]
+	if !ok {
+		return app.Image{}, false
+	}
+	elem := elementClasses[record.Element]
+	page.resources.Artwork("common-bg-bg-"+elem, "miao-plugin", "resources/common/bg/bg-"+elem+".webp")
+	keys, width := rankLayout(record.WeaponType, [3]int{1000, 960, 930})
+	rows := []any{}
+	for index, entry := range rank.Entries {
+		row := page.row(index+1, entry.UID, record, entry.Cons)
+		row["talents"] = page.talents(record, keys, entry.Talents)
+		if cone, ok := page.weapons[entry.Weapon]; ok {
+			row["weapon"] = page.weapon(cone, entry.WeaponLevel, entry.WeaponAffix)
+		}
+		sets := []any{}
+		for _, name := range entry.Sets[:min(2, len(entry.Sets))] {
+			sets = append(sets, page.setIcon(name))
+		}
+		row["sets"], row["set_count"], row["set_name"], row["grade"], row["mark"] = sets, len(sets), entry.SetName, customRankGrade(entry.Mark), miaoComma(entry.Mark, 1)
+		if entry.Damage != nil {
+			row["damage"] = map[string]any{"title": rank.DamageTitle, "value": miaoComma(*entry.Damage, 1)}
+		}
+		rows = append(rows, row)
+	}
+	title := context.Game.Prefix + record.Name + map[string]string{"mark": "圣遗物评分"}[rank.Mode] + "排行"
+	data := map[string]any{"elem": elem, "title": title, "mode": rank.Mode, "max": false, "time": "全服数据", "hash": context.Game.Prefix, "rows": rows, "width": width,
+		"limit": rank.Limit, "number": rank.Number}
+	return app.Image{Template: "rank", Data: data, Resources: page.resources.List}, true
+}
+
+// customRankGrade is ark's grade of a custom ranking row: the average score
+// of the six relics against miao's grade steps, MAX past the last.
+func customRankGrade(mark float64) string {
+	average := mark / 6
+	for _, step := range []struct {
+		grade string
+		below float64
+	}{{"D", 7}, {"C", 14}, {"B", 21}, {"A", 28}, {"S", 35}, {"SS", 42}, {"SSS", 49}, {"ACE", 56}, {"MAX", 70}} {
+		if average < step.below {
+			return step.grade
+		}
+	}
+	return "MAX"
 }
 
 // rankPage is what a ranking page draws its rows from: the calculation
