@@ -204,6 +204,3 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) er
 	}
 	return event.Result(map[string]any{"checked": true})
 }
-func syncTaskState(state string) string {
-	return map[string]string{"creating": "创建中", "waiting": "等待调度", "running": "同步中", "completed": "已完成", "paused": "已暂停", "expired": "已到期"}[state]
-}
