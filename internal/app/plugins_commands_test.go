@@ -20,6 +20,10 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 		"starrail": {
 			{"希儿面板", "character", []string{"希儿"}},
 			{"面板", "panel-list", nil},
+			{"角色面板", "panel-list", nil},
+			{"角色", "profile", nil},
+			{"卡片100000001", "profile", []string{"100000001"}},
+			{"探索", "profile", nil},
 			{"开启到期活动推送", "subscribe", []string{"到期"}},
 			{"推送公告", "content-push", nil},
 			{"星琼任务", "monthly-task", nil},

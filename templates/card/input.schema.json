@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["background", "head", "nickname", "level", "region", "uid", "active_days", "avatar_num", "achievement_num", "chest_num", "abyss_process", "avatars"],
+  "properties": {
+    "background": { "type": "string" },
+    "head": { "type": "string" },
+    "nickname": { "type": "string" },
+    "level": { "type": "string" },
+    "region": { "type": "string" },
+    "uid": { "type": "string" },
+    "active_days": { "type": "string" },
+    "avatar_num": { "type": "string" },
+    "achievement_num": { "type": "string" },
+    "chest_num": { "type": "string" },
+    "abyss_process": { "type": "string" },
+    "avatars": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

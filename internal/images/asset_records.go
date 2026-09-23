@@ -39,8 +39,16 @@ var onlineArtwork = [][2]string{
 	{"online-blocks", "resources/online/jeremy-thomas-E0AHdsENmDg-unsplash.jpg"},
 }
 
-// onlineRegions are the server names the official player card shows.
-var onlineRegions = map[string]string{"prod_gf_cn": "星穹列车", "prod_qd_cn": "无名客", "prod_official_usa": "America", "prod_official_eur": "Europe", "prod_official_asia": "Asia", "prod_official_cht": "TW, HK, MO"}
+// regionNames are the server names the official player card shows.
+var regionNames = map[string]string{"prod_gf_cn": "星穹列车", "prod_qd_cn": "无名客", "prod_official_usa": "America", "prod_official_eur": "Europe", "prod_official_asia": "Asia", "prod_official_cht": "TW, HK, MO"}
+
+// regionName is a region's server name, or the region for one without.
+func regionName(region string) string {
+	if name := regionNames[region]; name != "" {
+		return name
+	}
+	return region
+}
 
 // Online draws 在线时长 the way StarRail-plugin's online page does: the player
 // card, the last seven days' hours as a bar chart and every day's as a
@@ -84,10 +92,6 @@ func Online(context app.ImageContext, online app.OnlineImage) (app.Image, bool) 
 		}
 		details = append(details, map[string]any{"date": day.Date, "blocks": blocks})
 	}
-	region := onlineRegions[online.Role.Region]
-	if region == "" {
-		region = online.Role.Region
-	}
-	return app.Image{Template: "online", Data: map[string]any{"nickname": online.Role.Nickname, "game_uid": online.Role.UID, "region_name": region, "level": strconv.Itoa(online.Role.Level),
+	return app.Image{Template: "online", Data: map[string]any{"nickname": online.Role.Nickname, "game_uid": online.Role.UID, "region_name": regionName(online.Role.Region), "level": strconv.Itoa(online.Role.Level),
 		"bar": bar, "calendar": calendar, "details": details}, Resources: resources.List}, true
 }

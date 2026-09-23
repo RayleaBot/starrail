@@ -59,6 +59,7 @@ BUNDLES = {
         "resources/rogue/tourn/simulated-s3-bg-top.e5a5b60a.webp",
         "resources/rogue/locust/*",
         "resources/gridFight/*",
+        "resources/card/images/logo.png",
         "resources/images/rank4bg.webp",
         "resources/images/rank5bg.webp",
         "resources/help/icon.png",

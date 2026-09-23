@@ -1,13 +1,11 @@
 package images
 
 import (
-	"strings"
-
 	"github.com/RayleaBot/plugin-starrail/internal/app"
 )
 
-// commonItemArtwork is miao's shared item frames and fonts the roster pages
-// use.
+// commonItemArtwork is miao's shared item frames and fonts the training page
+// uses.
 var commonItemArtwork = [][2]string{
 	{"Number", "resources/common/font/tttgbnumber.woff"},
 	{"NZBZ", "resources/common/font/NZBZ.woff"},
@@ -30,61 +28,6 @@ var commonItemArtwork = [][2]string{
 	{"common-bg-bg-hydro", "resources/common/bg/bg-hydro.webp"},
 	{"character-imgs-bg-02", "resources/character/imgs/bg-02.jpg"},
 	{"character-imgs-main-02", "resources/character/imgs/main-02.png"},
-}
-
-// trailblazer reports the Trailblazer, whom miao leaves out of gold cards.
-func trailblazer(id string) bool { return len(id) == 4 && strings.HasPrefix(id, "80") }
-
-// Characters draws the character list the way miao's character/avatar-list
-// does for Star Rail: the profile banner with nickname and level, the
-// five-star and gold card counts, and every character as an avatar card,
-// strongest first. miao reads none of Star Rail's other index counts.
-func Characters(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
-	list, _ := result.Data["avatar_list"].([]any)
-	if len(list) == 0 {
-		return app.Image{}, false
-	}
-	resources := &app.ImageResources{Context: context}
-	for _, item := range commonItemArtwork {
-		resources.Artwork(item[0], "miao-plugin", item[1])
-	}
-	entries := buildRoster(context, resources, list)
-	five, gold := 0, 0
-	avatars := []any{}
-	for _, item := range entries {
-		avatars = append(avatars, item.card)
-		// miao counts a five-star's eidolons, the Trailblazer aside, and each
-		// five-star light cone's superimpositions as gold cards.
-		if item.weaponStar == 5 {
-			gold += item.refinement
-		}
-		if item.star == 5 {
-			five++
-			if !trailblazer(item.id) {
-				gold += item.cons + 1
-			}
-		}
-	}
-	player := map[string]any{"name": result.Role.Nickname, "level": result.Role.Level, "show_level": result.Role.Level > 1}
-	if result.Role.Nickname == "" {
-		player["name"] = "#" + result.Role.UID
-	}
-	stats := []any{}
-	for _, stat := range []struct {
-		title string
-		value int
-	}{{"五星角色", five}, {"金卡总数", gold}} {
-		if stat.value != 0 {
-			stats = append(stats, map[string]any{"title": stat.title, "value": stat.value})
-		}
-	}
-	// The banner is miao's common Star Rail banner with the strongest
-	// character's face.
-	player["banner"] = resources.Artwork("banner", "miao-plugin", "resources/meta-sr/character/common/imgs/banner.webp")
-	player["face"] = entries[0].card["face"]
-	return app.Image{Template: "characters", Data: map[string]any{
-		"uid": result.Role.UID, "player": player, "stats": stats, "avatars": avatars, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"),
-	}, Resources: resources.List}, true
 }
 
 // trainingLevels is miao's talent colour step for each original level; basic

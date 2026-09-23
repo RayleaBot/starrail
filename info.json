@@ -56,12 +56,8 @@
       "usage": "#卡片 [UID]",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "卡片",
-          "信息",
-          "探索"
-        ]
+        "type": "pattern",
+        "pattern": "^(?:卡片|探索|角色)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -76,19 +72,6 @@
           "体力",
           "查询体力",
           "开拓力"
-        ]
-      }
-    },
-    {
-      "id": "characters",
-      "name": "角色",
-      "description": "已拥有的角色列表",
-      "usage": "#角色 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "角色"
         ]
       }
     },
@@ -1787,7 +1770,6 @@
       "commands": [
         "profile",
         "note",
-        "characters",
         "training",
         "public-profile"
       ]
