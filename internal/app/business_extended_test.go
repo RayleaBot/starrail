@@ -57,6 +57,12 @@ func TestExtendedCommandInputs(t *testing.T) {
 			t.Fatal("invalid selector accepted")
 		}
 	}
+	// A UID alone, as in 深渊100000001 or 模拟宇宙100000001, is the UID.
+	for _, mode := range []string{"period", "rogue_period", "peak_period"} {
+		if input, uid, err := app.commandInput(Operation{Input: mode}, []string{"100000001"}, nil); err != nil || uid != "100000001" || input["schedule_type"] != nil {
+			t.Errorf("%s with a UID alone = %v %q %v", mode, input, uid, err)
+		}
+	}
 	// 往期 is the last period, and the recent runs for Anomaly Arbitration.
 	for mode, want := range map[string]int{"period": 2, "peak_period": 3} {
 		if input, _, err := app.commandInput(Operation{Input: mode}, []string{"往期"}, nil); err != nil || input["schedule_type"] != want {

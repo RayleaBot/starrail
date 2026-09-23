@@ -741,7 +741,8 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 			args = args[1:]
 		}
 	case "period", "rogue_period", "peak_period":
-		if len(args) > 0 {
+		// Without a period, as in "深渊100000001", the UID comes first.
+		if len(args) > 0 && !uidPattern.MatchString(args[0]) {
 			// Upstream names the period in words, as in "上期深渊"; Anomaly
 			// Arbitration's 往期 is the three most recent runs together.
 			words := map[string]string{"本期": "1", "上期": "2", "往期": "2"}

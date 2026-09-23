@@ -94,6 +94,19 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"删除希儿面板图1", "panel-image-remove", []string{"希儿", "1"}},
 			{"希儿面板图列表", "panel-image-list", []string{"希儿"}},
 			{"希儿", "character-card", nil},
+			// A UID glued to the word, as upstream's rules accept it, is the
+			// same leading argument as a spaced one. StarRail-plugin's
+			// challenge rules have no end anchor and read the first number in
+			// the message as the UID; only a UID counts.
+			{"深渊100000001", "abyss", []string{"100000001"}},
+			{"上期简易深渊100000001", "abyss", []string{"上期", "100000001"}},
+			{"深渊12", "character-card", nil},
+			{"最新深渊100000001", "abyss-latest", []string{"100000001"}},
+			{"忘却之庭100000001", "challenge", []string{"100000001"}},
+			{"上期混沌100000001", "challenge", []string{"上期", "100000001"}},
+			{"虚构叙事100000001", "story", []string{"100000001"}},
+			{"末日100000001", "boss", []string{"100000001"}},
+			{"往期异相仲裁100000001", "peak", []string{"往期", "100000001"}},
 		},
 	}
 	for game, list := range cases {

@@ -1124,7 +1124,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期)?(?:简易)?深渊$"
+        "pattern": "^(?P<period>本期|上期)?(?:简易)?深渊(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1135,7 +1135,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:最新|当期)(?:简易)?深渊$"
+        "pattern": "^(?:最新|当期)(?:简易)?深渊(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1146,7 +1146,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:忘却之庭|忘却|混沌回忆|混沌)$"
+        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:忘却之庭|忘却|混沌回忆|混沌)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1157,7 +1157,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:虚构叙事|虚构)$"
+        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:虚构叙事|虚构)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1168,7 +1168,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:末日幻影|末日)$"
+        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:末日幻影|末日)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1179,7 +1179,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:异相仲裁|异相|异乡|异向|仲裁)$"
+        "pattern": "^(?P<period>本期|上期|往期)?(?:简易)?(?:异相仲裁|异相|异乡|异向|仲裁)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
