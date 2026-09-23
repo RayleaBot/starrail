@@ -283,7 +283,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return event.SendText(friendlyError(readErr))
 		}
 		applyGroupConfig(event, config)
-		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && command != "reminder-stop" && command != "gacha-stop" && command != "gacha-progress" && !(command == "gacha-schedule" && len(args) > 0 && args[0] == "关闭") && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
+		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && command != "gacha-stop" && command != "gacha-progress" && !(command == "gacha-schedule" && len(args) > 0 && args[0] == "关闭") && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
 			return event.Result(map[string]any{"handled": false})
 		}
 	}
@@ -479,8 +479,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			break
 		}
 		view = computed["view"].(View)
-	case "reminder", "reminder-stop":
-		return a.chatReminder(ctx, event, command, args)
 	case "build":
 		// As miao, a number of fewer than nine digits picks the damage detail.
 		index, rest := 0, []string{}
