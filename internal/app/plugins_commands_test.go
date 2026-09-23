@@ -43,7 +43,7 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"十连光锥", "simulation", nil},
 			{"更新跃迁记录", "gacha-background", nil},
 			{"帮助", "help", nil},
-			{"刷新行迹", "panel-refresh-account", nil},
+			{"刷新行迹", "talent-refresh", nil},
 			{"角色分析", "gacha", nil},
 			{"光锥记录", "gacha", nil},
 			{"抽卡统计", "gacha", nil},

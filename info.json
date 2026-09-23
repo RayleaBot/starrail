@@ -98,7 +98,18 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:(?:米游社|mys)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?|(?:强制)?(?:刷新|更新)(?:所有|角色)*(?:行迹|技能|天赋))$"
+        "pattern": "^(?:(?:米游社|mys)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?)$"
+      }
+    },
+    {
+      "id": "talent-refresh",
+      "name": "刷新行迹",
+      "description": "从米游社重新读取全部角色的行迹，供练度统计使用",
+      "usage": "#刷新行迹",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:强制)?(?:刷新|更新)(?:所有|角色)*(?:行迹|技能|天赋)$"
       }
     },
     {
@@ -1689,6 +1700,7 @@
         "character",
         "panel-refresh",
         "panel-refresh-account",
+        "talent-refresh",
         "panel-list",
         "panel-delete",
         "original-image",
