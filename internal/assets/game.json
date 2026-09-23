@@ -266,7 +266,11 @@
     "atlas": [
       {
         "source": "star-rail-atlas",
-        "index": "path.json"
+        "index": "path.json",
+        "skip": [
+          "guide for role",
+          "material for role"
+        ]
       }
     ],
     "static": {
