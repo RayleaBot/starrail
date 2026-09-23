@@ -164,6 +164,15 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"遗器", "character-card", nil},
 			// Atlas's guide for role module takes 攻略0 after the guide.
 			{"希儿攻略0", "guides", []string{"希儿"}},
+			// StarRail-plugin's panel rule takes 设置面板 and 切换面板 with
+			// anything after them ahead of 面板换装; the bare words are
+			// MiaoOrStarrail's.
+			{"切换面板API2", "api-switch", nil},
+			{"设置面板api1", "api-switch", nil},
+			{"切换面板3", "api-switch", nil},
+			{"切换面板", "api-switch", nil},
+			{"API列表", "api-list", nil},
+			{"api列表", "api-list", nil},
 		},
 	}
 	for game, list := range cases {

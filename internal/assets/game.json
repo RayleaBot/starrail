@@ -146,6 +146,11 @@
       "talent_refreshed": "角色行迹更新成功，共{count}个角色\n你现在可以通过【{prefix}练度统计】来查看角色信息了..."
     }
   },
+  "panel_apis": [
+    "https://avocado.wiki/v1/info/",
+    "https://lulu.roki.best/v1/info/",
+    "https://sr.roki.best/v1/info/"
+  ],
   "hints": {
     "divergent-cycle": "请查询【本期】或【上期】的【差分宇宙·周期演算】，如发送命令【{prefix}本期演算】",
     "growth-help": "角色养成计算\n指令：{prefix}克拉拉养成\n示例：{prefix}克拉拉养成75 80 6 9 9 9\n参数为角色、武器、普攻、战技、终结技、天赋",

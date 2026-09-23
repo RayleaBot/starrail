@@ -82,7 +82,7 @@ func (a *App) characterPhotos(entry Entry) []artworkFile {
 // them first here.
 var aheadOfAtlas = []string{
 	// MiaoOrStarrail (priority -1000) and panel (1).
-	"character", "panel-list", "panel-refresh",
+	"character", "panel-list", "panel-refresh", "api-switch", "api-list",
 	// alias, gachasimulation, gatcha, hkrpg and srxx (-114514).
 	"alias-add", "alias-remove", "aliases", "simulation",
 	"gacha-link", "gacha", "gacha-help", "gacha-background",

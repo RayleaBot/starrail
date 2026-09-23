@@ -104,6 +104,12 @@
 
 管理动作 `showcase` 接收 `uid`，读取该游戏的展柜并保存，返回本次读到的角色。
 
+### StarRail-plugin 面板服务
+
+StarRail-plugin 自带的面板服务（`apps/panel.js`）与上述面板并存，写法按 Miao-Yunzai 上 MiaoOrStarrail 的默认设置（miao 开启、星铁关闭）分流：MiaoOrStarrail 先接的写法交给 miao，其余由 panel.js 的规则回答。服务固定为其 `defSet/panelApi.yaml` 所列的三项（`game.json` 的 `panel_apis`），插件设置 `panel_api` 以 1 起的序号选择当前服务（默认 1，超出范围按 1）。
+
+“设置面板API<序号>”“切换面板API<序号>”（API 可省或小写，序号取命令中的第一个数）经宿主 `config.write` 写入 `panel_api`，“API列表”列出各服务的域名与当前服务；两者同上游只限宿主超级管理员，其他人得到上游的拒绝回复。只写“设置面板”“切换面板”时 MiaoOrStarrail 先接下并交给 miao，与上游一样不回复。
+
 ### 本地面板历史
 
 `panel.history.list/save/get/compare/remove/export` 接收 `account_ref`、`role_ref`、`character_id`。每次通过账号服务的 `roles` 重新校验当前调用者/主体和角色，停用或撤销授权后不继续读取历史。历史属于当前账号提供者、账号、游戏角色、战斗角色的组合，不按公开 UID 合并。`save` 从官方重新读取规范化面板后保存，不接受页面上传面板；每个组合最多 20 份，超出拒绝，先由用户移除旧记录。

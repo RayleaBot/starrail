@@ -45,6 +45,7 @@
       "sr"
     ],
     "alias_permission": 0,
+    "panel_api": 1,
     "ark": {
       "panel_rank": true,
       "query_type": 3,
@@ -1629,6 +1630,31 @@
       }
     },
     {
+      "id": "api-switch",
+      "name": "切换面板API",
+      "description": "机器人超级管理员切换 StarRail-plugin 的面板服务",
+      "usage": "#切换面板API<序号>",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^(?:设置|切换)面板.*$"
+      }
+    },
+    {
+      "id": "api-list",
+      "name": "API列表",
+      "description": "机器人超级管理员查看 StarRail-plugin 的面板服务",
+      "usage": "#API列表",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "API列表",
+          "api列表"
+        ]
+      }
+    },
+    {
       "id": "panel-help",
       "name": "面板帮助",
       "description": "面板、伤害与换装命令的说明图",
@@ -1965,6 +1991,8 @@
         "group-settings",
         "artwork",
         "artwork-status",
+        "api-switch",
+        "api-list",
         "alias-help",
         "alias-set",
         "alias-remove",

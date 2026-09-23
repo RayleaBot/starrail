@@ -14,7 +14,7 @@ var helpIcons = map[string]int{
 	"gacha": 97, "gacha-summary": 97, "gacha-background": 97,
 	"rogue": 107, "divergent": 107, "divergent-normal": 107, "divergent-week": 107, "divergent-cycle": 107, "currency_wars": 107, "currency-wars-archive": 107, "swarm": 107,
 	"challenge": 110, "story": 110, "boss": 110, "peak": 110, "abyss": 110, "abyss-latest": 110,
-	"guides": 106, "simulation": 100, "codes": 96, "artwork": 85,
+	"guides": 106, "simulation": 100, "codes": 96, "artwork": 85, "api-switch": 85,
 }
 
 // helpColumns is StarRail-plugin's column count.

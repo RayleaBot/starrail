@@ -37,6 +37,9 @@ type Game struct {
 	Hints map[string]string `json:"hints"`
 	// Panels are the 更新面板 rules and replies.
 	Panels PanelSettings `json:"panels"`
+	// PanelAPIs are the services StarRail-plugin's own panel commands read,
+	// as its defSet/panelApi.yaml lists them.
+	PanelAPIs []string `json:"panel_apis"`
 	// Artwork lists the upstream image repositories an administrator can
 	// download into the data directory.
 	Artwork []artwork.Source `json:"artwork"`
@@ -107,6 +110,9 @@ type Settings struct {
 	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
 	// administrators.
 	AliasPermission int `json:"alias_permission"`
+	// PanelAPI picks StarRail-plugin's panel service among the game's
+	// PanelAPIs, counted from 1 as its panelApi.yaml default.
+	PanelAPI int `json:"panel_api"`
 	// Ark holds the ark-plugin settings (config/system/cfg_system.js) that
 	// apply here.
 	Ark ArkSettings `json:"ark"`
@@ -256,7 +262,7 @@ func New(assets Assets, directory string) (*App, error) {
 	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, uidListImage: assets.UIDList, payLogImage: assets.PayLog, onlineImage: assets.Online, rankStatsImage: assets.RankStats, poolImage: assets.Pools, characterCardImage: assets.CharacterCard, atlasIndexImage: assets.AtlasIndex, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
-	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{},
+	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{}, PanelAPI: 1,
 		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, ProfileChangeDiff: true, DealLongDmgTitle: 1, ProfileChangeOCR: true, ExportPanelData: 1, ImportPanelData: 2, ExportPanelRequire: 1, GroupRank: true, LocalGroupRank: true}}
 	_ = decodeObject(event.Config, &value)
 	return value
@@ -397,6 +403,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return event.Result(map[string]any{"handled": len(reply) > 0})
 	case "guide-help", "guide-default":
 		return a.guideCommand(event, command, args)
+	case "api-switch", "api-list":
+		return a.apiCommand(ctx, event, command, args)
 	case "subscribe", "unsubscribe", "content-push":
 		return a.subscriptionCommand(ctx, event, command, args)
 	case "news", "info", "events", "search", "estimate":
