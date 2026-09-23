@@ -44,7 +44,8 @@
       "星穹铁道",
       "铁道",
       "sr"
-    ]
+    ],
+    "alias_permission": 0
   },
   "commands": [
     {
@@ -399,7 +400,7 @@
       "name": "设置别名",
       "description": "给角色添加对所有群生效的自定义别名",
       "usage": "#喵喵别名设置 角色名 别名",
-      "permission": "super_admin",
+      "permission": "everyone",
       "trigger": {
         "type": "pattern",
         "pattern": "^喵喵别名(?:[崩星]铁)?设置$"
@@ -410,7 +411,7 @@
       "name": "删除别名",
       "description": "删除自定义别名，预设别名不能删除",
       "usage": "#喵喵别名删除 别名 / #删除别名 别名",
-      "permission": "super_admin",
+      "permission": "everyone",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:喵喵别名(?:[崩星]铁)?删除|删除(?:别名|昵称)(?P<alias>.+))$"
@@ -432,7 +433,7 @@
       "name": "添加别名",
       "description": "给角色添加别名，随后发送别名，多个用空格隔开",
       "usage": "#设置希儿别名",
-      "permission": "super_admin",
+      "permission": "everyone",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:设置|配置|添加)(?P<character>.+)(?:别名|昵称)$"

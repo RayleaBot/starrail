@@ -17,8 +17,10 @@ import (
 // custom aliases; StarRail-plugin's 设置X别名 (the aliases follow in the next
 // message), 删除别名 and X别名.
 // Custom aliases are the plugin's custom_aliases setting, the one the
-// management page edits. They apply to every group, so only super
-// administrators change them; 群设置 别名 keeps a group's own.
+// management page edits, and apply to every group; 群设置 别名 keeps a
+// group's own. Who changes them follows Yunzai's abbrSetAuth, the
+// alias_permission setting: 0 every group member, 1 group administrators, 2
+// super administrators; in private chats only super administrators.
 
 // customAliases serializes chat changes to custom_aliases. Events of several
 // groups run at once, each with the configuration of its start, so the value
@@ -101,7 +103,32 @@ func validAlias(alias string) bool {
 	return alias != "" && len(alias) <= 64 && !strings.ContainsAny(alias, "\r\n\t")
 }
 
+// aliasDenied is why the sender may not change aliases, "" when they may.
+func aliasDenied(event *rayleabot.EventContext) string {
+	switch {
+	case slices.Contains(event.SuperAdmins, event.Event.Actor.ID):
+		return ""
+	case event.Event.Target.Type != "group":
+		return "禁止私聊设置角色别名"
+	}
+	switch settings(event).AliasPermission {
+	case 0:
+		return ""
+	case 1:
+		if groupAdministrator(event) {
+			return ""
+		}
+		return "暂无权限，只有管理员才能操作"
+	}
+	return "暂无权限，只有主人才能操作"
+}
+
 func (a *App) aliasCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
+	if command == "alias-add" || command == "alias-set" || command == "alias-remove" {
+		if denied := aliasDenied(event); denied != "" {
+			return event.SendText(denied)
+		}
+	}
 	miao := strings.HasPrefix(event.Event.Command(), "喵喵别名")
 	aliases := settings(event).CustomAliases
 	reply := func(text string, err error) error {
