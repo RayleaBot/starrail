@@ -21,6 +21,13 @@ func (c PublicContentClient) get(ctx context.Context, address string, headers ma
 	return c.getUpTo(ctx, address, headers, 2*1024*1024)
 }
 
+// collection reads a 米游社 collection's posts in full. Some collections the
+// upstreams read answer with several megabytes, which get's limit refuses.
+func (c PublicContentClient) collection(ctx context.Context, id string) (map[string]any, error) {
+	params := url.Values{"gids": {bbsGID}, "order_type": {"2"}, "collection_id": {id}}
+	return c.getUpTo(ctx, "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection?"+params.Encode(), nil, 16*1024*1024)
+}
+
 // getUpTo is get for an answer of up to limit bytes.
 func (c PublicContentClient) getUpTo(ctx context.Context, address string, headers map[string]string, limit int64) (map[string]any, error) {
 	u, err := url.Parse(address)

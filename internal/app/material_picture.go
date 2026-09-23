@@ -23,16 +23,11 @@ var materialCollections = []struct {
 
 var materialOSS = "?x-oss-process=image//resize,s_1000/quality,q_80/auto-orient,0/interlace,1/format,jpg"
 
-// materialLimit is the answer size a collection may have: the first one
-// sends every post in full, near 9 MB.
-const materialLimit = 16 * 1024 * 1024
-
 // materialPicture is the address of a character's material picture, "" when
 // no collection has a post naming it.
 func (c PublicContentClient) materialPicture(ctx context.Context, name string) (string, error) {
 	for _, collection := range materialCollections {
-		params := url.Values{"gids": {bbsGID}, "order_type": {"2"}, "collection_id": {collection.id}}
-		page, err := c.getUpTo(ctx, "https://bbs-api.mihoyo.com/post/wapi/getPostFullInCollection?"+params.Encode(), nil, materialLimit)
+		page, err := c.collection(ctx, collection.id)
 		if err != nil {
 			return "", err
 		}
