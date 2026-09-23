@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["uid", "api", "time", "user_name", "type", "characters"],
+  "properties": {
+    "uid": { "type": "string" },
+    "api": { "type": "string" },
+    "time": { "type": "string" },
+    "user_name": { "type": "string" },
+    "type": { "type": "string" },
+    "characters": { "type": "array" },
+    "render_footer": { "type": "string" }
+  },
+  "additionalProperties": false
+}

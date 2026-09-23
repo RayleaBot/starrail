@@ -169,6 +169,31 @@
       }
     },
     {
+      "id": "api-panel-refresh",
+      "name": "面板更新",
+      "description": "按 StarRail-plugin 从面板服务更新面板，列出本次更新的角色，随后同 miao 更新展柜面板",
+      "usage": "#面板更新 [UID]",
+      "permission": "everyone",
+      "trigger": {
+        "type": "pattern",
+        "pattern": "^面板更新(?P<uid>[0-9]{9,10})?$"
+      }
+    },
+    {
+      "id": "api-panel-list",
+      "name": "面板",
+      "description": "按 StarRail-plugin 列出面板服务保存的角色",
+      "usage": "#面板列表",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "面板",
+          "面板列表"
+        ]
+      }
+    },
+    {
       "id": "panel-refresh",
       "name": "更新面板",
       "description": "从 Mihomo 读取游戏内角色展柜的面板并保存",
@@ -176,14 +201,14 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
       "id": "panel-list",
       "name": "面板列表",
       "description": "已保存面板的角色列表",
-      "usage": "#面板列表 [UID]",
+      "usage": "#面板列表<UID>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1772,6 +1797,8 @@
         "panel-refresh-account",
         "talent-refresh",
         "panel-list",
+        "api-panel-list",
+        "api-panel-refresh",
         "panel-delete",
         "original-image",
         "panel-image-upload",

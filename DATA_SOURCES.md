@@ -8,6 +8,10 @@
 
 本插件沿用 RayleaBot SDK 的 AGPL-3.0 许可，安装包管理页提供对应源码下载。上游数据的原许可声明另行保留。
 
+## StarRail-plugin 面板服务
+
+“面板”“面板更新”等按 [StarRail-plugin 固定提交](https://github.com/TsukinaKasumi/StarRail-plugin/tree/090e411cf9be28b1644721fab54eab0ad283668f)的 `apps/panel.js` 查询其自带的第三方面板服务，服务列表取自同一提交的 `defSet/panelApi.yaml`；查询时向所选服务发送 UID 与签名，返回的面板属于该服务。签名由 `internal/panelapi/sign.b64` 计算，它是该提交 `resources/fuck/fuck` 的原样副本（由 `scripts/bundle-panel-api.mjs` 复制，未改写），与上游 `utils/auth.js` 的 getSign 一样解码 base64 后作为函数求值，只提供其模块引入的 md5。`templates/api-card/` 按同一提交的 `panel/new_card` 与 `common/common.css` 改写，同上游 1.6 倍缩放，角色头像取自“星铁插件图片”素材来源的 `resources/panel/resources/avatar/`。以上均为 Apache-2.0，见 `LICENSES/StarRail-plugin-Apache-2.0.txt`。
+
 ## 装备评分
 
 评分运行 miao 提交 `7f6f1c84c89102bc6b1c58c8e1b06c61f4642161` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、星魂、光锥与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。

@@ -71,6 +71,8 @@ BUNDLES = {
         "resources/gachasimulation/resources/images/*",
         "resources/gatcha/images/char/*",
         "resources/panel/resources/weapon/*",
+        # The panel service's character list.
+        "resources/panel/resources/avatar/*.png",
         "resources/baseData/characters.json",
         "resources/baseData/light_cones.json",
         # Strategy pictures sent by the static picture commands.

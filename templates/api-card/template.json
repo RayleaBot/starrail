@@ -1,0 +1,11 @@
+{
+  "id": "api-card",
+  "name": "星铁面板服务角色列表",
+  "description": "面板与面板更新命令的图片，布局参照 StarRail-plugin panel/new_card",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 1594,
+  "height": 2400
+}

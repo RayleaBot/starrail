@@ -8,6 +8,7 @@ import (
 	plugin "github.com/RayleaBot/plugin-starrail"
 	"github.com/RayleaBot/plugin-starrail/internal/app"
 	"github.com/RayleaBot/plugin-starrail/internal/images"
+	"github.com/RayleaBot/plugin-starrail/internal/panelapi"
 	"github.com/RayleaBot/plugin-starrail/internal/reference/miao"
 	"github.com/RayleaBot/plugin-starrail/internal/showcase"
 )
@@ -43,5 +44,5 @@ func Load() app.Assets {
 	if err != nil {
 		panic(err) // the embedded directory name is fixed at build time
 	}
-	return app.Assets{Game: game, Catalog: catalog, Manifest: plugin.Info, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Images: images.Builders(), Queries: images.Queries(), Panel: images.Panel, Gacha: images.Gacha, Help: images.Help, MonthlyStats: images.LedgerCount, Calendar: images.Calendar, Entry: images.Entry, SimulationImage: images.GachaSimulation, Rank: images.Rank, CloudRank: images.CloudRank, Showcase: showcase.Source, PanelList: images.PanelList, UIDList: images.UIDList, PayLog: images.PayLog, Online: images.Online, RankStats: images.RankStats, Pools: images.PoolInfo, ArtifactList: images.ArtifactList, CharacterCard: images.CharacterCard, AtlasIndex: images.AtlasIndex}
+	return app.Assets{Game: game, Catalog: catalog, Manifest: plugin.Info, Calc: miao.Profile(files), Resources: dataFile("resources.json"), Simulation: dataFile("simulation.json"), CloudPanels: dataFile("cloud-panels.json"), Images: images.Builders(), Queries: images.Queries(), Panel: images.Panel, Gacha: images.Gacha, Help: images.Help, MonthlyStats: images.LedgerCount, Calendar: images.Calendar, Entry: images.Entry, SimulationImage: images.GachaSimulation, Rank: images.Rank, CloudRank: images.CloudRank, Showcase: showcase.Source, PanelList: images.PanelList, UIDList: images.UIDList, PayLog: images.PayLog, Online: images.Online, RankStats: images.RankStats, Pools: images.PoolInfo, ArtifactList: images.ArtifactList, CharacterCard: images.CharacterCard, AtlasIndex: images.AtlasIndex, PanelAPI: panelapi.Scripts, APICard: images.APICard}
 }

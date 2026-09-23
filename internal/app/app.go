@@ -97,6 +97,10 @@ type Assets struct {
 	Pools PoolImageBuilder
 	// AtlasIndex draws Atlas's numbered lists that cannot be forwarded.
 	AtlasIndex AtlasIndexImageBuilder
+	// PanelAPI runs StarRail-plugin's panel service scripts; APICard draws
+	// its 面板列表.
+	PanelAPI PanelAPIScripts
+	APICard  APICardImageBuilder
 	// Queries picks the official query, by operation name, for commands that
 	// draw on another operation's data, as 最新深渊 runs whichever record
 	// opened last.
@@ -199,6 +203,10 @@ type App struct {
 	Simulation   *SimulationStore
 	Cloud        CloudClient
 	BuildPresets *BuildPresetStore
+	// APIService is StarRail-plugin's panel service; APIPanels keeps the
+	// characters it returned for each UID.
+	APIService PanelAPIClient
+	APIPanels  *PanelAPIStore
 
 	commands           commandSet
 	images             map[string]ImageBuilder
@@ -222,6 +230,8 @@ type App struct {
 	poolImage          PoolImageBuilder
 	characterCardImage CharacterCardImageBuilder
 	atlasIndexImage    AtlasIndexImageBuilder
+	panelAPIScripts    PanelAPIScripts
+	apiCardImage       APICardImageBuilder
 	atlases            atlasLibraries
 	atlasMenus         atlasMenus
 	guides             guideCache
@@ -259,7 +269,7 @@ func New(assets Assets, directory string) (*App, error) {
 	if directory == "" {
 		return nil, fmt.Errorf("plugin data directory is required")
 	}
-	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, uidListImage: assets.UIDList, payLogImage: assets.PayLog, onlineImage: assets.Online, rankStatsImage: assets.RankStats, poolImage: assets.Pools, characterCardImage: assets.CharacterCard, atlasIndexImage: assets.AtlasIndex, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
+	return &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, uidListImage: assets.UIDList, payLogImage: assets.PayLog, onlineImage: assets.Online, rankStatsImage: assets.RankStats, poolImage: assets.Pools, characterCardImage: assets.CharacterCard, atlasIndexImage: assets.AtlasIndex, panelAPIScripts: assets.PanelAPI, apiCardImage: assets.APICard, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, APIPanels: &PanelAPIStore{Directory: filepath.Join(directory, "panel-api")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{}, PanelAPI: 1,
@@ -403,7 +413,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return event.Result(map[string]any{"handled": len(reply) > 0})
 	case "guide-help", "guide-default":
 		return a.guideCommand(event, command, args)
-	case "api-switch", "api-list":
+	case "api-panel-list", "api-panel-refresh", "api-switch", "api-list":
 		return a.apiCommand(ctx, event, command, args)
 	case "subscribe", "unsubscribe", "content-push":
 		return a.subscriptionCommand(ctx, event, command, args)

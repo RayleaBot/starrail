@@ -14,7 +14,7 @@ ignored_dirs = {".git", ".rayleabot", "node_modules", "dist", "__pycache__", ".t
 # Runtime data and the bundled upstream artwork sit at the top of the tree;
 # internal/assets/data is embedded source and stays.
 ignored_top = {"data", "assets"}
-allowed_suffixes = {".go", ".mod", ".sum", ".work", ".json", ".md", ".txt", ".ts", ".js", ".mjs", ".vue", ".css", ".html", ".yaml", ".yml", ".py"}
+allowed_suffixes = {".go", ".mod", ".sum", ".work", ".json", ".md", ".txt", ".ts", ".js", ".mjs", ".vue", ".css", ".html", ".yaml", ".yml", ".py", ".b64"}
 allowed_names = {"LICENSE", ".gitignore", ".npmrc"}
 blocked_names = {"master-key.json", "go.work.sum", ".env", "credentials.json", "cookies.json"}
 

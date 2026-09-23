@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body>
+<div class="container" id="container">
+<div class="other-text">
+  <div class="left_banner">
+    <div class="left_bar"></div>
+    <div class="title">角色数据</div>
+    <div class="uid">
+      <div class="code"></div>
+      <div class="text">UID:{{ .uid }}</div>
+    </div>
+  </div>
+  <div class="tg"></div>
+  <div class="tgl"></div>
+  <div class="update-service">面板更新服务: {{ .api }}</div>
+  <div class="update-time">更新时间：{{ .time }}</div>
+  <div class="_copyright">{{ .render_footer }}</div>
+</div>
+<div class="data">
+  <div class="title">
+    <div class="left">
+      <span class="golden-circle">●</span>为本次更新角色
+      <span class="grey-circle">●</span>为历史缓存角色
+    </div>
+    <div class="right">
+      昵称: {{ .user_name }}
+    </div>
+  </div>
+  <div class="item-list">
+    {{ range .characters }}
+    <div class="item" data-isUpdate="{{ .updated }}">
+      <div class="avatar">
+        <img{{ with .avatar }} data-render-resource="{{ . }}"{{ end }} alt="">
+      </div>
+      <div class="text" data-isCircle="{{ $.type }}">
+        {{ .name }}
+        <div class="rank const-rank-{{ .rank }}">{{ .rank }}</div>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+</div>
+</body>
+</html>

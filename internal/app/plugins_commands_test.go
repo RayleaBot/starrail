@@ -20,7 +20,8 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 	}{
 		"starrail": {
 			{"希儿面板", "character", []string{"希儿"}},
-			{"面板", "panel-list", nil},
+			{"面板", "api-panel-list", nil},
+			{"面板列表", "api-panel-list", nil},
 			{"角色面板", "panel-list", nil},
 			{"角色", "profile", nil},
 			{"卡片100000001", "profile", []string{"100000001"}},
@@ -29,6 +30,9 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"推送公告", "content-push", nil},
 			{"星琼任务", "monthly-task", nil},
 			{"更新面板", "panel-refresh", nil},
+			{"全部面板更新", "panel-refresh", nil},
+			{"面板更新", "api-panel-refresh", nil},
+			{"面板更新100000001", "api-panel-refresh", []string{"100000001"}},
 			{"mys更新面板", "panel-refresh-account", nil},
 			{"遗器列表", "artifact-list", nil},
 			{"希儿换满命换满行迹", "talent-wiki", []string{"希儿换满命换满"}},
@@ -151,7 +155,10 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"希儿遗器100000001", "score", []string{"希儿", "100000001"}},
 			{"希儿圣遗物100000001", "score", []string{"希儿", "100000001"}},
 			{"希儿伤害100000001", "build", []string{"希儿", "100000001"}},
+			// StarRail-plugin's plmb rule ends at 列表, so miao's list
+			// answers a UID after the word.
 			{"面板100000001", "panel-list", []string{"100000001"}},
+			{"面板列表100000001", "panel-list", []string{"100000001"}},
 			// Atlas answers these before the commands they reach. On
 			// Miao-Yunzai StarRail-plugin's rogue rule, having no end anchor,
 			// takes 宇宙布洛妮娅 first; the rogue command ends with its words.
