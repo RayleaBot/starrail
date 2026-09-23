@@ -319,11 +319,8 @@
       "usage": "#寰宇蝗灾 [UID]",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "寰宇蝗灾",
-          "蝗灾"
-        ]
+        "type": "pattern",
+        "pattern": "^(?:寰宇)?蝗灾(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -362,11 +359,8 @@
       "usage": "#差分宇宙 [UID]",
       "permission": "everyone",
       "trigger": {
-        "type": "exact",
-        "names": [
-          "差分宇宙",
-          "差分"
-        ]
+        "type": "pattern",
+        "pattern": "^(?:差分宇宙|差分)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1190,7 +1184,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<period>本期|上期|往期)?(?:模拟)?宇宙$"
+        "pattern": "^(?P<period>本期|上期|往期)?(?:模拟)?宇宙(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1201,7 +1195,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^常规(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?$"
+        "pattern": "^常规(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -1212,7 +1206,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:本期|上期|本周|上周)(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?$"
+        "pattern": "^(?:本期|上期|本周|上周)(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {

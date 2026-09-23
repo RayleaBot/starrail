@@ -107,6 +107,17 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"虚构叙事100000001", "story", []string{"100000001"}},
 			{"末日100000001", "boss", []string{"100000001"}},
 			{"往期异相仲裁100000001", "peak", []string{"往期", "100000001"}},
+			// Its Simulated and Divergent Universe rules read the UID the same
+			// way; the run's number stays in the word.
+			{"模拟宇宙100000001", "rogue", []string{"100000001"}},
+			{"上期宇宙100000001", "rogue", []string{"上期", "100000001"}},
+			{"蝗灾100000001", "swarm", []string{"100000001"}},
+			{"寰宇蝗灾100000001", "swarm", []string{"100000001"}},
+			{"差分100000001", "divergent", []string{"100000001"}},
+			{"差分宇宙100000001", "divergent", []string{"100000001"}},
+			{"常规演算二100000001", "divergent-normal", []string{"100000001"}},
+			{"上周差分宇宙记录三100000001", "divergent-week", []string{"100000001"}},
+			{"本期演算100000001", "divergent-week", []string{"100000001"}},
 		},
 	}
 	for game, list := range cases {
