@@ -27,25 +27,27 @@ var rankArtwork = [][2]string{
 }
 
 // rankLayout is the talents miao's rank list shows for the ranked
-// character's path, and the page's width among widths for Remembrance,
-// Elation and the others: memosprite skills for Remembrance, the Elation
-// skill for Elation; other paths, and the list of every character's best,
-// show four.
-func rankLayout(path string, widths [3]int) ([]string, int) {
+// character's path and the page width ark gives it: memosprite skills for
+// Remembrance, 1000 pixels wide, the Elation skill for Elation, 960; other
+// paths, and the list of every character's best, show four on a page 930
+// wide.
+func rankLayout(path string) ([]string, int) {
 	switch path {
 	case "记忆":
-		return []string{"a", "e", "t", "q", "me", "mt"}, widths[0]
+		return []string{"a", "e", "t", "q", "me", "mt"}, 1000
 	case "欢愉":
-		return []string{"a", "e", "t", "q", "xe"}, widths[1]
+		return []string{"a", "e", "t", "q", "xe"}, 960
 	}
-	return []string{"a", "e", "t", "q"}, widths[2]
+	return []string{"a", "e", "t", "q"}, 930
 }
 
 // Rank draws a group ranking the way miao's character/rank-profile-list
-// does in its Star Rail mode: the title and ranking notes, then a row per
-// entry with its place (or, listing every character's best, the character),
-// the member's avatar, Eidolon, name and UID, the talents, light cone, relic
-// sets with their score and grade, and the default detail's damage.
+// does in its Star Rail mode, as ark-plugin's copy of the page: the title and
+// ranking notes, then a row per entry with its place (or, listing every
+// character's best, the character), the member's avatar, Eidolon, name and
+// UID, the talents, light cone, relic sets with their score and grade, the
+// default detail's damage, and ark's global rank when it gives them, on a
+// page 180 pixels wider.
 func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 	if context.Game.Calc == nil || len(rank.Entries) == 0 {
 		return app.Image{}, false
@@ -57,7 +59,7 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		elem = elementClasses[ranked.Element]
 	}
 	page.resources.Artwork("common-bg-bg-"+elem, "miao-plugin", "resources/common/bg/bg-"+elem+".webp")
-	keys, width := rankLayout(ranked.WeaponType, [3]int{970, 970, 900})
+	keys, width := rankLayout(ranked.WeaponType)
 	rows := []any{}
 	for index, entry := range rank.Entries {
 		record, panel := page.records[entry.CharacterID], *entry.Panel
@@ -99,6 +101,9 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 			}
 			row["damage"] = map[string]any{"title": app.RankDamageTitle(entry.Damage.Title), "value": value}
 		}
+		if index < len(rank.Totals) && rank.Totals[index] != "" {
+			row["total"] = map[string]any{"title": rank.TotalTitle, "rank": rank.Totals[index]}
+		}
 		rows = append(rows, row)
 	}
 	title := "最强排行"
@@ -116,7 +121,11 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 		title = name + map[string]string{"mark": "遗器评分"}[rank.Mode] + "排行"
 	}
 	since := time.UnixMilli(rank.SinceMS).In(chinaTime).Format("01-02 15:04")
-	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "time": since, "hash": context.Game.Prefix, "rows": rows, "width": width}
+	if rank.Totals != nil {
+		width += 180
+	}
+	data := map[string]any{"elem": elem, "title": context.Game.Prefix + title, "mode": rank.Mode, "max": rank.Character.ID == "", "time": since, "hash": context.Game.Prefix, "rows": rows, "width": width,
+		"totals": rank.Totals != nil}
 	return app.Image{Template: "rank", Data: data, Resources: page.resources.List}, true
 }
 
@@ -124,8 +133,7 @@ func Rank(context app.ImageContext, rank app.RankImage) (app.Image, bool) {
 // rank-profile-list for Star Rail: the character's face in each row with the
 // UID ark shows, the Eidolon, talents, light cone, sets and score it returns
 // and the ranked detail's average damage; the notes read 全服数据, ark's order
-// and filters and the rows asked for. ark draws the page 930 pixels wide,
-// 960 for Elation and 1000 for Remembrance characters.
+// and filters and the rows asked for.
 func CloudRank(context app.ImageContext, rank app.CloudRankImage) (app.Image, bool) {
 	if context.Game.Calc == nil || len(rank.Entries) == 0 {
 		return app.Image{}, false
@@ -137,7 +145,7 @@ func CloudRank(context app.ImageContext, rank app.CloudRankImage) (app.Image, bo
 	}
 	elem := elementClasses[record.Element]
 	page.resources.Artwork("common-bg-bg-"+elem, "miao-plugin", "resources/common/bg/bg-"+elem+".webp")
-	keys, width := rankLayout(record.WeaponType, [3]int{1000, 960, 930})
+	keys, width := rankLayout(record.WeaponType)
 	rows := []any{}
 	for index, entry := range rank.Entries {
 		row := page.row(index+1, entry.UID, record, entry.Cons)

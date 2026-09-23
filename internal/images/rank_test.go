@@ -51,3 +51,32 @@ func TestCloudRankFollowsArk(t *testing.T) {
 		t.Error("damage drawn without ark's dmg_avg")
 	}
 }
+
+func TestRankShowsArkTotals(t *testing.T) {
+	application, err := app.New(assets.Load(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	character, _ := application.Catalog.Get("1407")
+	panel := app.CharacterPanel{ID: "1407", Level: 80, Element: "量子"}
+	entries := []app.RankEntry{{UID: "1", CharacterID: "1407", Panel: &panel}, {UID: "2", CharacterID: "1407", Panel: &panel}}
+	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog}
+	// ark draws a Remembrance character's ranking 1000 wide with its six
+	// talents, and 180 wider with its column.
+	drawn, _ := images.Rank(context, app.RankImage{Mode: "dmg", Character: character, Entries: entries})
+	rows := drawn.Data["rows"].([]any)
+	if drawn.Data["width"] != 1000 || drawn.Data["totals"] != false || len(rows[0].(map[string]any)["talents"].([]any)) != 6 {
+		t.Fatalf("data = %v", drawn.Data)
+	}
+	drawn, _ = images.Rank(context, app.RankImage{Mode: "dmg", Character: character, Entries: entries, TotalTitle: "伤害排名", Totals: []string{"1148 / 60392", ""}})
+	rows = drawn.Data["rows"].([]any)
+	if drawn.Data["width"] != 1180 || drawn.Data["totals"] != true || rows[0].(map[string]any)["total"].(map[string]any)["rank"] != "1148 / 60392" || rows[1].(map[string]any)["total"] != nil {
+		t.Fatalf("data = %v", drawn.Data)
+	}
+	// The list of every character's best shows four talents on the narrow
+	// page.
+	drawn, _ = images.Rank(context, app.RankImage{Mode: "dmg", Entries: entries})
+	if drawn.Data["width"] != 930 || len(drawn.Data["rows"].([]any)[0].(map[string]any)["talents"].([]any)) != 4 {
+		t.Fatalf("data = %v", drawn.Data)
+	}
+}

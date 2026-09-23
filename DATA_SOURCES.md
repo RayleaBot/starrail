@@ -38,7 +38,7 @@ Apache-2.0 许可保留在 `LICENSES/StarRail-plugin-Apache-2.0.txt`，对应的
 
 `templates/uid-list/` 按 Miao-Yunzai 原神插件的 html/user/uid-list 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），页面框架与样式沿用 miao-plugin 的 common/layout/elem 与 common/common.css（MIT，见 `LICENSES/miao-plugin-MIT.txt`），同 miao 的 1.4 倍缩放；图片地址改为宿主渲染资源。玩家的头像与名片按 miao 的 faceImgs 取该 UID 已保存面板中编号最小的角色，没有时用 miao 的通用头像与名片。
 
-`templates/rank/` 按 miao-plugin 的 character/rank-profile-list 星铁模式改写（MIT），容器宽度同上游在页面内设置；ark-plugin 的自定义排行沿用这一页面（MIT，见 `LICENSES/ark-plugin-MIT.txt`），同 `apps/customRank.js` 写入“全服数据”、排序与筛选说明及请求行数，页面宽 930（欢愉命途 960、记忆命途 1000），评级按六件遗器的平均分阈值（56 分以上为 MAX）。
+`templates/rank/` 按 miao-plugin 的 character/rank-profile-list 星铁模式改写（MIT），容器宽度同上游在页面内设置，群排行按 ark-plugin 改写后的宽度 930（欢愉命途 960、记忆命途 1000），并同其备份的 `miao-plugin-rank/resources/character/rank-profile-list.html` 加上全服排名一栏（再宽 180）；ark-plugin 的自定义排行沿用这一页面（MIT，见 `LICENSES/ark-plugin-MIT.txt`），同 `apps/customRank.js` 写入“全服数据”、排序与筛选说明及请求行数，页面宽 930（欢愉命途 960、记忆命途 1000），评级按六件遗器的平均分阈值（56 分以上为 MAX）。
 
 `templates/panel/` 另按 ark-plugin 备份的 `miao-plugin-rank/resources/character/profile-detail.html`（MIT，见 `LICENSES/ark-plugin-MIT.txt`）加入面板排名：名次行接在伤害表后，排名统计块照搬其布局与内联样式，两张图按其 ECharts 选项（默认网格、smooth、面积渐变与标注）输出为 SVG，渐变的色标按上游的原顺序输出（上游把红色色标写在前一色标之前，浏览器因此从本面板的位置起画 2.5 个百分点的红带，这里保持一致）；上游在星铁中同样写“圣遗物排名”“圣遗物评分”。
 

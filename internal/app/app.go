@@ -125,6 +125,11 @@ type ArkSettings struct {
 	// MarkRankType is markRankType: ranks of local data are marked (本地),
 	// or (面板变换) for a changed panel.
 	MarkRankType bool `json:"mark_rank_type"`
+	// GroupRank is groupRank: a group ranking shows ark's global ranks.
+	GroupRank bool `json:"group_rank"`
+	// LocalGroupRank is localGroupRank: ark ranks the listed panels
+	// themselves rather than the UIDs' panels it keeps.
+	LocalGroupRank bool `json:"local_group_rank"`
 	// NewUserPanel is newUserPanel: 更新面板 of a UID without kept panels
 	// first takes the panels ark keeps for it.
 	NewUserPanel bool `json:"new_user_panel"`
@@ -228,7 +233,7 @@ func New(assets Assets, directory string) (*App, error) {
 }
 func settings(event *rayleabot.EventContext) Settings {
 	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{},
-		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true}}
+		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, GroupRank: true, LocalGroupRank: true}}
 	_ = decodeObject(event.Config, &value)
 	return value
 }
