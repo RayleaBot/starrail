@@ -287,6 +287,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.helpCommand(ctx, event, command, args)
 	case "gacha-export", "gacha-import":
 		return a.gachaFileCommand(ctx, event, command, args)
+	case "panel-export":
+		return a.panelExportCommand(ctx, event)
 	case "pay-log":
 		return a.payLogCommand(ctx, event, args)
 	case "online":
