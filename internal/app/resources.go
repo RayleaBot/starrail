@@ -13,11 +13,8 @@ type MaterialInfo struct {
 	Kind        string   `json:"kind"`
 	Rarity      int      `json:"rarity"`
 	Family      string   `json:"family"`
-	Days        []int    `json:"days"`
-	City        string   `json:"city"`
 	Sources     []string `json:"sources"`
 	Description string   `json:"description"`
-	Related     []string `json:"related"`
 }
 
 func resourceView(game Game, action string, result map[string]any) View {
@@ -27,16 +24,6 @@ func resourceView(game Game, action string, result map[string]any) View {
 		v.Title = game.Name + "材料查询"
 		for _, m := range items[:min(10, len(items))] {
 			value := fmt.Sprintf("%d 星 · %s", m.Rarity, m.Family)
-			if m.City != "" {
-				value += " · " + m.City
-			}
-			if len(m.Days) > 0 {
-				days := []string{}
-				for _, d := range m.Days {
-					days = append(days, []string{"", "周一", "周二", "周三", "周四", "周五", "周六", "周日"}[d])
-				}
-				value += " · " + strings.Join(days, "/")
-			}
 			if len(m.Sources) > 0 {
 				value += "\n" + strings.Join(m.Sources, "；")
 			}
@@ -71,16 +58,10 @@ type PoolInfo struct {
 	Weapons5       []string `json:"weapons5"`
 	Weapons4       []string `json:"weapons4"`
 }
-type Birthday struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Date string `json:"date"`
-}
 type GameResources struct {
 	Version   string         `json:"version,omitempty"`
 	Materials []MaterialInfo `json:"materials"`
 	Pools     []PoolInfo     `json:"pools"`
-	Birthdays []Birthday     `json:"birthdays"`
 }
 
 func (a *App) resourceQuery(action string, input map[string]any) (map[string]any, error) {
@@ -97,20 +78,8 @@ func (a *App) resourceQuery(action string, input map[string]any) (map[string]any
 		matches := []MaterialInfo{}
 		query := strings.TrimSpace(strings.ToLower(q.Query))
 		for _, m := range data.Materials {
-			if query != "" && !strings.Contains(strings.ToLower(m.Name+" "+m.Family+" "+m.City+" "+m.ID), query) {
+			if query != "" && !strings.Contains(strings.ToLower(m.Name+" "+m.Family+" "+m.ID), query) {
 				continue
-			}
-			if q.Weekday != 0 && !slices.Contains(m.Days, q.Weekday) {
-				continue
-			}
-			m.Related = []string{}
-			for _, entry := range a.Catalog.Entries {
-				for _, material := range entry.Materials {
-					if material == m.Name || material == m.Family {
-						m.Related = append(m.Related, entry.Name)
-						break
-					}
-				}
 			}
 			m.Description = plainGameText(m.Description)
 			matches = append(matches, m)
@@ -159,15 +128,5 @@ func (a *App) resourceQuery(action string, input map[string]any) (map[string]any
 		next = &end
 	}
 	pools = pools[offset:end]
-	date := q.Date
-	if date == "" {
-		date = time.Now().In(time.FixedZone("UTC+8", 8*60*60)).Format("2006-01-02")
-	}
-	birthdays := []Birthday{}
-	for _, b := range data.Birthdays {
-		if b.Date == date[5:] {
-			birthdays = append(birthdays, b)
-		}
-	}
-	return map[string]any{"pools": pools, "total": total, "next_offset": next, "birthdays": birthdays, "birthday_date": date, "version": resourceVersion(a.Game), "timezone": "UTC+8", "source": "fixed_reference"}, nil
+	return map[string]any{"pools": pools, "total": total, "next_offset": next, "version": resourceVersion(a.Game), "timezone": "UTC+8", "source": "fixed_reference"}, nil
 }

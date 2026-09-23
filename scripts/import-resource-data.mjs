@@ -22,23 +22,21 @@ async function dataModule(file, expression) {
   return JSON.parse(new vm.Script(`${source}\nJSON.stringify(${expression})`).runInContext(context, { timeout: 1000 }))
 }
 
-// Materials are listed by kind; Star Rail has no weekday rotation.
+// Materials are listed by kind.
 const byKind = JSON.parse(await fs.readFile(path.join(meta, 'material/data.json'), 'utf8'))
 const materials = new Map()
 for (const [kind, list] of Object.entries(byKind)) {
   for (const item of Object.values(list)) {
-    materials.set(item.name, { id: String(item.id), name: item.name, kind, rarity: item.star, family: item.name, days: [], city: '', sources: Array.isArray(item.source) ? item.source : [], description: item.desc ?? '' })
+    materials.set(item.name, { id: String(item.id), name: item.name, kind, rarity: item.star, family: item.name, sources: Array.isArray(item.source) ? item.source : [], description: item.desc ?? '' })
   }
 }
 
 const pools = await dataModule(path.join(meta, 'info/index.js'), 'poolDetailSr.map(p=>({...p,kind:"event"}))')
 
-// Star Rail's character data gives no birthdays.
 const out = {
   version: 'miao-7f6f1c84c891',
   materials: [...materials.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh')),
   pools: pools.map(p => ({ version: p.version, half: p.half, from: p.from, to: p.to, kind: p.kind, characters5: p.char5 ?? [], characters4: p.char4 ?? [], weapons5: p.weapon5 ?? [], weapons4: p.weapon4 ?? [] })),
-  birthdays: [],
 }
 await fs.writeFile(path.join(root, 'internal/assets/data/resources.json'), JSON.stringify(out) + '\n')
 console.log(JSON.stringify({ materials: materials.size, pools: pools.length }))

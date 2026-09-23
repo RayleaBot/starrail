@@ -117,8 +117,7 @@ func (a *App) bannerQuery(input map[string]any) (map[string]any, error) {
 	if end < total {
 		next = &end
 	}
-	birthdayInfo, _ := a.resourceQuery("calendar.query", map[string]any{"date": date.Format("2006-01-02")})
-	return map[string]any{"pools": matches[offset:end], "appearances": appearances, "total": total, "next_offset": next, "version": resourceVersion(game), "coverage": "fixed_reference", "date": date.Format("2006-01-02"), "birthdays": birthdayInfo["birthdays"], "birthday_date": date.Format("2006-01-02")}, nil
+	return map[string]any{"pools": matches[offset:end], "appearances": appearances, "total": total, "next_offset": next, "version": resourceVersion(game), "coverage": "fixed_reference", "date": date.Format("2006-01-02")}, nil
 }
 
 type VersionDrawCount struct {

@@ -23,8 +23,8 @@ var game []byte
 //go:embed calc
 var calc embed.FS
 
-// data holds this game's fixed reference data: materials, banners and
-// birthdays, plus the optional feature data listed in Kit.
+// data holds this game's fixed reference data: materials and banners, plus
+// the optional feature data listed in Kit.
 //
 //go:embed data
 var data embed.FS

@@ -53,7 +53,7 @@ type Assets struct {
 	Catalog  []byte // catalog.json
 	Manifest []byte // info.json
 	Calc     reference.Profile
-	// Resources holds materials, banners and birthdays. The others are optional:
+	// Resources holds materials and banners. The others are optional:
 	// only games with that feature provide them.
 	Resources   []byte
 	Simulation  []byte
