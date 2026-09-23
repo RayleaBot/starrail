@@ -283,7 +283,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return event.SendText(friendlyError(readErr))
 		}
 		applyGroupConfig(event, config)
-		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && command != "gacha-stop" && command != "gacha-progress" && !(command == "gacha-schedule" && len(args) > 0 && args[0] == "关闭") && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
+		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
 			return event.Result(map[string]any{"handled": false})
 		}
 	}
@@ -336,13 +336,12 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.challengeCommand(ctx, event, command, args)
 	case "gacha-link":
 		return a.gachaLinkCommand(event)
-	case "gacha-background", "gacha-schedule", "gacha-progress", "gacha-stop":
-		// A link the sender pasted updates at once, as StarRail-plugin's
-		// 更新抽卡记录 reads its bound link.
-		if owned, ok := a.LinkJobs.owner(syncOwner(event)); ok && command == "gacha-background" && (len(args) == 0 || args[len(args)-1] == owned.uid || args[len(args)-1] == "增量" || args[len(args)-1] == "全量") {
+	case "gacha-background":
+		// StarRail-plugin's 更新跃迁记录 reads the link the sender bound.
+		if owned, ok := a.LinkJobs.owner(syncOwner(event)); ok && (len(args) == 0 || args[len(args)-1] == owned.uid) {
 			return a.updateByLink(ctx, event, owned)
 		}
-		return a.syncTaskCommand(ctx, event, command, args)
+		return event.SendText("未绑定抽卡链接，请点击链接查看说明\nhttps://mp.weixin.qq.com/s/FFHTor5DiG3W_rfQVs3KJQ\n发送[" + prefix + "抽卡链接]绑定")
 	case "community-progress":
 		return a.communityProgress(ctx, event)
 	case "community-task", "community-stop":
