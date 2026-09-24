@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -56,6 +57,10 @@ func TestExtendedCommandInputs(t *testing.T) {
 		if _, _, err := app.commandInput(Operation{Input: tc.mode}, []string{tc.invalid}, nil); err == nil {
 			t.Fatal("invalid selector accepted")
 		}
+	}
+	// 面板, 遗器, 伤害 and 养成 read their character by name, then the UID.
+	if input, uid, err := pluginApp(t).commandInput(Operation{Input: "characters"}, []string{"希儿", "100000001"}, nil); err != nil || uid != "100000001" || !reflect.DeepEqual(input["character_ids"], []any{"1102"}) {
+		t.Errorf("a character = %v %q %v", input, uid, err)
 	}
 	// A UID alone, as in 月历100000001, is the UID.
 	if input, uid, err := app.commandInput(Operation{Input: "year_month"}, []string{"100000001"}, nil); err != nil || uid != "100000001" || input["month"] != nil {

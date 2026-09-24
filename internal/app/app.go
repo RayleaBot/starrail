@@ -806,7 +806,8 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 			input["month"] = month
 			args = args[1:]
 		}
-	case "characters_optional":
+	case "characters":
+		// 面板, 遗器, 伤害 and 养成 name their character first.
 		if len(args) == 0 {
 			break
 		}
