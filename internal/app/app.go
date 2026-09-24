@@ -455,8 +455,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.accountTaskCommand(ctx, event, command, args)
 	case "community-status", "community-sign":
 		return a.communityCommand(ctx, event, command, args)
-	case "cloud-private-panel":
-		return a.privateCloudPanelCommand(ctx, event, args)
 	case "cloud-verify-code", "cloud-verify":
 		return a.arkVerifyCommand(ctx, event, command, args)
 	case "public-profile":
