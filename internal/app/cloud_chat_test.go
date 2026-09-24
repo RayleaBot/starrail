@@ -2,6 +2,7 @@ package app
 
 import (
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -14,9 +15,15 @@ const rankSpecificAnswer = `[{"retcode":100,"data":{"scores":["295.20","275.90",
 // no panel placed on them.
 func TestReadRankStatsFollowsPanelPage(t *testing.T) {
 	entry := Entry{ID: "1102", Name: "希儿", Element: "量子"}
-	image, err := readRankStats(entry, cloudList(t, rankSpecificAnswer))
+	image, view, err := readRankStats(entry, cloudList(t, rankSpecificAnswer))
 	if err != nil || image.DamageTitle != "终结技伤害" || image.Totals != [2]string{"11471", "10994"} {
 		t.Fatalf("image = %+v %v", image, err)
+	}
+	// Without an image the reply lists both distributions.
+	for _, line := range []string{"希儿排名统计", "排名趋势 · 终结技伤害", "伤害排名\n统计样本：11471 个UID\nTOP 1%：95589.83", "遗器排名\n统计样本：10994 个UID\nTOP 1%：295.2", "TOP 99%：25.2"} {
+		if !strings.Contains(view.Text(), line) {
+			t.Fatalf("text lacks %q:\n%s", line, view.Text())
+		}
 	}
 	if damage := image.Damage; damage.Top != 100 || math.Abs(damage.Scores[0]-81.87) > 0.01 || damage.Percent != -100 {
 		t.Fatalf("damage = %+v", damage)
@@ -24,10 +31,15 @@ func TestReadRankStatsFollowsPanelPage(t *testing.T) {
 	if artis := image.Artis; artis.Top != 338.2 || artis.Scores[9] != 25.2 || artis.Percent != -100 {
 		t.Fatalf("artis = %+v", artis)
 	}
+	// A distribution ark did not send reads 暂无数据.
+	answer := cloudList(t, rankSpecificAnswer).([]any)
+	if _, view, err := readRankStats(entry, []any{cloudObject(t, `{"retcode":102}`), answer[1]}); err != nil || !strings.Contains(view.Text(), "遗器排名\n暂无数据") {
+		t.Fatalf("text = %q %v", view.Text(), err)
+	}
 	// ark answers a character it does not rank with a failed object, and
 	// nothing else can be drawn.
 	for raw, code := range map[string]string{`{"retcode":102}`: "plugin.game_cloud_rejected", `{"retcode":100,"data":{"scores":[1,2,3,4,5,6,7,8,9,10]}}`: "plugin.game_cloud_invalid", `[{"retcode":102},{"retcode":102}]`: "plugin.game_cloud_invalid"} {
-		if _, err := readRankStats(entry, cloudList(t, raw)); PublicError(err).Code != code {
+		if _, _, err := readRankStats(entry, cloudList(t, raw)); PublicError(err).Code != code {
 			t.Errorf("%s: %v", raw, err)
 		}
 	}

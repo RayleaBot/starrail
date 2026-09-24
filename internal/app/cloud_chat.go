@@ -73,8 +73,8 @@ func (a *App) cloudChatCommand(ctx context.Context, event *rayleabot.EventContex
 // answers with the two distributions its panel page draws as 排名统计, the
 // relic scores first; upstream's command reads a single distribution from
 // the answer's data and so only replies 未知错误. They are drawn here as that
-// block draws them, without a panel's place. A reply that cannot be drawn is
-// one line, as the other cloud queries fail.
+// block draws them, without a panel's place; without an image the reply lists
+// each distribution's scores, as other commands fall back to text.
 func (a *App) rankStatsCommand(ctx context.Context, event *rayleabot.EventContext, args []string) error {
 	entry, ok := a.Catalog.Resolve(strings.TrimSpace(strings.Join(args, "")), "character", a.aliasMap(event))
 	if !ok {
@@ -85,11 +85,10 @@ func (a *App) rankStatsCommand(ctx context.Context, event *rayleabot.EventContex
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	image, err := readRankStats(entry, decoded)
+	image, view, err := readRankStats(entry, decoded)
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	view := View{Title: "排名统计图片暂时无法生成，请稍后重试。"}
 	if a.rankStatsImage != nil {
 		if drawn, ok := a.rankStatsImage(a.imageContext(ctx), image); ok {
 			view.Image = &drawn
@@ -114,13 +113,14 @@ type RankStatsImageBuilder func(ImageContext, RankStatsImage) (Image, bool)
 
 // readRankStats reads rank/specific's answer as the panel page reads it: the
 // damage distribution second and the relic one first, as rankCurve turns
-// them into curves, with no panel placed on them. ark answers a character it
-// does not rank with a failed object instead.
-func readRankStats(entry Entry, decoded any) (RankStatsImage, error) {
+// them into curves, with no panel placed on them, and as text the score at
+// each ranking percentile. ark answers a character it does not rank with a
+// failed object instead.
+func readRankStats(entry Entry, decoded any) (RankStatsImage, View, error) {
 	distributions, ok := decoded.([]any)
 	if !ok {
 		if err := cloudRetcode(asObject(decoded)); err != nil {
-			return RankStatsImage{}, err
+			return RankStatsImage{}, View{}, err
 		}
 	}
 	image := RankStatsImage{Character: entry}
@@ -137,9 +137,33 @@ func readRankStats(entry Entry, decoded any) (RankStatsImage, error) {
 		}
 	}
 	if image.Damage == nil && image.Artis == nil {
-		return RankStatsImage{}, gameError("cloud_invalid", "云服务数据格式暂不兼容。")
+		return RankStatsImage{}, View{}, gameError("cloud_invalid", "云服务数据格式暂不兼容。")
 	}
-	return image, nil
+	view := View{Title: entry.Name + "排名统计", Rows: []Row{}}
+	if image.DamageTitle != "" {
+		view.Subtitle = "排名趋势 · " + image.DamageTitle
+	}
+	for _, part := range []struct {
+		title string
+		index int
+		total string
+	}{{"伤害排名", 1, image.Totals[0]}, {"遗器排名", 0, image.Totals[1]}} {
+		section := Section{Title: part.title, Rows: []Row{}}
+		var scores []float64
+		if part.index < len(distributions) {
+			scores = cloudScores(data(part.index))
+		}
+		if scores == nil {
+			section.Text = "暂无数据"
+		} else {
+			section.Rows = append(section.Rows, Row{Label: "统计样本", Value: part.total + " 个UID"})
+			for index, score := range scores {
+				section.Rows = append(section.Rows, Row{Label: "TOP " + strconv.Itoa(cloudPercentiles[index]) + "%", Value: strconv.FormatFloat(score, 'f', -1, 64)})
+			}
+		}
+		view.Sections = append(view.Sections, section)
+	}
+	return image, view, nil
 }
 
 // cloudExchangeCommand is ark-plugin's 导出面板数据 and 导入面板数据<UID>:
