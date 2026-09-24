@@ -2,10 +2,8 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -25,11 +23,10 @@ var detailedRecords = []string{"starrail.challenge", "starrail.story", "starrail
 // apart from it: 上期 asks the last period and, for Anomaly Arbitration, 往期
 // the three recent runs, which upstream draws side by side even beside 上期;
 // 简易 asks a challenge's simple record, without need_all. Otherwise the
-// Simulated Universe asks for the current period, as upstream does. A word
-// standing apart must be one the command's trigger takes after its name; a
-// period may also be given as its number, as on the query page, and the UID
-// follows.
-func challengeInput(operation Operation, word string, args []string) (map[string]any, string, error) {
+// Simulated Universe asks for the current period, as upstream does. The first
+// other word standing apart is the UID, as upstream takes the message's first
+// number for the UID; unlike on the query page, a number is never a period.
+func challengeInput(operation Operation, word string, args []string) (map[string]any, string) {
 	words := []string{"本期", "上期", "简易"}
 	switch operation.Name {
 	case "starrail.peak":
@@ -57,24 +54,11 @@ func challengeInput(operation Operation, word string, args []string) (map[string
 	if operation.Name != "starrail.rogue" && strings.Contains(text, "简易") {
 		input["need_all"] = false
 	}
-	// Without a period number, as in "深渊100000001", the UID comes first.
-	if len(rest) > 0 && operation.Input != "none" && !uidPattern.MatchString(rest[0]) {
-		maximum := 2
-		if operation.Input != "period" {
-			maximum = 3
-		}
-		period, err := strconv.Atoi(rest[0])
-		if err != nil || period < 1 || period > maximum {
-			return nil, "", gameError("input_invalid", fmt.Sprintf("期数使用 1 至 %d。", maximum))
-		}
-		input["schedule_type"] = period
-		rest = rest[1:]
-	}
 	uid := ""
 	if len(rest) > 0 {
 		uid = rest[0]
 	}
-	return input, uid, nil
+	return input, uid
 }
 
 // queryRecord runs a query the way StarRail-plugin's queryChallenge asks for a

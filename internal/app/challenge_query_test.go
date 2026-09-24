@@ -36,7 +36,10 @@ func TestChallengeInputFollowsQueryChallenge(t *testing.T) {
 		{"starrail.abyss", "深渊", []string{"简易", "100000001"}, 0, true, "100000001"},
 		{"starrail.abyss", "深渊", []string{"100000001", "上期"}, 2, false, "100000001"},
 		{"starrail.abyss", "上期深渊简易", nil, 2, true, ""},
-		{"starrail.abyss", "深渊", []string{"2", "100000001"}, 2, false, "100000001"},
+		// A number standing apart is the UID, as upstream reads the first
+		// number in the message, never a period.
+		{"starrail.abyss", "深渊", []string{"2", "100000001"}, 0, false, "2"},
+		{"starrail.abyss", "深渊", []string{"上期", "2"}, 2, false, "2"},
 		// 最新深渊 runs queryChallenge too.
 		{"starrail.abyss_latest", "最新深渊上期", nil, 2, false, ""},
 		{"starrail.abyss_latest", "最新简易深渊", []string{"100000001"}, 0, true, "100000001"},
@@ -50,28 +53,24 @@ func TestChallengeInputFollowsQueryChallenge(t *testing.T) {
 		// no simple record.
 		{"starrail.rogue", "模拟宇宙", nil, 1, false, ""},
 		{"starrail.rogue", "宇宙上期", nil, 2, false, ""},
-		{"starrail.rogue", "宇宙", []string{"3", "100000001"}, 3, false, "100000001"},
+		{"starrail.rogue", "宇宙", []string{"3", "100000001"}, 1, false, "3"},
 	} {
 		operation, _ := a.operation(tc.operation)
-		input, uid, err := challengeInput(operation, tc.word, tc.args)
-		if err != nil {
-			t.Errorf("%s %v: %v", tc.word, tc.args, err)
-			continue
-		}
+		input, uid := challengeInput(operation, tc.word, tc.args)
 		_, simple := input["need_all"]
 		if input["schedule_type"] != nil && input["schedule_type"] != tc.period || input["schedule_type"] == nil && tc.period != 0 || simple != tc.simple || simple && input["need_all"] != false || uid != tc.uid {
 			t.Errorf("%s %v = %v %q, want period %d simple %v uid %q", tc.word, tc.args, input, uid, tc.period, tc.simple, tc.uid)
 		}
 	}
-	// A word standing apart must be one the command's trigger takes after
-	// its name: 往期 is Anomaly Arbitration's alone.
+	// Only the words the command's trigger takes after its name count: 往期
+	// is Anomaly Arbitration's alone, and the Simulated Universe has no
+	// 简易, so they are read as the UID.
 	for _, tc := range []struct {
-		operation string
-		args      []string
-	}{{"starrail.abyss", []string{"往期"}}, {"starrail.challenge", []string{"3"}}, {"starrail.rogue", []string{"简易"}}, {"starrail.peak", []string{"4"}}} {
+		operation, arg string
+	}{{"starrail.abyss", "往期"}, {"starrail.rogue", "简易"}} {
 		operation, _ := a.operation(tc.operation)
-		if input, _, err := challengeInput(operation, operation.Command, tc.args); err == nil {
-			t.Errorf("%s %v accepted: %v", tc.operation, tc.args, input)
+		if input, uid := challengeInput(operation, operation.Command, []string{tc.arg}); uid != tc.arg || input["schedule_type"] == 3 || input["need_all"] != nil {
+			t.Errorf("%s %s = %v %q", tc.operation, tc.arg, input, uid)
 		}
 	}
 }

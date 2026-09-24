@@ -737,7 +737,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		var uid string
 		var parseErr error
 		if slices.Contains(challengeCommands, operation.Name) {
-			input, uid, parseErr = challengeInput(operation, event.Event.Command(), args)
+			input, uid = challengeInput(operation, event.Event.Command(), args)
 		} else {
 			input, uid, parseErr = a.commandInput(operation, args, a.aliasMap(event))
 		}
