@@ -143,9 +143,10 @@ func readRankStats(entry Entry, decoded any) (RankStatsImage, error) {
 }
 
 // cloudExchangeCommand is ark-plugin's 导出面板数据 and 导入面板数据<UID>:
-// export uploads the UID's kept panels that came from the account, as the
-// exchange format, for ten minutes; import downloads a UID's upload into the
-// UID's kept panels. Who may do either is ark's exportPanelData and
+// export uploads every panel kept for the UID, whichever service it came
+// from, as upstream uploads miao's player data, in the exchange format, for
+// ten minutes (a panel that cannot be written out is left out); import
+// downloads a UID's upload into the UID's kept panels. Who may do either is ark's exportPanelData and
 // importPanelData; the UID is the one named, mentioned or in use.
 func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	level := settings(event).Ark.ImportPanelData
@@ -167,10 +168,7 @@ func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventCo
 		}
 		avatars := map[string]json.RawMessage{}
 		for _, kept := range saved.Panels {
-			if kept.Official == nil {
-				continue
-			}
-			if id, raw, err := officialCloudAvatar(ctx, a.Game, kept.panel(), kept.Official); err == nil {
+			if id, raw, err := cloudAvatar(ctx, a.Game, kept.panel()); err == nil {
 				avatars[id] = raw
 			}
 		}

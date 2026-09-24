@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/json"
+	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/RayleaBot/plugin-starrail/internal/reference"
@@ -16,6 +18,91 @@ func TestOfficialCloudRollRestoration(t *testing.T) {
 		t.Fatal("unrepresentable stat exported")
 	}
 }
+
+// A Mihomo panel keeps each substat's roll count and its value cut as the
+// game shows it; the step is the one whose value cuts to it.
+func TestShowcaseRollsRestoreCutValues(t *testing.T) {
+	g := testGame(t)
+	cases := []struct {
+		star int
+		stat PanelStat
+		want string
+	}{
+		{5, PanelStat{Key: "speed", Value: "4.6", Times: 1}, "7,2,2"},
+		{5, PanelStat{Key: "cdmg", Value: "18.1%", Times: 2}, "9,3,4"},
+		{5, PanelStat{Key: "atkPlus", Value: "21", Times: 0}, "2,1,2"},
+		// 3.456% shows as 3.4%, further from it than the closest-value search
+		// of official values allows.
+		{4, PanelStat{Key: "hp", Value: "3.4%", Times: 0}, "4,1,2"},
+	}
+	for _, tc := range cases {
+		if rolls, err := showcaseRolls(g, tc.star, tc.stat); err != nil || len(rolls) != 1 || rolls[0] != tc.want {
+			t.Errorf("%+v = %v %v, want %s", tc.stat, rolls, err, tc.want)
+		}
+	}
+	if _, err := showcaseRolls(g, 5, PanelStat{Key: "speed", Value: "4.6"}); err == nil {
+		t.Fatal("restored speed no single roll gives")
+	}
+}
+
+// 导出面板 writes every kept panel back as miao keeps it: a panel ark handed
+// over and one read from Mihomo give the relics they were read from.
+func TestCloudAvatarWritesEverySource(t *testing.T) {
+	a := pluginApp(t)
+	attrIds := map[string][]string{"1": {"5,2,2", "7,1,1", "9,3,4", "8,1,0"}, "2": {"1,2,1", "7,2,2", "10,1,2", "12,1,0"}}
+	player := cloudObject(t, `{"uid":"100000001","avatars":{"1102":{"id":1102,"elem":"quantum","level":80,"promote":6,"cons":0,"talent":{"a":6,"e":10,"t":10,"q":10},"trees":["1102101"],
+		"weapon":{"id":23001,"level":80,"promote":6,"affix":1},"artis":{"1":{"level":15,"star":5,"id":61011,"mainId":1,"attrIds":["5,2,2","7,1,1","9,3,4","8,1,0"]},
+		"2":{"level":15,"star":5,"id":61012,"mainId":1,"attrIds":["1,2,1","7,2,2","10,1,2","12,1,0"]}}}}}`)
+	panels := a.arkPlayerPanels(t.Context(), "100000001", player)
+	if len(panels) != 1 {
+		t.Fatalf("panels = %+v", panels)
+	}
+	written := func(panel CharacterPanel) map[string][]string {
+		t.Helper()
+		_, raw, err := cloudAvatar(t.Context(), a.Game, panel)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var avatar struct {
+			Artis map[string]struct{ AttrIds []string } `json:"artis"`
+		}
+		if err := json.Unmarshal(raw, &avatar); err != nil {
+			t.Fatal(err)
+		}
+		out := map[string][]string{}
+		for slot, piece := range avatar.Artis {
+			out[slot] = slices.Sorted(slices.Values(piece.AttrIds))
+		}
+		return out
+	}
+	want := map[string][]string{}
+	for slot, ids := range attrIds {
+		want[slot] = slices.Sorted(slices.Values(ids))
+	}
+	if got := written(panels[0]); !reflect.DeepEqual(got, want) {
+		t.Fatalf("ark panel = %v, want %v", got, want)
+	}
+	// The same relics as Mihomo shows them: counts less one, values cut.
+	shown := map[string][2]any{"atk": {"7.7%", 1}, "speed": {"2.3", 0}, "cdmg": {"18.1%", 2}, "cpct": {"2.5%", 0}, "hpPlus": {"71", 1}, "effPct": {"4.3%", 0}, "stance": {"5.1%", 0}}
+	panel := panels[0]
+	panel.Source = "mihomo"
+	panel.Equipment = slices.Clone(panel.Equipment)
+	for index, piece := range panel.Equipment {
+		piece.Sub = slices.Clone(piece.Sub)
+		for i, stat := range piece.Sub {
+			value := shown[stat.Key]
+			if piece.Slot == 2 && stat.Key == "speed" {
+				value = [2]any{"4.6", 1}
+			}
+			piece.Sub[i].Value, piece.Sub[i].Times = value[0].(string), value[1].(int)
+		}
+		panel.Equipment[index] = piece
+	}
+	if got := written(panel); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Mihomo panel = %v, want %v", got, want)
+	}
+}
+
 func TestCloudCapturePromotionResolutionUsesPinnedBaseAttributes(t *testing.T) {
 	for _, key := range []string{"sr_1102"} {
 		engine := calcEngine(t)

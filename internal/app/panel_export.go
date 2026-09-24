@@ -8,9 +8,10 @@ import (
 )
 
 // panelExportCommand is ark-plugin's 导出面板: the saved panels of the UID in
-// use, or of a mentioned player, sent as a miao player data file. Only
-// panels read from the official records carry what the file needs to
-// rebuild relic substats, as for 导出面板数据. Who may export is ark's
+// use, or of a mentioned player, sent as a miao player data file, which
+// upstream sends with every character miao keeps, whichever service it came
+// from. A panel that cannot be written out is left out, and without any the
+// reply is upstream's for a missing file. Who may export is ark's
 // exportPanelRequire; a refused user gets no reply, as upstream.
 func (a *App) panelExportCommand(ctx context.Context, event *rayleabot.EventContext) error {
 	owner, err := a.panelOwner(ctx, event, "")
@@ -26,10 +27,7 @@ func (a *App) panelExportCommand(ctx context.Context, event *rayleabot.EventCont
 	}
 	avatars := map[string]json.RawMessage{}
 	for _, kept := range saved.Panels {
-		if kept.Official == nil {
-			continue
-		}
-		if id, raw, err := officialCloudAvatar(ctx, a.Game, kept.panel(), kept.Official); err == nil {
+		if id, raw, err := cloudAvatar(ctx, a.Game, kept.panel()); err == nil {
 			avatars[id] = raw
 		}
 	}

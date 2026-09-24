@@ -70,13 +70,43 @@ func mapCloudStat(key string) string {
 	return key
 }
 
-func officialCloudGear(g Game, gear PanelEquipment, raw map[string]any) (map[string]any, error) {
+// showcaseRolls restores a substat a Mihomo panel keeps: Mihomo's roll count
+// and the value cut as the game shows it, to one decimal for percentages and
+// speed and to a whole number otherwise. miao's HomoApi keeps the count and
+// step of Mihomo's raw answer; the step is the one whose value is cut to the
+// kept one (allowing for the tables' float noise).
+func showcaseRolls(g Game, star int, stat PanelStat) ([]any, error) {
+	value, ok := buildStatNumber(stat.Value)
+	count := stat.Times + 1
+	if !ok || count > 6 {
+		return nil, gameError("cloud_invalid", "展柜装备词条数值不可还原。")
+	}
+	unit := 1.0
+	if strings.HasSuffix(strings.TrimSpace(stat.Value), "%") || stat.Key == "speed" {
+		unit = 0.1
+	}
+	for id, attr := range g.Data.CloudGear.Meta.StarData[strconv.Itoa(star)].Sub {
+		if attr.Key != mapCloudStat(stat.Key) {
+			continue
+		}
+		for step := 0; step <= count*2; step++ {
+			if rolled := attr.Base*float64(count) + attr.Step*float64(step); rolled > value-1e-3 && rolled < value+unit+1e-3 {
+				return []any{id + "," + strconv.Itoa(count) + "," + strconv.Itoa(step)}, nil
+			}
+		}
+	}
+	return nil, gameError("cloud_invalid", "展柜显示值与固定词条表无法对应，未导出此角色。")
+}
+
+// cloudGear writes a relic as miao's player data keeps it, its substats as
+// rolls reads them.
+func cloudGear(g Game, gear PanelEquipment, rolls func(star int, stat PanelStat) ([]any, error)) (map[string]any, error) {
 	if !gear.Complete || len(gear.Main) != 1 {
-		return nil, gameError("cloud_invalid", "官方装备资料不完整，无法导出。")
+		return nil, gameError("cloud_invalid", "装备资料不完整，无法导出。")
 	}
 	star, err := strconv.Atoi(gear.Rarity)
 	if err != nil || star < 1 || star > 5 {
-		return nil, gameError("cloud_invalid", "官方装备品质无效。")
+		return nil, gameError("cloud_invalid", "装备品质无效。")
 	}
 	d := *g.Data.CloudGear
 	itemKey := gear.ID
@@ -94,27 +124,17 @@ func officialCloudGear(g Game, gear PanelEquipment, raw map[string]any) (map[str
 		}
 	}
 	if mainID == "" {
-		return nil, gameError("cloud_invalid", "官方主词条无法映射。")
+		return nil, gameError("cloud_invalid", "主词条无法映射。")
 	}
 	out["mainId"] = mainID
 
-	listKey := "properties"
-	rows := asList(raw[listKey])
 	attrs := []any{}
 	for _, stat := range gear.Sub {
-		var times any
-		for _, v := range rows {
-			r := asObject(v)
-			if asText(r["property_type"]) == stat.ID {
-				times = r["times"]
-				break
-			}
-		}
-		rolls, err := cloudRolls(g, star, stat, times)
+		found, err := rolls(star, stat)
 		if err != nil {
 			return nil, err
 		}
-		attrs = append(attrs, rolls...)
+		attrs = append(attrs, found...)
 	}
 	out["attrIds"] = attrs
 	return out, nil
@@ -158,7 +178,15 @@ func originalCloudTalents(record reference.Character, profile BuildProfile) map[
 	}
 	return out
 }
-func officialCloudAvatar(ctx context.Context, g Game, panel CharacterPanel, raw map[string]any) (string, json.RawMessage, error) {
+
+// cloudAvatar writes a kept panel as miao keeps the character in its player
+// data, whichever service the panel came from. The relic substats become
+// miao's attrIds (id,count,step), restored from what the panel keeps of them:
+// an official panel keeps the value shown and the official roll count, as
+// miao's MysPanelHSR reads them; a Mihomo panel the value cut as the game
+// shows it and Mihomo's roll count; a panel from ark and a changed panel the
+// value alone, the rolls that give it closest.
+func cloudAvatar(ctx context.Context, g Game, panel CharacterPanel) (string, json.RawMessage, error) {
 	game, engine := g.ID, g.Calc
 	if g.Data == nil || g.Data.CloudGear == nil {
 		return "", nil, gameError("cloud_invalid", "固定装备资料无法读取。")
@@ -189,13 +217,28 @@ func officialCloudAvatar(ctx context.Context, g Game, panel CharacterPanel, raw 
 	}
 	rawGear := map[int]map[string]any{}
 	for _, field := range []string{"relics", "ornaments"} {
-		for _, v := range asList(raw[field]) {
+		for _, v := range asList(panel.Official[field]) {
 			gear := asObject(v)
 			rawGear[number(gear["pos"])] = gear
 		}
 	}
 	for _, gear := range panel.Equipment {
-		converted, err := officialCloudGear(g, gear, rawGear[gear.Slot])
+		converted, err := cloudGear(g, gear, func(star int, stat PanelStat) ([]any, error) {
+			switch {
+			case panel.Official != nil:
+				var times any
+				for _, v := range asList(rawGear[gear.Slot]["properties"]) {
+					if r := asObject(v); asText(r["property_type"]) == stat.ID {
+						times = r["times"]
+						break
+					}
+				}
+				return cloudRolls(g, star, stat, times)
+			case panel.Source == "mihomo":
+				return showcaseRolls(g, star, stat)
+			}
+			return cloudRolls(g, star, stat, nil)
+		})
 		if err != nil {
 			return "", nil, err
 		}
@@ -233,14 +276,7 @@ func (a *App) captureCloudPanel(ctx context.Context, client AccountsClient, choi
 	if panel == nil {
 		return nil, gameError("character_missing", "官方未返回此角色。")
 	}
-	var raw map[string]any
-	for _, v := range asList(result.Data["avatar_list"]) {
-		if item := asObject(v); asText(item["id"]) == id {
-			raw = item
-			break
-		}
-	}
-	exportID, data, err := officialCloudAvatar(ctx, a.Game, *panel, raw)
+	exportID, data, err := cloudAvatar(ctx, a.Game, *panel)
 	if err != nil {
 		return nil, err
 	}
