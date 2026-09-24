@@ -49,7 +49,7 @@ func TestGachaSummaryNeverClaimsCompleteHistory(t *testing.T) {
 }
 func TestExtendedCommandInputs(t *testing.T) {
 	app := &App{}
-	for _, tc := range []struct{ mode, valid, invalid, key string }{{"year_month", "202609", "202613", "month"}, {"starrail_pool", "21", "100", "gacha_type"}} {
+	for _, tc := range []struct{ mode, valid, invalid, key string }{{"starrail_pool", "21", "100", "gacha_type"}} {
 		input, uid, err := app.commandInput(Operation{Input: tc.mode}, []string{tc.valid, "100000001"}, nil)
 		if err != nil || uid != "100000001" || input[tc.key] == nil {
 			t.Fatal("valid selector failed")
@@ -61,9 +61,5 @@ func TestExtendedCommandInputs(t *testing.T) {
 	// 面板, 遗器, 伤害 and 养成 read their character by name, then the UID.
 	if input, uid, err := pluginApp(t).commandInput(Operation{Input: "characters"}, []string{"希儿", "100000001"}, nil); err != nil || uid != "100000001" || !reflect.DeepEqual(input["character_ids"], []any{"1102"}) {
 		t.Errorf("a character = %v %q %v", input, uid, err)
-	}
-	// A UID alone, as in 月历100000001, is the UID.
-	if input, uid, err := app.commandInput(Operation{Input: "year_month"}, []string{"100000001"}, nil); err != nil || uid != "100000001" || input["month"] != nil {
-		t.Errorf("a UID alone = %v %q %v", input, uid, err)
 	}
 }

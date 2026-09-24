@@ -36,10 +36,14 @@ func TestChallengeInputFollowsQueryChallenge(t *testing.T) {
 		{"starrail.abyss", "深渊", []string{"简易", "100000001"}, 0, true, "100000001"},
 		{"starrail.abyss", "深渊", []string{"100000001", "上期"}, 2, false, "100000001"},
 		{"starrail.abyss", "上期深渊简易", nil, 2, true, ""},
-		// A number standing apart is the UID, as upstream reads the first
-		// number in the message, never a period.
+		// The first number in the message is the UID, as upstream reads it,
+		// never a period; other words are passed over, and the words count
+		// wherever they stand.
 		{"starrail.abyss", "深渊", []string{"2", "100000001"}, 0, false, "2"},
 		{"starrail.abyss", "深渊", []string{"上期", "2"}, 2, false, "2"},
+		{"starrail.abyss", "深渊", []string{"往期"}, 0, false, ""},
+		{"starrail.abyss", "深渊", []string{"看看上期的", "a100000001"}, 2, false, "100000001"},
+		{"starrail.abyss", "深渊100000001", []string{"100000001", "简易"}, 0, true, "100000001"},
 		// 最新深渊 runs queryChallenge too.
 		{"starrail.abyss_latest", "最新深渊上期", nil, 2, false, ""},
 		{"starrail.abyss_latest", "最新简易深渊", []string{"100000001"}, 0, true, "100000001"},
@@ -54,6 +58,7 @@ func TestChallengeInputFollowsQueryChallenge(t *testing.T) {
 		{"starrail.rogue", "模拟宇宙", nil, 1, false, ""},
 		{"starrail.rogue", "宇宙上期", nil, 2, false, ""},
 		{"starrail.rogue", "宇宙", []string{"3", "100000001"}, 1, false, "3"},
+		{"starrail.rogue", "宇宙", []string{"简易"}, 1, false, ""},
 	} {
 		operation, _ := a.operation(tc.operation)
 		input, uid := challengeInput(operation, tc.word, tc.args)
@@ -62,15 +67,41 @@ func TestChallengeInputFollowsQueryChallenge(t *testing.T) {
 			t.Errorf("%s %v = %v %q, want period %d simple %v uid %q", tc.word, tc.args, input, uid, tc.period, tc.simple, tc.uid)
 		}
 	}
-	// Only the words the command's trigger takes after its name count: 往期
-	// is Anomaly Arbitration's alone, and the Simulated Universe has no
-	// 简易, so they are read as the UID.
+}
+
+// A query command takes what follows its word as its upstream rule does.
+func TestOperationInputFollowsUpstreamRules(t *testing.T) {
+	var game Game
+	if err := json.Unmarshal(pluginFile(t, "internal/assets/game.json"), &game); err != nil {
+		t.Fatal(err)
+	}
+	a := &App{Game: game}
 	for _, tc := range []struct {
-		operation, arg string
-	}{{"starrail.abyss", "往期"}, {"starrail.rogue", "简易"}} {
-		operation, _ := a.operation(tc.operation)
-		if input, uid := challengeInput(operation, operation.Command, []string{tc.arg}); uid != tc.arg || input["schedule_type"] == 3 || input["need_all"] != nil {
-			t.Errorf("%s %s = %v %q", tc.operation, tc.arg, input, uid)
+		command, word string
+		args          []string
+		uid           string
+		ours          bool
+	}{
+		// StarRail-plugin's card and rogue rules take anything after the
+		// word and read the first number as the UID.
+		{"profile", "卡片", []string{"看看", "100000001"}, "100000001", true},
+		{"divergent-week", "本期演算", []string{"上周", "12"}, "12", true},
+		{"swarm", "蝗灾", []string{"简易"}, "", true},
+		// Rules that end with the word take nothing after it.
+		{"note", "体力", nil, "", true},
+		{"note", "体力", []string{"100000001"}, "", false},
+		{"monthly", "月历", []string{"202609"}, "", false},
+		{"currency_wars", "货币战争", []string{"一"}, "", false},
+		{"training", "练度统计", []string{"100000001"}, "", false},
+		{"abyss", "深渊", []string{"往期"}, "", true},
+	} {
+		operation, ok := a.operation("starrail." + strings.ReplaceAll(tc.command, "-", "_"))
+		if !ok {
+			t.Fatalf("no operation for %s", tc.command)
+		}
+		_, uid, ours, err := a.operationInput(operation, tc.command, tc.word, tc.args)
+		if err != nil || uid != tc.uid || ours != tc.ours {
+			t.Errorf("%s %v = %q %v %v", tc.word, tc.args, uid, ours, err)
 		}
 	}
 }

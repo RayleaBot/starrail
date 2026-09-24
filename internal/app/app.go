@@ -737,13 +737,9 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		if !matched {
 			return event.Result(map[string]any{"handled": false})
 		}
-		var input map[string]any
-		var uid string
-		var parseErr error
-		if slices.Contains(challengeCommands, operation.Name) {
-			input, uid = challengeInput(operation, event.Event.Command(), args)
-		} else {
-			input, uid, parseErr = a.commandInput(operation, args, a.aliasMap(event))
+		input, uid, ours, parseErr := a.operationInput(operation, command, event.Event.Command(), args)
+		if !ours {
+			return event.Result(map[string]any{"handled": false})
 		}
 		if parseErr != nil {
 			err = parseErr
@@ -773,7 +769,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			_ = a.Monthly.Keep(a.accountClient(event).Provider, choice, result.Data, time.Now())
 		}
 		view = BusinessView(a.Game, textOperation, result, a.Catalog)
-		view.Image = a.featureImage(ctx, event, choice, operation.Name, event.Event.Command(), input, result)
+		// Upstream's pages read their words from the whole message.
+		view.Image = a.featureImage(ctx, event, choice, operation.Name, strings.Join(append([]string{event.Event.Command()}, event.Event.Args()...), " "), input, result)
 	}
 	if err != nil {
 		return event.SendText(friendlyError(err))
@@ -794,16 +791,6 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 			default:
 				return nil, "", gameError("input_invalid", "卡池使用 1、2、11、12、21 或 22。")
 			}
-			args = args[1:]
-		}
-	case "year_month":
-		// Only YYYYMM is a month; a UID is left for the role.
-		if len(args) > 0 && len(args[0]) == 6 {
-			month, err := strconv.Atoi(args[0])
-			if err != nil || month < 202001 || month > 210012 || month%100 < 1 || month%100 > 12 {
-				return nil, "", gameError("input_invalid", "月份使用 YYYYMM，例如 202609。")
-			}
-			input["month"] = month
 			args = args[1:]
 		}
 	case "characters":

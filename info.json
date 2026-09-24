@@ -79,7 +79,7 @@
       "id": "note",
       "name": "体力",
       "description": "开拓力、每日实训与委托派遣等实时便笺",
-      "usage": "#体力 [UID]",
+      "usage": "#体力",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -150,7 +150,7 @@
       "id": "training",
       "name": "练度统计",
       "description": "全部角色的等级、星魂、行迹、光锥与遗器评分",
-      "usage": "#练度统计 [UID]",
+      "usage": "#练度统计",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -325,7 +325,7 @@
       "id": "monthly",
       "name": "月历",
       "description": "本月或指定月份的星琼与票券收入（开拓月历）",
-      "usage": "#月历 [YYYYMM] [UID]",
+      "usage": "#月历",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -393,7 +393,7 @@
       "id": "currency_wars",
       "name": "货币战争",
       "description": "货币战争的晋升等级、职级与最新通关战绩",
-      "usage": "#货币战争 [UID]",
+      "usage": "#货币战争",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
