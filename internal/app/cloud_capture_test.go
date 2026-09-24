@@ -172,6 +172,26 @@ func writtenRelics(t *testing.T, a *App, panel CharacterPanel) map[string][]stri
 var officialShown = map[string][2]any{"atk": {"7.7%", 2}, "1speed": {"2", 1}, "2speed": {"4", 2}, "cdmg": {"18.1%", 3}, "cpct": {"2.5%", 1},
 	"hpPlus": {"71", 2}, "effPct": {"4.3%", 1}, "stance": {"5.1%", 1}}
 
+// officialSeele is sharedSeele as the record API shows it, as a panel kept
+// before previewed substats were left out keeps it: the first relic, below
+// +3, still lists the substat it will gain. The first relic's speed is 2.6
+// (7,1,2), which the record API shows as 2; the total speed, 0.3 above the
+// shared panel's, shows cut too.
+func officialSeele(t *testing.T, a *App) CharacterPanel {
+	t.Helper()
+	official := shownPanel(sharedSeele(t, a), "mihoyo", officialShown)
+	official.Stats = slices.Clone(official.Stats)
+	for i, stat := range official.Stats {
+		if value, _ := buildStatNumber(stat.Value); stat.ID == "4" {
+			official.Stats[i].Value = strconv.Itoa(int(value + 0.3))
+		}
+	}
+	official.Equipment[0].Sub = append(official.Equipment[0].Sub, PanelStat{ID: "31", Key: "defPlus", Value: "19", Times: 1})
+	official.Official = map[string]any{"relics": []any{map[string]any{"pos": json.Number("1"),
+		"properties": []any{map[string]any{"property_type": json.Number("31"), "times": json.Number("1"), "value": "19", "is_preview": true}}}}}
+	return official
+}
+
 // An official panel is written as miao's MysPanelHSR reads it: the counts the
 // record API gives with the steps the cut values round to, without the
 // substat it only previews, and with speed steps added one relic after
@@ -179,27 +199,15 @@ var officialShown = map[string][2]any{"atk": {"7.7%", 2}, "1speed": {"2", 1}, "2
 // number. A changed panel keeps the relics of the panel it took them from.
 func TestOfficialPanelWritesAsMysPanelHSR(t *testing.T) {
 	a := pluginApp(t)
-	official := shownPanel(sharedSeele(t, a), "mihoyo", officialShown)
-	// The first relic's speed is 2.6 (7,1,2) here, which the record API shows
-	// as 2; the total speed, 0.3 above the shared panel's, shows cut too.
-	official.Stats = slices.Clone(official.Stats)
-	for i, stat := range official.Stats {
-		if value, _ := buildStatNumber(stat.Value); stat.ID == "4" {
-			official.Stats[i].Value = strconv.Itoa(int(value + 0.3))
-		}
+	saved, err := a.Profiles.Keep("100000001", []CharacterPanel{officialSeele(t, a)}, "米游社", nil)
+	if err != nil {
+		t.Fatal(err)
 	}
-	// A relic below +3 shows the substat it will gain as a preview.
-	official.Equipment[0].Sub = append(official.Equipment[0].Sub, PanelStat{ID: "31", Key: "defPlus", Value: "19", Times: 1})
-	official.Official = map[string]any{"relics": []any{map[string]any{"pos": json.Number("1"),
-		"properties": []any{map[string]any{"property_type": json.Number("31"), "times": json.Number("1"), "value": "19", "is_preview": true}}}}}
 	// Both speed substats restore at step 0, a whole 1.0 below the total;
 	// miao adds a step to each in turn, twice, and stops 0.2 past it.
 	want := map[string][]string{"1": {"5,2,2", "7,1,2", "8,1,0", "9,3,4"}, "2": {"1,2,1", "10,1,2", "12,1,0", "7,2,2"}}
-	if got := writtenRelics(t, a, official); !reflect.DeepEqual(got, want) {
+	if got := writtenRelics(t, a, saved.Panels["1102"].panel()); !reflect.DeepEqual(got, want) {
 		t.Fatalf("official panel = %v, want %v", got, want)
-	}
-	if _, err := a.Profiles.Keep("100000001", []CharacterPanel{official}, "米游社", nil); err != nil {
-		t.Fatal(err)
 	}
 	six := 6
 	changed, err := a.changedPanel(t.Context(), "100000001", PanelChange{CharacterID: "1102", Cons: &six})

@@ -90,7 +90,9 @@ func panelStats(raw []any, metadata map[string]any, valueKey string) []PanelStat
 		item := asObject(value)
 		id := asText(item["property_type"])
 		display := asText(item[valueKey])
-		if id == "" || display == "" {
+		// A relic below +3 previews the substat it will gain; miao's
+		// MysPanelHSR leaves it out.
+		if id == "" || display == "" || item["is_preview"] == true {
 			continue
 		}
 		name := firstText(asObject(metadata[id]), "name", "property_name_relic")

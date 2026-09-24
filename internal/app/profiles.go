@@ -137,10 +137,30 @@ func (s *PanelStore) Delete(uid string) error {
 	return err
 }
 
-// panel returns the kept panel with its official entry.
+// panel returns the kept panel with its official entry. A panel kept before
+// previewed substats were left out loses them here, as miao's MysPanelHSR
+// reads the official entry without them.
 func (s SavedPanel) panel() CharacterPanel {
 	panel := s.Panel
 	panel.Official, panel.UpdatedAtMS = s.Official, s.UpdatedAtMS
+	previews := map[int][]string{}
+	for _, field := range []string{"relics", "ornaments"} {
+		for _, raw := range asList(s.Official[field]) {
+			gear := asObject(raw)
+			for _, item := range asList(gear["properties"]) {
+				if property := asObject(item); property["is_preview"] == true {
+					previews[number(gear["pos"])] = append(previews[number(gear["pos"])], asText(property["property_type"]))
+				}
+			}
+		}
+	}
+	if len(previews) == 0 {
+		return panel
+	}
+	panel.Equipment = slices.Clone(panel.Equipment)
+	for index, gear := range panel.Equipment {
+		panel.Equipment[index].Sub = slices.DeleteFunc(slices.Clone(gear.Sub), func(stat PanelStat) bool { return slices.Contains(previews[gear.Slot], stat.ID) })
+	}
 	return panel
 }
 

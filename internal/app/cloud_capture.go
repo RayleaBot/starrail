@@ -218,34 +218,28 @@ func resolvePanelBasis(ctx context.Context, g Game, panel CharacterPanel) (panel
 	return panelBasis{record, profile, promote, light}, err
 }
 
-// officialProperty is what the record API gives of a relic substat besides
-// its value: the roll count, and whether it is only a preview.
-type officialProperty struct {
-	times   int
-	preview bool
-}
-
 // panelArtis writes a panel's relics as miao keeps them in its player data,
 // by slot, the substats as miao's attrIds (id,count,step) restored as miao
 // reads the service the panel came from. An official panel keeps the value
-// shown and the official roll count, as MysPanelHSR reads them, leaving out
-// the substats the record API only previews, and its speed is corrected; a
-// Mihomo panel keeps the value cut as the game shows it and Mihomo's roll
-// count; a panel from ark and a piece read by its OCR keep miao's values. A
-// changed panel's piece keeps the substats of the panel it was taken from, as
-// miao's ProfileChange copies the relics. basis is the panel's own, or nil to
-// resolve it only when the speed needs it.
+// shown and the official roll count, as MysPanelHSR reads them, and its speed
+// is corrected; a Mihomo panel keeps the value cut as the game shows it and
+// Mihomo's roll count; a panel from ark and a piece read by its OCR keep
+// miao's values. A changed panel's piece keeps the substats of the panel it
+// was taken from, as miao's ProfileChange copies the relics. basis is the
+// panel's own, or nil to resolve it only when the speed needs it.
 func panelArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelBasis) (map[string]map[string]any, error) {
-	official := map[int]map[string]officialProperty{}
+	// A panel kept before the roll counts were kept has them in the official
+	// entry.
+	official := map[int]map[string]int{}
 	for _, field := range []string{"relics", "ornaments"} {
 		for _, raw := range asList(panel.Official[field]) {
 			gear := asObject(raw)
-			properties := map[string]officialProperty{}
+			times := map[string]int{}
 			for _, item := range asList(gear["properties"]) {
 				property := asObject(item)
-				properties[asText(property["property_type"])] = officialProperty{number(property["times"]), property["is_preview"] == true}
+				times[asText(property["property_type"])] = number(property["times"])
 			}
-			official[number(gear["pos"])] = properties
+			official[number(gear["pos"])] = times
 		}
 	}
 	taken := map[*CharacterPanel]map[string]map[string]any{}
@@ -270,17 +264,12 @@ func panelArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelB
 			}
 			switch panel.Source {
 			case "mihoyo":
-				// A panel kept before the counts were kept has them in the
-				// official entry.
-				shown, ok := official[gear.Slot][stat.ID]
+				times, ok := official[gear.Slot][stat.ID]
 				if !ok {
-					shown.times = stat.Times
+					times = stat.Times
 				}
-				if shown.preview {
-					return nil, nil
-				}
-				if shown.times > 0 {
-					return officialRolls(g, star, stat, shown.times)
+				if times > 0 {
+					return officialRolls(g, star, stat, times)
 				}
 			case "mihomo":
 				return showcaseRolls(g, star, stat)
