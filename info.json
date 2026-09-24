@@ -1328,8 +1328,8 @@
     {
       "id": "cloud-rank-stats",
       "name": "排名统计",
-      "description": "ark 云端该角色的评分分布",
-      "usage": "#雷电将军排名统计",
+      "description": "ark 云端该角色的伤害与遗器评分分布，按面板的排名统计样式出图",
+      "usage": "#希儿排名统计",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",

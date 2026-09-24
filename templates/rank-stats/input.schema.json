@@ -2,30 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "required": [
-    "character",
-    "title",
-    "total",
-    "time",
-    "chart",
-    "cards"
+    "elem",
+    "name",
+    "charts",
+    "totals"
   ],
   "properties": {
-    "character": {
+    "elem": {
+      "type": "string"
+    },
+    "name": {
       "type": "string"
     },
     "title": {
       "type": "string"
     },
-    "total": {
-      "type": "string"
+    "charts": {
+      "type": "array"
     },
-    "time": {
-      "type": "string"
-    },
-    "chart": {
-      "type": "object"
-    },
-    "cards": {
+    "totals": {
       "type": "array"
     },
     "render_footer": {

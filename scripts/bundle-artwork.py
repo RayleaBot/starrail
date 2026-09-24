@@ -102,7 +102,6 @@ BUNDLES = {
         "resources/font/tttgbnumber.ttf",
         "resources/font/HYWenHei-55W.ttf",
     ]),
-    "ark-plugin": ("ark-plugin", ["resources/graph/background.png"]),
 }
 
 parser = argparse.ArgumentParser()

@@ -54,13 +54,14 @@ func TestReforgeMatchesKeptPieceBySubstats(t *testing.T) {
 	}
 }
 
+// The query page lists the score at each ranking percentile of every
+// distribution rank/specific answers.
 func TestDistributionKeepsArkPercentileScores(t *testing.T) {
-	data := cloudObject(t, `{"retcode":100,"data":{"name":"重击伤害","total":1234,"scores":[98000,90000,85000.5,80000,76000,70000,62000,50000,40000,30000]}}`)
-	result, err := projectCloud(testGame(t), CloudInput{Mode: "distribution", CharacterID: "1102"}, data)
-	if err != nil || result.Stats == nil || result.Stats.Title != "重击伤害" || result.Stats.Total != "1234" || len(result.Stats.Scores) != 10 || result.Stats.Scores[2] != 85000.5 {
-		t.Fatal(result.Stats, err)
+	result, err := projectCloud(testGame(t), CloudInput{Mode: "distribution", CharacterID: "1102"}, cloudList(t, rankSpecificAnswer))
+	if err != nil {
+		t.Fatal(err)
 	}
-	if text := result.View.Text(); !strings.Contains(text, "TOP 1%：98000") || !strings.Contains(text, "TOP 99%：30000") {
+	if text := result.View.Text(); !strings.Contains(text, "TOP 1%：295.2") || !strings.Contains(text, "TOP 99%：996.34") {
 		t.Fatal(text)
 	}
 }

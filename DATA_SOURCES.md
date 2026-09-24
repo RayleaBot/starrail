@@ -50,7 +50,7 @@ Apache-2.0 许可保留在 `LICENSES/StarRail-plugin-Apache-2.0.txt`，对应的
 
 `templates/panel/` 另按 ark-plugin 备份的 `miao-plugin-rank/resources/character/profile-detail.html`（MIT，见 `LICENSES/ark-plugin-MIT.txt`）加入面板排名：名次行接在伤害表后，排名统计块照搬其布局与内联样式，两张图按其 ECharts 选项（默认网格、smooth、面积渐变与标注）输出为 SVG，换装面板的伤害变化同其伤害表的写法（上游的内联样式改为同值的类）；渐变的色标按上游的原顺序输出（上游把红色色标写在前一色标之前，浏览器因此从本面板的位置起画 2.5 个百分点的红带，这里保持一致）；上游在星铁中同样写“圣遗物排名”“圣遗物评分”，这里按星铁的称呼写“遗器排名”“遗器评分”。
 
-`templates/rank-stats/` 按 ark-plugin 的 graph/stats 改写（MIT，见 `LICENSES/ark-plugin-MIT.txt`），页面框架沿用 miao-plugin 的 common/layout/default 与 common/common.css，同 ark 的 1.4 倍缩放。上游在浏览器中用 ECharts 绘制折线，这里按 ECharts 的刻度与平滑算法输出相同的 SVG，不随插件分发该库；背景图取自“ark 插件图片”素材来源的 `resources/graph/`。
+`templates/rank-stats/` 是排名统计命令的图片：ark-plugin 的 graph/stats 只能画 `rank/specific` 早先回答的单条分布，ark 现在回答遗器与伤害两条分布，因此改用上述面板页排名统计块的布局、样式与两张图（MIT，见 `LICENSES/ark-plugin-MIT.txt`），页面框架同面板页取自 miao-plugin 的 common/common.css 与 character/profile-detail.css，不标本面板的位置与名次；标题旁的“排名趋势 · 伤害计算名”与每张图下的“统计样本 N 个UID”沿用 graph/stats 的写法。
 
 `templates/atlas-index/` 按 Atlas 的 resource/massage/text.html 与 text.css 改写（GPL-3.0，见 `LICENSES/Atlas-GPL-3.0.txt`），同上游的 1.5 倍缩放，数字字体取自 Yunzai 的 tttgbnumber；上游的 Source Han Sans CN Bold 字体超过宿主单个渲染资源 16 MiB 的上限，不随附，其余文字使用渲染器的字体。
 

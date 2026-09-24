@@ -1,6 +1,37 @@
 package app
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
+
+// rankSpecificAnswer is ark's answer to rank/specific with percent 0: the
+// relic distribution, then the damage one.
+const rankSpecificAnswer = `[{"retcode":100,"data":{"scores":["295.20","275.90","264.90","250.80","240.20","218.90","187.70","109.90","70.40","25.20"],"total":10994,"name":"终结技伤害","top1":"338.20"}},
+	{"retcode":100,"data":{"scores":["95589.83","77644.48","70002.64","62100.72","56369.78","47075.55","30730.31","9460.62","4672.43","996.34"],"total":11471,"name":"终结技伤害","top1":"116762.08"}}]`
+
+// 排名统计 reads ark's two distributions as the panel page reads them, with
+// no panel placed on them.
+func TestReadRankStatsFollowsPanelPage(t *testing.T) {
+	entry := Entry{ID: "1102", Name: "希儿", Element: "量子"}
+	image, err := readRankStats(entry, cloudList(t, rankSpecificAnswer))
+	if err != nil || image.DamageTitle != "终结技伤害" || image.Totals != [2]string{"11471", "10994"} {
+		t.Fatalf("image = %+v %v", image, err)
+	}
+	if damage := image.Damage; damage.Top != 100 || math.Abs(damage.Scores[0]-81.87) > 0.01 || damage.Percent != -100 {
+		t.Fatalf("damage = %+v", damage)
+	}
+	if artis := image.Artis; artis.Top != 338.2 || artis.Scores[9] != 25.2 || artis.Percent != -100 {
+		t.Fatalf("artis = %+v", artis)
+	}
+	// ark answers a character it does not rank with a failed object, and
+	// nothing else can be drawn.
+	for raw, code := range map[string]string{`{"retcode":102}`: "plugin.game_cloud_rejected", `{"retcode":100,"data":{"scores":[1,2,3,4,5,6,7,8,9,10]}}`: "plugin.game_cloud_invalid", `[{"retcode":102},{"retcode":102}]`: "plugin.game_cloud_invalid"} {
+		if _, err := readRankStats(entry, cloudList(t, raw)); PublicError(err).Code != code {
+			t.Errorf("%s: %v", raw, err)
+		}
+	}
+}
 
 func TestArkUsageTextFollowsArk(t *testing.T) {
 	// Anonymous quota: no permission or multiplier, no advanced quota.

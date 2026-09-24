@@ -1,11 +1,11 @@
 {
   "id": "rank-stats",
   "name": "星铁排名统计",
-  "description": "排名统计命令的图片，布局参照 ark-plugin graph/stats",
+  "description": "排名统计命令的图片，样式同面板页的 ark 排名统计块",
   "version": "1",
   "entry_html": "template.html",
   "stylesheet": "styles.css",
   "input_schema": "input.schema.json",
-  "width": 1680,
+  "width": 960,
   "height": 1400
 }

@@ -138,3 +138,31 @@ func TestPanelComparesChangedDamageAsArk(t *testing.T) {
 		t.Fatalf("damage = %v", damage)
 	}
 }
+
+// 排名统计 draws the character's distributions as the panel page's block
+// does, with no panel placed on them.
+func TestRankStatsDrawsPanelRankCharts(t *testing.T) {
+	scores := []float64{99, 90, 80, 70, 60, 50, 40, 30, 20, 10}
+	none := func(top float64) *app.RankCurve {
+		return &app.RankCurve{Scores: scores, Top: top, Percent: -100, Score: -100}
+	}
+	image := app.RankStatsImage{Character: app.Entry{ID: "1102", Name: "希儿", Element: "量子"}, Damage: none(100), Artis: none(338.2), DamageTitle: "终结技伤害", Totals: [2]string{"11471", "10994"}}
+	drawn, ok := images.RankStats(app.ImageContext{}, image)
+	if !ok || drawn.Template != "rank-stats" || drawn.Data["elem"] != "quantum" || drawn.Data["title"] != "终结技伤害" {
+		t.Fatalf("drawn = %v", drawn)
+	}
+	for _, raw := range drawn.Data["charts"].([]any) {
+		chart := raw.(map[string]any)
+		if _, marked := chart["mark"]; marked || len(chart["stops"].([]any)) != 2 || chart["line"] == "" {
+			t.Fatalf("chart = %v", chart)
+		}
+	}
+	// The relic axis tops at the best score, cut to a whole number.
+	artis := drawn.Data["charts"].([]any)[1].(map[string]any)["y_ticks"].([]any)
+	if last := artis[len(artis)-1].(map[string]any); last["label"] != "338" {
+		t.Fatalf("ticks = %v", artis)
+	}
+	if _, ok := images.RankStats(app.ImageContext{}, app.RankStatsImage{}); ok {
+		t.Fatal("drew no distributions")
+	}
+}
