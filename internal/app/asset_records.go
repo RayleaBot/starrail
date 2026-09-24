@@ -78,7 +78,7 @@ func (a *App) payLogCommand(ctx context.Context, event *rayleabot.EventContext, 
 			page = n
 		}
 	}
-	client, choice, role, missing := a.ownRole(ctx, event, "authkey获取失败，请使用"+a.Game.Prefix+"扫码登录重新绑定stoken后再进行查看~")
+	client, choice, role, missing := a.ownRole(ctx, event, "authkey获取失败，请使用扫码登录重新绑定stoken后再进行查看~")
 	if missing != "" {
 		return event.SendText(missing)
 	}
@@ -120,7 +120,7 @@ type onlineRecord struct {
 }
 
 func (a *App) onlineCommand(ctx context.Context, event *rayleabot.EventContext) error {
-	client, choice, role, missing := a.ownRole(ctx, event, "请先使用"+a.Game.Prefix+"cookie帮助绑定cookie和星铁绑定uid后再进行查看噢")
+	client, choice, role, missing := a.ownRole(ctx, event, "请先使用cookie帮助绑定cookie和星铁绑定uid后再进行查看噢")
 	if missing != "" {
 		return event.SendText(missing)
 	}
