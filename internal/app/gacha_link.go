@@ -430,11 +430,13 @@ func gachaLinkSummary(prefix string, before, after map[string]int) string {
 	return strings.Join(lines, "\n")
 }
 
-// gachaLinkCommand is StarRail-plugin's 抽卡链接: the link is taken in private
-// chat, and pasting it anywhere is also read.
+// gachaLinkCommand is StarRail-plugin's 抽卡链接 with its default
+// gatchaUrlGroup, which takes links in groups too: it asks for the link,
+// mentioning the sender in a group, and the link is read wherever it is
+// pasted.
 func (a *App) gachaLinkCommand(event *rayleabot.EventContext) error {
 	if event.Event.Target.Type == "group" {
-		return event.SendText("请私聊绑定")
+		return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.At(event.Event.Actor.ID), rayleabot.Text("\n请发送抽卡链接"))
 	}
 	return event.SendText("请发送抽卡链接")
 }

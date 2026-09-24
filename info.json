@@ -254,7 +254,7 @@
     {
       "id": "gacha-link",
       "name": "抽卡链接",
-      "description": "说明抽卡链接改在管理页导入",
+      "description": "按 StarRail-plugin 提示发送抽卡链接，群聊中也可发送",
       "usage": "#抽卡链接",
       "permission": "everyone",
       "trigger": {
