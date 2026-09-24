@@ -4,7 +4,6 @@ import (
 	"context"
 	"math"
 	"strconv"
-	"strings"
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -49,8 +48,9 @@ type OnlineBlock struct {
 type OnlineImageBuilder func(ImageContext, OnlineImage) (Image, bool)
 
 // ownRole is the account role of the UID in use, which the self-service
-// records need; missing is upstream's reply when there is none.
-func (a *App) ownRole(ctx context.Context, event *rayleabot.EventContext) (AccountsClient, Selection, Role, string) {
+// records need; missing is upstream's reply when there is none, noKey when
+// the UID has no account to read the records with.
+func (a *App) ownRole(ctx context.Context, event *rayleabot.EventContext, noKey string) (AccountsClient, Selection, Role, string) {
 	client := a.accountClient(event)
 	listed, err := client.List(ctx, 0)
 	if err != nil {
@@ -62,7 +62,7 @@ func (a *App) ownRole(ctx context.Context, event *rayleabot.EventContext) (Accou
 		if uid == "" && len(listed.Items) == 0 {
 			return client, Selection{}, Role{}, "尚未绑定uid,请发送" + a.Game.Prefix + "绑定uid进行绑定"
 		}
-		return client, Selection{}, Role{}, "authkey获取失败，请私聊发送“扫码登录”重新绑定stoken后再进行查看~"
+		return client, Selection{}, Role{}, noKey
 	}
 	return client, choice, role, ""
 }
@@ -78,7 +78,7 @@ func (a *App) payLogCommand(ctx context.Context, event *rayleabot.EventContext, 
 			page = n
 		}
 	}
-	client, choice, role, missing := a.ownRole(ctx, event)
+	client, choice, role, missing := a.ownRole(ctx, event, "authkey获取失败，请使用"+a.Game.Prefix+"扫码登录重新绑定stoken后再进行查看~")
 	if missing != "" {
 		return event.SendText(missing)
 	}
@@ -120,11 +120,8 @@ type onlineRecord struct {
 }
 
 func (a *App) onlineCommand(ctx context.Context, event *rayleabot.EventContext) error {
-	client, choice, role, missing := a.ownRole(ctx, event)
+	client, choice, role, missing := a.ownRole(ctx, event, "请先使用"+a.Game.Prefix+"cookie帮助绑定cookie和星铁绑定uid后再进行查看噢")
 	if missing != "" {
-		if strings.HasPrefix(missing, "authkey") {
-			missing = "请先私聊发送“扫码登录”绑定米游社账号，再进行查看噢"
-		}
 		return event.SendText(missing)
 	}
 	notice(ctx, event, "正在统计中，时间可能比较久请多等一会~")
