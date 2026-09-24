@@ -276,13 +276,10 @@ func (a *App) customRankCommand(ctx context.Context, event *rayleabot.EventConte
 	}
 	id, _ := strconv.Atoi(character.ID)
 	decoded, err := a.arkRequest(ctx, event, "rank/custom", map[string]any{"charId": id, "data": query, "game": arkGame})
-	if err != nil {
-		// Upstream meant this reply for a failed request, though its request
-		// never throws and the failure reads as an unknown error.
-		return event.SendText("排名服务暂不可用")
-	}
+	// Upstream's request never throws: a failed one answers false, which
+	// reads as an unknown error rather than its 排名服务暂不可用.
 	result := asObject(decoded)
-	if code := asText(result["retcode"]); code != "0" {
+	if code := asText(result["retcode"]); err != nil || code != "0" {
 		message := cmpOr(cloudText(result["message"]), "未知错误")
 		if code != "401" && code != "403" && code != "429" && strings.Contains(message, "does not exist") {
 			message = "该角色暂无数据"

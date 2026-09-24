@@ -67,6 +67,9 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"ark获取面板", "cloud-custom-rank-panel", nil},
 			{"arktoken用量", "cloud-usage", nil},
 			{"ARKTOKEN用量", "cloud-usage", nil},
+			// ark's getRank takes whatever follows 角色排名, spaced or not.
+			{"角色排名希儿100000001", "cloud-character-rank", []string{"希儿100000001"}},
+			{"角色排名", "cloud-character-rank", nil},
 			{"ark绑定星铁uid", "cloud-verify-code", nil},
 			{"ark验证星铁uid", "cloud-verify", nil},
 			{"希儿遗器排名", "rank", nil},

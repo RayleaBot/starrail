@@ -494,8 +494,10 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.pictureCommand(ctx, event, command, args)
 	case "cloud-reforge":
 		return a.reforgeCommand(ctx, event)
-	case "cloud-character-rank", "cloud-total-rank":
-		return a.cloudChatCommand(ctx, event, command, args)
+	case "cloud-character-rank":
+		return a.characterRankCommand(ctx, event, args)
+	case "cloud-total-rank":
+		return a.totalRankCommand(ctx, event, args)
 	case "cloud-rank-stats":
 		return a.rankStatsCommand(ctx, event, args)
 	case "cloud-custom-rank":

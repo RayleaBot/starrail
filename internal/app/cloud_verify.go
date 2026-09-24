@@ -38,21 +38,32 @@ func (a *App) arkVerifyCommand(ctx context.Context, event *rayleabot.EventContex
 }
 
 // arkVerifyReply is what ark-plugin replies to a verify route's answer: the
-// verification code and how to use it, or 验证成功, else the ERROR_MAP text
-// of ark's retcode. A request that fails has no retcode and reads 未知错误.
+// verification code and how to use it, or 验证成功, else dealError's reply.
 // The code's instructions keep upstream's Star Rail steps.
 func arkVerifyReply(prefix, route string, decoded any, err error) string {
-	result := asObject(decoded)
-	code := asText(result["retcode"])
 	switch {
-	case err != nil:
-		return "未知错误"
-	case code != "100":
-		return cmpOr(arkErrors(prefix)[code], "未知错误")
+	case !arkSucceeded(decoded, err):
+		return arkDealError(prefix, decoded, err)
 	case route == "verify":
 		return "验证成功"
 	}
-	return "验证码: " + asText(asObject(result["data"])["verifyCode"]) + "\n使用方式：\n星铁：手机——右上角三点——漫游签证——设置签名——填入验证码，5-10分钟后输入 " + prefix + "ark验证星铁uid\n验证码有效期24小时，验证通过后自动与QQ绑定，在其他Bot上无需再次绑定"
+	return "验证码: " + asText(asObject(asObject(decoded)["data"])["verifyCode"]) + "\n使用方式：\n星铁：手机——右上角三点——漫游签证——设置签名——填入验证码，5-10分钟后输入 " + prefix + "ark验证星铁uid\n验证码有效期24小时，验证通过后自动与QQ绑定，在其他Bot上无需再次绑定"
+}
+
+// arkSucceeded is whether ark answered a request with retcode 100, which
+// ark-plugin's user commands (apps/user.js) take as success.
+func arkSucceeded(decoded any, err error) bool {
+	return err == nil && asText(asObject(decoded)["retcode"]) == "100"
+}
+
+// arkDealError is ark-plugin's dealError for an answer that is not a
+// success: the ERROR_MAP text of its retcode, else 未知错误. A failed request
+// reads 未知错误 too, as ArkApi.req then answers false, which has no retcode.
+func arkDealError(prefix string, decoded any, err error) string {
+	if err != nil {
+		return "未知错误"
+	}
+	return cmpOr(arkErrors(prefix)[asText(asObject(decoded)["retcode"])], "未知错误")
 }
 
 // arkErrors is ark-plugin's ERROR_MAP by retcode, with 304 naming this

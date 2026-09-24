@@ -1305,12 +1305,12 @@
     {
       "id": "cloud-character-rank",
       "name": "角色排名",
-      "description": "ark 云端该角色的全服伤害排名（先更新）",
-      "usage": "#角色排名希儿 [UID]",
+      "description": "ark 云端该角色在所写 UID 的全服伤害排名（先更新）",
+      "usage": "#角色排名希儿<UID>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^角色排名(?P<text>.+)$"
+        "pattern": "^角色排名(?P<text>.*)$"
       }
     },
     {

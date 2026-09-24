@@ -15,9 +15,10 @@ const rankSpecificAnswer = `[{"retcode":100,"data":{"scores":["295.20","275.90",
 // no panel placed on them.
 func TestReadRankStatsFollowsPanelPage(t *testing.T) {
 	entry := Entry{ID: "1102", Name: "希儿", Element: "量子"}
-	image, view, err := readRankStats(entry, cloudList(t, rankSpecificAnswer))
-	if err != nil || image.DamageTitle != "终结技伤害" || image.Totals != [2]string{"11471", "10994"} {
-		t.Fatalf("image = %+v %v", image, err)
+	answer := cloudList(t, rankSpecificAnswer).([]any)
+	image, view, ok := readRankStats(entry, answer)
+	if !ok || image.DamageTitle != "终结技伤害" || image.Totals != [2]string{"11471", "10994"} {
+		t.Fatalf("image = %+v", image)
 	}
 	// Without an image the reply lists both distributions.
 	for _, line := range []string{"希儿排名统计", "排名趋势 · 终结技伤害", "伤害排名\n统计样本：11471 个UID\nTOP 1%：95589.83", "遗器排名\n统计样本：10994 个UID\nTOP 1%：295.2", "TOP 99%：25.2"} {
@@ -32,16 +33,49 @@ func TestReadRankStatsFollowsPanelPage(t *testing.T) {
 		t.Fatalf("artis = %+v", artis)
 	}
 	// A distribution ark did not send reads 暂无数据.
-	answer := cloudList(t, rankSpecificAnswer).([]any)
-	if _, view, err := readRankStats(entry, []any{cloudObject(t, `{"retcode":102}`), answer[1]}); err != nil || !strings.Contains(view.Text(), "遗器排名\n暂无数据") {
-		t.Fatalf("text = %q %v", view.Text(), err)
+	if _, view, ok := readRankStats(entry, []any{cloudObject(t, `{"retcode":102}`), answer[1]}); !ok || !strings.Contains(view.Text(), "遗器排名\n暂无数据") {
+		t.Fatalf("text = %q", view.Text())
 	}
-	// ark answers a character it does not rank with a failed object, and
-	// nothing else can be drawn.
-	for raw, code := range map[string]string{`{"retcode":102}`: "plugin.game_cloud_rejected", `{"retcode":100,"data":{"scores":[1,2,3,4,5,6,7,8,9,10]}}`: "plugin.game_cloud_invalid", `[{"retcode":102},{"retcode":102}]`: "plugin.game_cloud_invalid"} {
-		if _, _, err := readRankStats(entry, cloudList(t, raw)); PublicError(err).Code != code {
-			t.Errorf("%s: %v", raw, err)
+	// Nothing can be drawn when neither distribution reads.
+	if _, _, ok := readRankStats(entry, cloudList(t, `[{"retcode":102},{"retcode":102}]`).([]any)); ok {
+		t.Fatal("drew failed distributions")
+	}
+}
+
+// 角色排名, 总排名 and the other user commands read ark's answer as
+// ark-plugin does: retcode 100 is success, anything else is dealError's
+// ERROR_MAP text or 未知错误, as is a failed request.
+func TestArkUserRepliesFollowArk(t *testing.T) {
+	failed := gameError("cloud_unavailable", "云服务暂不可用或请求已取消。")
+	rank := `{"retcode":100,"rank":12,"score":98.765}`
+	for _, tc := range []struct {
+		answer string
+		err    error
+		want   string
+	}{
+		{rank, nil, "uid:100000001的希儿全服伤害排名为 12，伤害评分: 98.77"},
+		// toFixed rounds an exact half up.
+		{`{"retcode":100,"rank":3,"score":0.125}`, nil, "uid:100000001的希儿全服伤害排名为 3，伤害评分: 0.13"},
+		{`{"retcode":102}`, nil, "未查询到角色信息"},
+		{`{"retcode":201}`, nil, "请求超过速率限制，请5分钟后重试"},
+		{`{"retcode":0}`, nil, "未知错误"},
+		{rank, failed, "未知错误"},
+	} {
+		if got := characterRankReply("*", "100000001", "希儿", cloudObject(t, tc.answer), tc.err); got != tc.want {
+			t.Errorf("%s %v: %q", tc.answer, tc.err, got)
 		}
+	}
+	all := cloudObject(t, `{"retcode":100,"rank":[{"retcode":100,"rank":5,"score":88.1},{"retcode":102},{"retcode":100,"rank":40,"score":70}]}`)
+	want := "uid:100000001的星铁全服排名数据:\n希儿全服伤害排名为5，伤害评分: 88.10\n符玄全服伤害排名为40，伤害评分: 70.00\n"
+	if got := totalRankReply("*", "100000001", []string{"希儿", "银狼", "符玄"}, all, nil); got != want {
+		t.Errorf("total rank:\n%s", got)
+	}
+	if got := totalRankReply("*", "100000001", nil, nil, failed); got != "未知错误" {
+		t.Errorf("failed total rank: %q", got)
+	}
+	// ark's refusal of a UID nobody verified names this plugin's command.
+	if got := arkDealError("*", cloudObject(t, `{"retcode":304}`), nil); got != "该uid未验证号主，请通过 *ark验证星铁uid 验证uid" {
+		t.Errorf("304: %q", got)
 	}
 }
 
