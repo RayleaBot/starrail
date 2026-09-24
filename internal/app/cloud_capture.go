@@ -228,6 +228,13 @@ func resolvePanelBasis(ctx context.Context, g Game, panel CharacterPanel) (panel
 // was taken from, as miao's ProfileChange copies the relics. basis is the
 // panel's own, or nil to resolve it only when the speed needs it.
 func panelArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelBasis) (map[string]map[string]any, error) {
+	return restoreArtis(ctx, g, panel, basis, false)
+}
+
+// restoreArtis is panelArtis; partial leaves out the pieces that cannot be
+// restored instead of failing, and then corrects no speed, which needs every
+// piece.
+func restoreArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelBasis, partial bool) (map[string]map[string]any, error) {
 	// A panel kept before the roll counts were kept has them in the official
 	// entry.
 	official := map[int]map[string]int{}
@@ -244,6 +251,7 @@ func panelArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelB
 	}
 	taken := map[*CharacterPanel]map[string]map[string]any{}
 	artis := map[string]map[string]any{}
+	skipped := false
 	for _, gear := range panel.Equipment {
 		slot := strconv.Itoa(gear.Slot)
 		var copied any
@@ -251,12 +259,15 @@ func panelArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelB
 			kept, ok := taken[from]
 			if !ok {
 				var err error
-				if kept, err = panelArtis(ctx, g, *from, nil); err != nil {
+				if kept, err = restoreArtis(ctx, g, *from, nil, partial); err != nil {
 					return nil, err
 				}
 				taken[from] = kept
 			}
-			copied = kept[slot]["attrIds"]
+			if copied = kept[slot]["attrIds"]; copied == nil {
+				skipped = true
+				continue
+			}
 		}
 		piece, err := cloudGear(g, gear, func(star int, stat PanelStat) ([]any, error) {
 			if copied != nil {
@@ -276,6 +287,10 @@ func panelArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelB
 			}
 			return closestRolls(g, star, stat)
 		})
+		if err != nil && partial {
+			skipped = true
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -284,7 +299,7 @@ func panelArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelB
 		}
 		artis[slot] = piece
 	}
-	if panel.Source == "mihoyo" {
+	if panel.Source == "mihoyo" && !skipped {
 		officialSpeed(ctx, g, panel, basis, artis)
 	}
 	return artis, nil

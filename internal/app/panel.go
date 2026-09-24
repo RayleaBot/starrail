@@ -14,7 +14,9 @@ type PanelStat struct {
 	Value string `json:"value"`
 	Base  string `json:"base,omitempty"`
 	Added string `json:"added,omitempty"`
-	// Times is how often an equipment substat was upgraded.
+	// Times is what the service gives of an equipment substat's rolls: the
+	// record API's count, which counts the first roll, or the upgrades after
+	// it, Mihomo's count less one.
 	Times int `json:"times,omitempty"`
 }
 type PanelEquipment struct {

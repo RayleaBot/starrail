@@ -76,9 +76,7 @@ func (a *App) scorePanel(ctx context.Context, panel CharacterPanel) (CharacterPa
 	if err != nil {
 		return panel, gameError("score_unavailable", "缺少角色基准资料，暂不计算评分。")
 	}
-	var input map[string]any
-	input, err = miaoScoreInput(panel)
-
+	input, err := miaoScoreInput(panel, miaoRelics(ctx, a.Game, panel))
 	if err != nil {
 		return panel, err
 	}
@@ -130,9 +128,55 @@ func (a *App) scorePanel(ctx context.Context, panel CharacterPanel) (CharacterPa
 // miaoAttributeKeys maps official panel property IDs to miao attribute keys.
 var miaoAttributeKeys = map[string]string{"1": "hp", "2": "atk", "3": "def", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "58": "stance"}
 
+// miaoRelics are a panel's relics as miao scores them, by slot: miao reads a
+// relic of its player data (ArtisAttr) as the main stat at the relic's level
+// and each substat's value and roll count from its attrIds, which panelArtis
+// restores as miao reads the panel's service. A piece that cannot be restored
+// is left out.
+func miaoRelics(ctx context.Context, g Game, panel CharacterPanel) map[int]BuildGear {
+	relics := map[int]BuildGear{}
+	if g.Data == nil || g.Data.CloudGear == nil || g.Calc == nil {
+		return relics
+	}
+	artis, _ := restoreArtis(ctx, g, panel, nil, true)
+	for slot, piece := range artis {
+		table := g.Data.CloudGear.Meta.StarData[asText(piece["star"])]
+		key := g.Data.CloudGear.Meta.MainIdx[slot][asText(piece["mainId"])]
+		main, ok := table.Main[key]
+		relic := BuildGear{Main: BuildStat{Key: key, Value: main.Base + main.Step*float64(number(piece["level"]))}, Sub: []BuildStat{}}
+		for _, id := range asList(piece["attrIds"]) {
+			parts := strings.Split(asText(id), ",")
+			attr, found := table.Sub[parts[0]]
+			if ok = ok && found && len(parts) == 3; !ok {
+				break
+			}
+			count, step := number(parts[1]), number(parts[2])
+			relic.Sub = append(relic.Sub, BuildStat{Key: attr.Key, Value: attr.Base*float64(count) + attr.Step*float64(step), Times: count})
+		}
+		if ok {
+			relics[number(slot)] = relic
+		}
+	}
+	return relics
+}
+
+// rolls is the roll count miao gives a substat a panel shows when its relic
+// cannot be restored: the record API's count, Mihomo's (one more than the
+// upgrades it keeps), else a single roll.
+func rolls(source string, stat PanelStat) int {
+	switch {
+	case source == "mihoyo" && stat.Times > 0:
+		return stat.Times
+	case source == "mihomo":
+		return stat.Times + 1
+	}
+	return 1
+}
+
 // miaoScoreInput passes the attributes, eidolon or constellation, weapon and
-// complete equipment pieces that miao scoring rules read.
-func miaoScoreInput(panel CharacterPanel) (map[string]any, error) {
+// complete equipment pieces that miao scoring rules read, each piece's stats
+// as relics gives them, else as the panel shows them.
+func miaoScoreInput(panel CharacterPanel, relics map[int]BuildGear) (map[string]any, error) {
 	if !panel.RankKnown || panel.Rank < 0 || panel.Rank > 6 {
 		return nil, gameError("score_unavailable", "面板缺少星魂信息，暂不计算评分。")
 	}
@@ -175,8 +219,11 @@ func miaoScoreInput(panel CharacterPanel) (map[string]any, error) {
 			if i == 0 {
 				converted.Main = BuildStat{Key: stat.Key, Value: value}
 			} else {
-				converted.Sub = append(converted.Sub, BuildStat{Key: stat.Key, Value: value, Times: stat.Times})
+				converted.Sub = append(converted.Sub, BuildStat{Key: stat.Key, Value: value, Times: rolls(panel.Source, stat)})
 			}
+		}
+		if relic, ok := relics[piece.Slot]; ok {
+			converted.Main, converted.Sub = relic.Main, relic.Sub
 		}
 		if valid {
 			seen[piece.Slot] = true

@@ -373,14 +373,14 @@ function runScore(record, weapons, input) {
     weapon: { name: weapon?.name || input.weapon.name || '', affix: input.weapon.refinement, bonusKey: weapon?.detail?.attr?.bonusKey },
   };
   const cfg = ArtisMarkCfg.getCfg(profile);
-  // Substat detail as upstream's getMarkDetail shows it: rolls are the
-  // official upgrade count plus the initial roll, efficiency is the value in
-  // maximum single rolls.
+  // Substat detail as upstream's getMarkDetail shows it: rolls are the count
+  // miao keeps in the substat's attrIds, one when none is given, efficiency is
+  // the value in maximum single rolls.
   const attrMap = Meta.getMeta(currentGame, 'arti').attrMap;
   const rolled = s => {
     const key = miaoKey(s.key);
     const max = attrMap[key]?.value;
-    return { key, value: s.value, upNum: (s.times || 0) + 1, eff: max ? s.value / max : 0 };
+    return { key, value: s.value, upNum: s.times || 1, eff: max ? s.value / max : 0 };
   };
   const pieces = [];
   const all = {};

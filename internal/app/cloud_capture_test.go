@@ -114,9 +114,19 @@ func TestShowcaseRollsRestoreCutValues(t *testing.T) {
 // substats are the attrIds of sharedRelics.
 func sharedSeele(t *testing.T, a *App) CharacterPanel {
 	t.Helper()
+	return sharedSeeleWith(t, a, sharedRelics)
+}
+
+// sharedSeeleWith is sharedSeele with the attrIds of relics.
+func sharedSeeleWith(t *testing.T, a *App, relics map[string][]string) CharacterPanel {
+	t.Helper()
+	ids := func(slot string) string {
+		raw, _ := json.Marshal(relics[slot])
+		return string(raw)
+	}
 	player := cloudObject(t, `{"uid":"100000001","avatars":{"1102":{"id":1102,"elem":"quantum","level":80,"promote":6,"cons":0,"talent":{"a":6,"e":10,"t":10,"q":10},"trees":["1102101"],
-		"weapon":{"id":23001,"level":80,"promote":6,"affix":1},"artis":{"1":{"level":15,"star":5,"id":61011,"mainId":1,"attrIds":["5,2,2","7,1,1","9,3,4","8,1,0"]},
-		"2":{"level":15,"star":5,"id":61012,"mainId":1,"attrIds":["1,2,1","7,2,2","10,1,2","12,1,0"]}}}}}`)
+		"weapon":{"id":23001,"level":80,"promote":6,"affix":1},"artis":{"1":{"level":15,"star":5,"id":61011,"mainId":1,"attrIds":`+ids("1")+`},
+		"2":{"level":15,"star":5,"id":61012,"mainId":1,"attrIds":`+ids("2")+`}}}}}`)
 	panels := a.arkPlayerPanels(t.Context(), "100000001", player)
 	if len(panels) != 1 {
 		t.Fatalf("panels = %+v", panels)
@@ -217,6 +227,49 @@ func TestOfficialPanelWritesAsMysPanelHSR(t *testing.T) {
 	if got := writtenRelics(t, a, changed); !reflect.DeepEqual(got, want) {
 		t.Fatalf("changed panel = %v, want %v", got, want)
 	}
+}
+
+// miao scores the relics of its player data: an official panel as
+// MysPanelHSR keeps it, with the record API's roll counts (which count the
+// first roll) and the values its attrIds give, and a Mihomo panel as HomoApi
+// keeps it. Each scores as the same relics handed over by ark do.
+func TestPanelsScoreAsMiaoKeepsThem(t *testing.T) {
+	a := pluginApp(t)
+	scored := func(panel CharacterPanel) *ScoreDetail {
+		t.Helper()
+		result, err := a.scorePanel(t.Context(), panel)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return result.ScoreDetail
+	}
+	same := func(name string, got, want *ScoreDetail) {
+		t.Helper()
+		if got.Mark != want.Mark || !reflect.DeepEqual(got.Pieces, want.Pieces) || !reflect.DeepEqual(got.AllAttrs, want.AllAttrs) {
+			t.Errorf("%s = %s %+v, want %s %+v", name, got.Mark, got.Pieces, want.Mark, want.Pieces)
+		}
+	}
+	saved, err := a.Profiles.Keep("100000001", []CharacterPanel{officialSeele(t, a)}, "米游社", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	official := saved.Panels["1102"].panel()
+	// The relics miao keeps for it, speed corrected.
+	kept := sharedSeeleWith(t, a, map[string][]string{"1": {"5,2,2", "7,1,2", "9,3,4", "8,1,0"}, "2": {"1,2,1", "7,2,2", "10,1,2", "12,1,0"}})
+	kept.Stats = official.Stats
+	got, want := scored(official), scored(kept)
+	same("official panel", got, want)
+	// 暴击伤害 of the first relic shows 18.1% after three rolls; miao keeps
+	// 9,3,4, 18.144%.
+	for _, attr := range got.Pieces[1].Attrs {
+		if attr.Key == "cdmg" && (attr.UpNum != 3 || attr.Value != "18.1%") {
+			t.Errorf("暴击伤害 = %+v", attr)
+		}
+	}
+	shared := sharedSeele(t, a)
+	homo := shownPanel(shared, "mihomo", map[string][2]any{"atk": {"7.7%", 1}, "speed": {"2.3", 0}, "2speed": {"4.6", 1}, "cdmg": {"18.1%", 2}, "cpct": {"2.5%", 0},
+		"hpPlus": {"71", 1}, "effPct": {"4.3%", 0}, "stance": {"5.1%", 0}})
+	same("Mihomo panel", scored(homo), scored(shared))
 }
 
 // 导出面板 writes every kept panel back as miao keeps it: a panel ark handed
