@@ -3,7 +3,9 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -11,55 +13,68 @@ import (
 	"github.com/RayleaBot/plugin-starrail/internal/reference"
 )
 
-// The published record API exposes rounded values and enhancement counts, not
-// the original roll order. Restore the closest values in the pinned tables.
-func cloudRolls(g Game, star int, stat PanelStat, times any) ([]any, error) {
-	d := *g.Data.CloudGear
-	key := stat.Key
-	key = mapCloudStat(key)
+// subAttr is the substat of a relic rarity's table with a key, as miao's
+// lodash.findKey finds it: the first by ID.
+func subAttr(g Game, star int, key string) (string, cloudAttribute, bool) {
+	table := g.Data.CloudGear.Meta.StarData[strconv.Itoa(star)].Sub
+	ids := []int{}
+	for id, attr := range table {
+		if n, err := strconv.Atoi(id); err == nil && attr.Key == mapCloudStat(key) {
+			ids = append(ids, n)
+		}
+	}
+	if len(ids) == 0 {
+		return "", cloudAttribute{}, false
+	}
+	id := strconv.Itoa(slices.Min(ids))
+	return id, table[id], true
+}
 
+// officialRolls is MysPanelHSRData's getArtifactAttrId: the roll count is the
+// times the record API gives, and the steps are what the value shown adds to
+// that many base rolls, in steps, rounded as JavaScript's Math.round. The API
+// shows values cut rather than rounded (3.456% as 3.4%), so the steps are not
+// checked against the table, as upstream does not.
+func officialRolls(g Game, star int, stat PanelStat, times int) ([]any, error) {
+	id, attr, ok := subAttr(g, star, stat.Key)
+	value, valid := buildStatNumber(stat.Value)
+	if !ok || !valid {
+		return nil, gameError("cloud_invalid", "官方装备词条不在固定词条表中，未导出此角色。")
+	}
+	steps := math.Floor((value-float64(times)*attr.Base)/attr.Step + 0.5)
+	return []any{id + "," + strconv.Itoa(times) + "," + strconv.Itoa(int(steps))}, nil
+}
+
+// closestRolls restores a substat whose value is miao's own, as the panels
+// ark hands over and those its OCR reads keep them, or a kept official panel
+// without roll counts: the rolls of the pinned table that give the value, or
+// come closest to it.
+func closestRolls(g Game, star int, stat PanelStat) ([]any, error) {
 	value, ok := buildStatNumber(stat.Value)
 	if !ok {
-		return nil, gameError("cloud_invalid", "官方装备词条数值不可还原。")
+		return nil, gameError("cloud_invalid", "装备词条数值不可还原。")
 	}
 	tolerance := 0.051
 	if !strings.HasSuffix(strings.TrimSpace(stat.Value), "%") {
 		tolerance = 0.51
 	}
-	if key == "speed" && !strings.Contains(stat.Value, ".") {
-		tolerance = 0.999
-	}
-	count, hasCount := cloudInteger(times, 0, 6)
-	counts := []int{1, 2, 3, 4, 5, 6}
-	if hasCount {
-		if count >= 1 && count <= 6 {
-			counts = []int{count}
-		}
-	}
 	best := math.Inf(1)
 	var found []any
-	table := d.Meta.StarData[strconv.Itoa(star)]
-	for id, attr := range table.Sub {
-		if attr.Key != key {
+	for id, attr := range g.Data.CloudGear.Meta.StarData[strconv.Itoa(star)].Sub {
+		if attr.Key != mapCloudStat(stat.Key) {
 			continue
 		}
-		for _, n := range counts {
-			for step := 0; step <= n*2; step++ {
-				v := attr.Base*float64(n) + attr.Step*float64(step)
-				diff := math.Abs(v - value)
-				if key == "speed" && !strings.Contains(stat.Value, ".") && v < value {
-					continue
-				}
-				if diff < best {
+		for count := 1; count <= 6; count++ {
+			for step := 0; step <= count*2; step++ {
+				if diff := math.Abs(attr.Base*float64(count) + attr.Step*float64(step) - value); diff < best {
 					best = diff
-					found = []any{id + "," + strconv.Itoa(n) + "," + strconv.Itoa(step)}
+					found = []any{id + "," + strconv.Itoa(count) + "," + strconv.Itoa(step)}
 				}
 			}
 		}
 	}
-
 	if len(found) == 0 || best > tolerance {
-		return nil, gameError("cloud_invalid", "官方显示值与固定词条表无法合理对应，未导出此角色。")
+		return nil, gameError("cloud_invalid", "装备词条数值与固定词条表无法对应，未导出此角色。")
 	}
 	return found, nil
 }
@@ -74,7 +89,9 @@ func mapCloudStat(key string) string {
 // and the value cut as the game shows it, to one decimal for percentages and
 // speed and to a whole number otherwise. miao's HomoApi keeps the count and
 // step of Mihomo's raw answer; the step is the one whose value is cut to the
-// kept one (allowing for the tables' float noise).
+// kept one (allowing for the tables' float noise). Only a two-star relic's
+// flat attack and defence, whose steps are smaller than one, can cut two
+// steps to the same number; the smaller is taken.
 func showcaseRolls(g Game, star int, stat PanelStat) ([]any, error) {
 	value, ok := buildStatNumber(stat.Value)
 	count := stat.Times + 1
@@ -179,76 +196,221 @@ func originalCloudTalents(record reference.Character, profile BuildProfile) map[
 	return out
 }
 
+// panelBasis is what miao's player data keeps of a character besides its
+// relics: the calculation record, the panel's build, and the promotions of the
+// character and its light cone.
+type panelBasis struct {
+	record         reference.Character
+	profile        BuildProfile
+	promote, light int
+}
+
+func resolvePanelBasis(ctx context.Context, g Game, panel CharacterPanel) (panelBasis, error) {
+	record, err := findBuildCharacter(g.Calc, panel)
+	if err != nil {
+		return panelBasis{}, err
+	}
+	profile, err := buildProfile(panel, record)
+	if err != nil {
+		return panelBasis{}, err
+	}
+	promote, light, err := resolveCloudPromotions(ctx, g.Calc, record, profile)
+	return panelBasis{record, profile, promote, light}, err
+}
+
+// officialProperty is what the record API gives of a relic substat besides
+// its value: the roll count, and whether it is only a preview.
+type officialProperty struct {
+	times   int
+	preview bool
+}
+
+// panelArtis writes a panel's relics as miao keeps them in its player data,
+// by slot, the substats as miao's attrIds (id,count,step) restored as miao
+// reads the service the panel came from. An official panel keeps the value
+// shown and the official roll count, as MysPanelHSR reads them, leaving out
+// the substats the record API only previews, and its speed is corrected; a
+// Mihomo panel keeps the value cut as the game shows it and Mihomo's roll
+// count; a panel from ark and a piece read by its OCR keep miao's values. A
+// changed panel's piece keeps the substats of the panel it was taken from, as
+// miao's ProfileChange copies the relics. basis is the panel's own, or nil to
+// resolve it only when the speed needs it.
+func panelArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelBasis) (map[string]map[string]any, error) {
+	official := map[int]map[string]officialProperty{}
+	for _, field := range []string{"relics", "ornaments"} {
+		for _, raw := range asList(panel.Official[field]) {
+			gear := asObject(raw)
+			properties := map[string]officialProperty{}
+			for _, item := range asList(gear["properties"]) {
+				property := asObject(item)
+				properties[asText(property["property_type"])] = officialProperty{number(property["times"]), property["is_preview"] == true}
+			}
+			official[number(gear["pos"])] = properties
+		}
+	}
+	taken := map[*CharacterPanel]map[string]map[string]any{}
+	artis := map[string]map[string]any{}
+	for _, gear := range panel.Equipment {
+		slot := strconv.Itoa(gear.Slot)
+		var copied any
+		if from := gear.From; from != nil {
+			kept, ok := taken[from]
+			if !ok {
+				var err error
+				if kept, err = panelArtis(ctx, g, *from, nil); err != nil {
+					return nil, err
+				}
+				taken[from] = kept
+			}
+			copied = kept[slot]["attrIds"]
+		}
+		piece, err := cloudGear(g, gear, func(star int, stat PanelStat) ([]any, error) {
+			if copied != nil {
+				return nil, nil
+			}
+			switch panel.Source {
+			case "mihoyo":
+				// A panel kept before the counts were kept has them in the
+				// official entry.
+				shown, ok := official[gear.Slot][stat.ID]
+				if !ok {
+					shown.times = stat.Times
+				}
+				if shown.preview {
+					return nil, nil
+				}
+				if shown.times > 0 {
+					return officialRolls(g, star, stat, shown.times)
+				}
+			case "mihomo":
+				return showcaseRolls(g, star, stat)
+			}
+			return closestRolls(g, star, stat)
+		})
+		if err != nil {
+			return nil, err
+		}
+		if copied != nil {
+			piece["attrIds"] = copied
+		}
+		artis[slot] = piece
+	}
+	if panel.Source == "mihoyo" {
+		officialSpeed(ctx, g, panel, basis, artis)
+	}
+	return artis, nil
+}
+
+// officialSpeed is MysPanelHSRData's 速度修正. The record API shows speed
+// substats cut to whole numbers, so miao calculates the character's speed from
+// the relics as restored and, when the official total is more than 0.2 above
+// it, adds a step to one speed substat after another, in slot order, counting
+// 0.3 for a five-star relic and 0.2 for another, until no more than 0.05 is
+// missing or twenty rounds have passed.
+func officialSpeed(ctx context.Context, g Game, panel CharacterPanel, basis *panelBasis, artis map[string]map[string]any) {
+	target, shown := 0.0, false
+	for _, stat := range panel.Stats {
+		if stat.ID == "4" {
+			target, shown = buildStatNumber(stat.Value)
+		}
+	}
+	slots := slices.SortedFunc(maps.Keys(artis), func(x, y string) int { return number(x) - number(y) })
+	speeds := false
+	for _, slot := range slots {
+		for _, id := range asList(artis[slot]["attrIds"]) {
+			speeds = speeds || strings.HasPrefix(asText(id), "7,")
+		}
+	}
+	if !shown || !speeds {
+		return
+	}
+	if basis == nil {
+		resolved, err := resolvePanelBasis(ctx, g, panel)
+		if err != nil {
+			return
+		}
+		basis = &resolved
+	}
+	speed, ok := artisSpeed(ctx, g, panel, *basis, artis)
+	missing := target - speed
+	if !ok || speed == 0 || missing <= 0.2 {
+		return
+	}
+	for round := 0; missing > 0.05 && round < 20; round++ {
+		raised := false
+		for _, slot := range slots {
+			ids := asList(artis[slot]["attrIds"])
+			for index, id := range ids {
+				parts := strings.Split(asText(id), ",")
+				if missing <= 0.05 || len(parts) != 3 || parts[0] != "7" {
+					continue
+				}
+				ids[index] = parts[0] + "," + parts[1] + "," + strconv.Itoa(number(parts[2])+1)
+				missing -= map[bool]float64{true: 0.3, false: 0.2}[number(artis[slot]["star"]) >= 5]
+				raised = true
+			}
+		}
+		if !raised {
+			break
+		}
+	}
+}
+
+// artisSpeed is the speed miao's Attr gives the character wearing the relics
+// as restored.
+func artisSpeed(ctx context.Context, g Game, panel CharacterPanel, basis panelBasis, artis map[string]map[string]any) (float64, bool) {
+	pieces := []PanelEquipment{}
+	for slot, piece := range artis {
+		_, decoded := decodeCloudGear(g, number(slot), piece)
+		if decoded == nil {
+			return 0, false
+		}
+		pieces = append(pieces, *decoded)
+	}
+	gear, err := buildGearSet(CharacterPanel{EquipmentKnown: true, Equipment: pieces})
+	if err != nil {
+		return 0, false
+	}
+	weapon := basis.profile.Weapon
+	weapon.Promote = &basis.light
+	raw, err := g.Calc.Change(ctx, basis.record, map[string]any{"level": panel.Level, "promote": basis.promote, "rank": panel.Rank,
+		"talents": basis.profile.Talents, "trees": basis.profile.Trees, "equipment": gear, "weapon": weapon})
+	var result struct {
+		Attributes map[string]float64 `json:"attributes"`
+	}
+	if err != nil || json.Unmarshal(raw, &result) != nil {
+		return 0, false
+	}
+	return result.Attributes["speed"], true
+}
+
 // cloudAvatar writes a kept panel as miao keeps the character in its player
-// data, whichever service the panel came from. The relic substats become
-// miao's attrIds (id,count,step), restored from what the panel keeps of them:
-// an official panel keeps the value shown and the official roll count, as
-// miao's MysPanelHSR reads them; a Mihomo panel the value cut as the game
-// shows it and Mihomo's roll count; a panel from ark and a changed panel the
-// value alone, the rolls that give it closest. source is the service the
-// character is saved under (_source): share for data exchanged with ark, or
-// miao's name for the service a kept panel came from; the times are when the
-// panel was kept, or now for one that was not.
+// data, whichever service the panel came from, its relics as panelArtis
+// restores them. source is the service the character is saved under
+// (_source): share for data exchanged with ark, or miao's name for the
+// service a kept panel came from; the times are when the panel was kept, or
+// now for one that was not.
 func cloudAvatar(ctx context.Context, g Game, panel CharacterPanel, source string) (string, json.RawMessage, error) {
-	game, engine := g.ID, g.Calc
 	if g.Data == nil || g.Data.CloudGear == nil {
 		return "", nil, gameError("cloud_invalid", "固定装备资料无法读取。")
 	}
-	record, err := findBuildCharacter(engine, panel)
+	basis, err := resolvePanelBasis(ctx, g, panel)
 	if err != nil {
 		return "", nil, err
 	}
-	var _ string = game
-	profile, err := buildProfile(panel, record)
-	if err != nil {
-		return "", nil, err
-	}
-	promote, wp, err := resolveCloudPromotions(ctx, engine, record, profile)
-	if err != nil {
-		return "", nil, err
-	}
-	id := record.ID
+	record, profile := basis.record, basis.profile
 	saved := panel.UpdatedAtMS
 	if saved <= 0 {
 		saved = time.Now().UnixMilli()
 	}
-	avatar := map[string]any{"_time": saved, "_update": saved, "_talent": saved, "id": id, "name": record.Name, "elem": record.Element, "level": panel.Level, "promote": promote, "cons": panel.Rank, "talent": originalCloudTalents(record, profile), "trees": profile.Trees, "artis": map[string]any{}}
-	if panel.Weapon == nil {
-		avatar["weapon"] = nil
-	} else {
-		weapon := map[string]any{"level": profile.Weapon.Level, "promote": wp, "affix": profile.Weapon.Refinement}
-		weapon["id"] = profile.Weapon.ID
-
-		avatar["weapon"] = weapon
+	artis, err := panelArtis(ctx, g, panel, &basis)
+	if err != nil {
+		return "", nil, err
 	}
-	rawGear := map[int]map[string]any{}
-	for _, field := range []string{"relics", "ornaments"} {
-		for _, v := range asList(panel.Official[field]) {
-			gear := asObject(v)
-			rawGear[number(gear["pos"])] = gear
-		}
-	}
-	for _, gear := range panel.Equipment {
-		converted, err := cloudGear(g, gear, func(star int, stat PanelStat) ([]any, error) {
-			switch {
-			case panel.Official != nil:
-				var times any
-				for _, v := range asList(rawGear[gear.Slot]["properties"]) {
-					if r := asObject(v); asText(r["property_type"]) == stat.ID {
-						times = r["times"]
-						break
-					}
-				}
-				return cloudRolls(g, star, stat, times)
-			case panel.Source == "mihomo":
-				return showcaseRolls(g, star, stat)
-			}
-			return cloudRolls(g, star, stat, nil)
-		})
-		if err != nil {
-			return "", nil, err
-		}
-		avatar["artis"].(map[string]any)[strconv.Itoa(gear.Slot)] = converted
+	avatar := map[string]any{"_time": saved, "_update": saved, "_talent": saved, "id": record.ID, "name": record.Name, "elem": record.Element, "level": panel.Level, "promote": basis.promote, "cons": panel.Rank, "talent": originalCloudTalents(record, profile), "trees": profile.Trees, "artis": artis}
+	avatar["weapon"] = nil
+	if panel.Weapon != nil {
+		avatar["weapon"] = map[string]any{"id": profile.Weapon.ID, "level": profile.Weapon.Level, "promote": basis.light, "affix": profile.Weapon.Refinement}
 	}
 	// Normalize through JSON so exported slices use the same representation as imported files.
 	var data map[string]any

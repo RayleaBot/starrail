@@ -243,13 +243,28 @@ func parsePanelChange(catalog Catalog, aliases map[string]string, text string) (
 // changedPanel is miao's getProfile: the character's kept panel with the
 // changes applied, its properties calculated again from the parts.
 func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) (CharacterPanel, error) {
-	kept := func(from changeSource) (CharacterPanel, bool) {
-		saved, err := a.Profiles.Read(cmp.Or(from.UID, uid))
-		if err != nil {
-			return CharacterPanel{}, false
+	// keep reads a kept panel once, which the pieces taken from it share.
+	keptPanels := map[changeSource]*CharacterPanel{}
+	keep := func(from changeSource) *CharacterPanel {
+		key := changeSource{CharacterID: cmp.Or(from.CharacterID, change.CharacterID), UID: cmp.Or(from.UID, uid)}
+		if panel, seen := keptPanels[key]; seen {
+			return panel
 		}
-		item, ok := saved.Panels[cmp.Or(from.CharacterID, change.CharacterID)]
-		return item.panel(), ok
+		var found *CharacterPanel
+		if saved, err := a.Profiles.Read(key.UID); err == nil {
+			if item, ok := saved.Panels[key.CharacterID]; ok {
+				panel := item.panel()
+				found = &panel
+			}
+		}
+		keptPanels[key] = found
+		return found
+	}
+	kept := func(from changeSource) (CharacterPanel, bool) {
+		if panel := keep(from); panel != nil {
+			return *panel, true
+		}
+		return CharacterPanel{}, false
 	}
 	source, hasSource := kept(changeSource{})
 	id := cmp.Or(change.Swap, change.CharacterID)
@@ -350,21 +365,26 @@ func (a *App) changedPanel(ctx context.Context, uid string, change PanelChange) 
 			}
 		}
 	}
-	// Artifacts: another character's, then single pieces, then the sets.
+	// Artifacts: another character's, then single pieces, then the sets. A
+	// piece taken from a kept panel remembers it.
 	pieces := map[int]PanelEquipment{}
-	artifacts := source
+	artifacts := keep(changeSource{})
 	if change.Artifacts != nil {
-		artifacts, _ = kept(*change.Artifacts)
+		artifacts = keep(*change.Artifacts)
 	}
-	for _, piece := range artifacts.Equipment {
-		pieces[piece.Slot] = piece
+	if artifacts != nil {
+		for _, piece := range artifacts.Equipment {
+			piece.From = artifacts
+			pieces[piece.Slot] = piece
+		}
 	}
 	slots, groups := 6, "001122"
 	for slot := 1; slot <= slots; slot++ {
 		if from, ok := change.Pieces[slot]; ok {
-			if other, ok := kept(from); ok {
+			if other := keep(from); other != nil {
 				for _, piece := range other.Equipment {
 					if piece.Slot == slot {
+						piece.From = other
 						pieces[slot] = piece
 					}
 				}

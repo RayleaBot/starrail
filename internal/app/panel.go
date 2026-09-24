@@ -30,6 +30,9 @@ type PanelEquipment struct {
 	Sub        []PanelStat     `json:"sub"`
 	Complete   bool            `json:"complete"`
 	Score      *EquipmentScore `json:"score,omitempty"`
+	// From is the kept panel a changed panel took the piece from; it is not
+	// stored.
+	From *CharacterPanel `json:"-"`
 }
 type PanelSkill struct {
 	Kind        string `json:"kind,omitempty"`

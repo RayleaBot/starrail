@@ -116,8 +116,9 @@ func cleanCloudGear(value any) (map[string]any, error) {
 				}
 				rows = append(rows, next)
 			} else {
+				// miao's steps for an official value may fall below zero.
 				text := asText(v)
-				if text == "" || len(text) > 64 || strings.Trim(text, "0123456789,") != "" {
+				if text == "" || len(text) > 64 || strings.Trim(text, "0123456789,-") != "" {
 					return nil, gameError("cloud_invalid", "装备副词条编号无效。")
 				}
 				rows = append(rows, text)
