@@ -47,11 +47,11 @@ func Ledger(context app.ImageContext, result app.QueryResult) (app.Image, bool) 
 	amount := func(value any, digits int) string {
 		number := app.Int(value)
 		if number > 10000 {
-			return jsFixed(float64(number)/10000, digits) + " w"
+			return app.JSFixed(float64(number)/10000, digits) + " w"
 		}
 		return strconv.Itoa(number)
 	}
-	pulls := func(value any) string { return jsFixed(float64(app.Int(value))/160, 0) }
+	pulls := func(value any) string { return app.JSFixed(float64(app.Int(value))/160, 0) }
 
 	groups, _ := month["group_by"].([]any)
 	legend, values, colors, total := []any{}, []float64{}, []string{}, 0

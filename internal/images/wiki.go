@@ -3,7 +3,6 @@ package images
 import (
 	"encoding/json"
 	"html"
-	"math/big"
 	"regexp"
 	"slices"
 	"strconv"
@@ -188,7 +187,7 @@ func wikiFill(desc string, tables map[string]struct {
 			if match[2] == "f2" {
 				digits = 2
 			}
-			text = jsFixed(value*100, digits) + "%"
+			text = app.JSFixed(value*100, digits) + "%"
 		}
 		desc = strings.ReplaceAll(desc, match[0], text+" (lv"+strconv.Itoa(level)+")")
 	}
@@ -203,7 +202,7 @@ func wikiFill(desc string, tables map[string]struct {
 		values := []string{}
 		for _, value := range table.Values {
 			if percent[key] {
-				values = append(values, jsFixed(value*100, 1)+"%")
+				values = append(values, app.JSFixed(value*100, 1)+"%")
 			} else {
 				values = append(values, miaoComma(value, 0))
 			}
@@ -242,29 +241,9 @@ func wikiDetail(name string, desc []string, tables []wikiTable, icon string, fir
 	return map[string]any{"icon": icon, "name": name, "desc": text.String(), "tables": len(tables) > 0, "shared": shared, "rows": rows, "levels": levels}
 }
 
-// jsFixed is JavaScript's toFixed: the exact value rounded half up, a
-// negative value as its magnitude after a minus sign.
-func jsFixed(value float64, digits int) string {
-	if value < 0 {
-		return "-" + jsFixed(-value, digits)
-	}
-	scaled := new(big.Float).SetPrec(256).SetFloat64(value)
-	scaled.Mul(scaled, new(big.Float).SetPrec(256).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(digits)), nil)))
-	scaled.Add(scaled, new(big.Float).SetPrec(256).SetFloat64(0.5))
-	whole, _ := scaled.Int(nil)
-	text := whole.String()
-	if digits == 0 {
-		return text
-	}
-	for len(text) <= digits {
-		text = "0" + text
-	}
-	return text[:len(text)-digits] + "." + text[len(text)-digits:]
-}
-
 // miaoComma is miao's Format.comma: toFixed decimals with thousands commas.
 func miaoComma(value float64, digits int) string {
-	fixed, _ := strconv.ParseFloat(jsFixed(value, digits), 64)
+	fixed, _ := strconv.ParseFloat(app.JSFixed(value, digits), 64)
 	integer, decimal, _ := strings.Cut(strconv.FormatFloat(fixed, 'f', -1, 64), ".")
 	for index := len(integer) - 3; index > 0; index -= 3 {
 		integer = integer[:index] + "," + integer[index:]

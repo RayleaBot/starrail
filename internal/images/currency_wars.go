@@ -205,11 +205,11 @@ func currencyWarsDamage(lineup map[string]any, entities map[string]map[string]an
 	for _, item := range list[:min(5, len(list))] {
 		percent := "0"
 		if most := list[0].value; most > 0 {
-			percent = jsFixed(item.value/most*100, 2)
+			percent = app.JSFixed(item.value/most*100, 2)
 		}
-		value := jsFixed(item.value, 0)
+		value := app.JSFixed(item.value, 0)
 		if item.value >= 10000 {
-			value = jsFixed(item.value/10000, 1) + "万"
+			value = app.JSFixed(item.value/10000, 1) + "万"
 		}
 		rows = append(rows, map[string]any{"trait": item.trait, "entity": item.entity, "value": value, "percent": percent})
 	}

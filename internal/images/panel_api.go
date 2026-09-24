@@ -143,7 +143,7 @@ func apiPanelRelics(context app.ImageContext, local func(string) string, relics 
 		}
 		score := "0"
 		if relic.Score != 0 {
-			score = jsFixed(relic.Score, 1)
+			score = app.JSFixed(relic.Score, 1)
 		}
 		icon := ""
 		if file := icons[strconv.Itoa(relic.ID)].Icon; file != "" {

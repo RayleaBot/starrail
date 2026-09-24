@@ -1,6 +1,10 @@
 package images
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/RayleaBot/plugin-starrail/internal/app"
+)
 
 // The expected strings are what JavaScript's toFixed and miao's Format print.
 func TestMiaoFormatsFollowJavaScript(t *testing.T) {
@@ -9,8 +13,8 @@ func TestMiaoFormatsFollowJavaScript(t *testing.T) {
 		digits int
 		want   string
 	}{{106.25, 1, "106.3"}, {178.75, 1, "178.8"}, {1.005, 2, "1.00"}, {0.5, 0, "1"}, {931.392, 1, "931.4"}, {-100, 1, "-100.0"}, {-0.04, 1, "-0.0"}} {
-		if got := jsFixed(tc.value, tc.digits); got != tc.want {
-			t.Errorf("jsFixed(%v, %d) = %s, want %s", tc.value, tc.digits, got, tc.want)
+		if got := app.JSFixed(tc.value, tc.digits); got != tc.want {
+			t.Errorf("app.JSFixed(%v, %d) = %s, want %s", tc.value, tc.digits, got, tc.want)
 		}
 	}
 	if got := miaoComma(115, 1); got != "115.0" {

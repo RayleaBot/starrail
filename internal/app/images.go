@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"math/big"
 	"strconv"
 	"strings"
 	"sync"
@@ -263,6 +264,26 @@ func Text(value any) string { return asText(value) }
 func Int(value any) int {
 	parsed, _ := strconv.ParseFloat(asText(value), 64)
 	return int(parsed)
+}
+
+// JSFixed is JavaScript's toFixed: the exact value rounded half up, a
+// negative value as its magnitude after a minus sign.
+func JSFixed(value float64, digits int) string {
+	if value < 0 {
+		return "-" + JSFixed(-value, digits)
+	}
+	scaled := new(big.Float).SetPrec(256).SetFloat64(value)
+	scaled.Mul(scaled, new(big.Float).SetPrec(256).SetInt(new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(digits)), nil)))
+	scaled.Add(scaled, new(big.Float).SetPrec(256).SetFloat64(0.5))
+	whole, _ := scaled.Int(nil)
+	text := whole.String()
+	if digits == 0 {
+		return text
+	}
+	for len(text) <= digits {
+		text = "0" + text
+	}
+	return text[:len(text)-digits] + "." + text[len(text)-digits:]
 }
 
 // ImageResources collects an image's render resources, adding each file once

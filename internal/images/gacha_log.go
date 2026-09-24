@@ -237,11 +237,11 @@ func gachaLog(image app.GachaImage, icon func(name, itemType string) string, poo
 	}
 	upCost := strconv.Itoa(valid * 160)
 	if valid*160 >= 10000 {
-		upCost = jsFixed(float64(valid*160)/10000, 2) + "w"
+		upCost = app.JSFixed(float64(valid*160)/10000, 2) + "w"
 	}
 	noWaiRate := "0"
 	if fiveNum > 0 {
-		noWaiRate = jsFixed(float64(fiveNum-big-wai)/float64(fiveNum-big)*100, 1)
+		noWaiRate = app.JSFixed(float64(fiveNum-big-wai)/float64(fiveNum-big)*100, 1)
 	}
 	worst, best := 0, 0
 	for _, item := range fives {
