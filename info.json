@@ -576,15 +576,28 @@
       }
     },
     {
-      "id": "cloud-verify",
-      "name": "云验证",
-      "description": "本人私聊显式验证 ark 跨机器人 UID 关联",
-      "usage": "#云验证 获取/提交/状态 UID 确认 | 进度/取消",
+      "id": "cloud-verify-code",
+      "name": "ark绑定星铁uid",
+      "description": "向 ark 获取当前 UID 的验证码，设为游戏签名后用于验证 UID 拥有者",
+      "usage": "#ark绑定星铁uid",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "云验证"
+          "ark绑定星铁uid"
+        ]
+      }
+    },
+    {
+      "id": "cloud-verify",
+      "name": "ark验证星铁uid",
+      "description": "签名生效后由 ark 验证 UID 拥有者，通过后 UID 与 QQ 绑定（仅 OneBot11）",
+      "usage": "#ark验证星铁uid",
+      "permission": "everyone",
+      "trigger": {
+        "type": "exact",
+        "names": [
+          "ark验证星铁uid"
         ]
       }
     },
@@ -1842,6 +1855,7 @@
         "cloud-import",
         "cloud-reforge",
         "cloud-private-panel",
+        "cloud-verify-code",
         "cloud-verify"
       ]
     },

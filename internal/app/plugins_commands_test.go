@@ -67,6 +67,8 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"ark获取面板", "cloud-custom-rank-panel", nil},
 			{"arktoken用量", "cloud-usage", nil},
 			{"ARKTOKEN用量", "cloud-usage", nil},
+			{"ark绑定星铁uid", "cloud-verify-code", nil},
+			{"ark验证星铁uid", "cloud-verify", nil},
 			{"希儿遗器排名", "rank", nil},
 			{"最强希儿", "rank-top", nil},
 			{"今年星琼统计", "monthly-history", nil},

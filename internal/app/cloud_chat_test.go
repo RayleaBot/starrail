@@ -99,3 +99,30 @@ func TestPanelDataRefusalFollowsArkPermission(t *testing.T) {
 		t.Fatal("account")
 	}
 }
+
+// ark绑定星铁uid and ark验证星铁uid reply as ark-plugin does: the code and
+// its Star Rail steps, 验证成功, the ERROR_MAP text of ark's retcode, and 未知错误
+// for a retcode it does not map or a request that fails.
+func TestArkVerifyReplyFollowsArk(t *testing.T) {
+	code := arkVerifyReply("*", "verify/code", cloudObject(t, `{"retcode":100,"data":{"verifyCode":"ab12cd"}}`), nil)
+	if want := "验证码: ab12cd\n使用方式：\n星铁：手机——右上角三点——漫游签证——设置签名——填入验证码，5-10分钟后输入 *ark验证星铁uid\n验证码有效期24小时，验证通过后自动与QQ绑定，在其他Bot上无需再次绑定"; code != want {
+		t.Fatalf("code reply:\n%s", code)
+	}
+	cases := []struct {
+		route, answer string
+		err           error
+		want          string
+	}{
+		{"verify", `{"retcode":100}`, nil, "验证成功"},
+		{"verify", `{"retcode":302}`, nil, "验证失败，个人签名不匹配，请五分钟后重试"},
+		{"verify", `{"retcode":304}`, nil, "该uid未验证号主，请通过 *ark验证星铁uid 验证uid"},
+		{"verify/code", `{"retcode":-1}`, nil, "插件版本过低，请更新插件"},
+		{"verify", `{"retcode":999}`, nil, "未知错误"},
+		{"verify", `{"retcode":100}`, gameError("cloud_unavailable", "云服务暂不可用或请求已取消。"), "未知错误"},
+	}
+	for _, tc := range cases {
+		if got := arkVerifyReply("*", tc.route, cloudObject(t, tc.answer), tc.err); got != tc.want {
+			t.Errorf("%s %s: %q", tc.route, tc.answer, got)
+		}
+	}
+}

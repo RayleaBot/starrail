@@ -457,8 +457,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.communityCommand(ctx, event, command, args)
 	case "cloud-private-panel":
 		return a.privateCloudPanelCommand(ctx, event, args)
-	case "cloud-verify":
-		return a.cloudVerifyCommand(event, args)
+	case "cloud-verify-code", "cloud-verify":
+		return a.arkVerifyCommand(ctx, event, command, args)
 	case "public-profile":
 		if len(args) < 1 || len(args) > 2 {
 			return event.SendText("使用“" + prefix + "公开信息 UID [区服]”查询官方公开资料；需要有本人主动加入的公共查询账号。")
