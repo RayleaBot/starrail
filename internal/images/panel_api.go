@@ -97,7 +97,7 @@ func APIPanel(context app.ImageContext, image app.APIPanelImage) (app.Image, boo
 		attributes = append(attributes, percent("Icon"+element+"AddedRatio", "属性伤害提高", value(strings.ToLower(element)+"Added")))
 	}
 	data := map[string]any{
-		"picture": resources.Artwork("api-panel-picture", "starrail-plugin", image.Picture), "name": character.Name,
+		"picture": resources.Artwork("api-panel-picture", image.PictureSource, image.Picture), "name": character.Name,
 		"element": local("resources/common/element/" + strings.ToLower(element) + ".png"), "path": lifePath,
 		"level": character.Level, "rank": character.Rank, "attributes": attributes,
 		"skills": apiPanelSkills(local, image.Skills), "uid": image.UID, "api": image.API,

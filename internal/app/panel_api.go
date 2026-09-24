@@ -36,13 +36,14 @@ type APICardImageBuilder func(ImageContext, APICardImage) (Image, bool)
 // APIPanelImage is StarRail-plugin's new_panel page for one character: the
 // character as the service returned it, the skills the page lists, the
 // damage table (nil when the damage module does not calculate the
-// character) and the picture drawn, a file of the starrail-plugin source.
+// character) and the picture drawn, a file of the artwork source
+// PictureSource.
 type APIPanelImage struct {
-	UID, API  string
-	Character APICharacter
-	Skills    []APISkill
-	Damages   []APIDamage
-	Picture   string
+	UID, API               string
+	Character              APICharacter
+	Skills                 []APISkill
+	Damages                []APIDamage
+	PictureSource, Picture string
 }
 
 // APISkill is a skill the panel page lists, at the level the eidolons raise
@@ -129,7 +130,8 @@ func (a *App) apiPanel(ctx context.Context, event *rayleabot.EventContext, name,
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	image := APIPanelImage{UID: uid, API: apiHost(api), Character: character, Skills: apiSkills(character, a.panelAPIScripts.RankSkillUp), Picture: a.apiPicture(character)}
+	picture := a.apiPicture(character)
+	image := APIPanelImage{UID: uid, API: apiHost(api), Character: character, Skills: apiSkills(character, a.panelAPIScripts.RankSkillUp), PictureSource: picture.Source, Picture: picture.Path}
 	behaviors := []APIBehavior{}
 	for _, skill := range image.Skills {
 		behaviors = append(behaviors, skill.APIBehavior)
@@ -146,7 +148,7 @@ func (a *App) apiPanel(ctx context.Context, event *rayleabot.EventContext, name,
 		if drawn, ok := a.apiPanelImage(a.imageContext(ctx), image); ok {
 			view.Image = &drawn
 			// As upstream, 原图 then answers with the picture the panel drew.
-			_ = a.rememberImage(event, "artwork:starrail-plugin/"+image.Picture)
+			_ = a.rememberImage(event, "artwork:"+picture.Source+"/"+picture.Path)
 		}
 	}
 	return a.sendView(ctx, event, view)
@@ -213,7 +215,27 @@ func apiSkills(character APICharacter, raises map[string][]RankSkillUp) []APISki
 // five a random one of the character's pro-file directory, else its
 // profile/normal-character picture or a random one of its directory there,
 // else the default picture. The Trailblazers are named 星 and 穹 there.
-func (a *App) apiPicture(character APICharacter) string {
+// StarRail-plugin's default pictures stop at its older characters; for one it
+// lacks, the panel draws miao's splash of the character, as 面板 does.
+func (a *App) apiPicture(character APICharacter) artworkFile {
+	file := artworkFile{"starrail-plugin", a.starRailPicture(character)}
+	if _, ok := a.Artwork.File(file.Source, file.Path); ok || a.Game.Calc == nil {
+		return file
+	}
+	for _, record := range a.Game.Calc.Metadata().Characters {
+		if record.ID != strconv.Itoa(character.AvatarID) {
+			continue
+		}
+		splash := artworkFile{"miao-plugin", "resources/meta-sr/character/" + record.Name + "/imgs/splash.webp"}
+		if _, ok := a.Artwork.File(splash.Source, splash.Path); ok {
+			return splash
+		}
+	}
+	return file
+}
+
+// starRailPicture is the picture of StarRail-plugin's getCharImage.
+func (a *App) starRailPicture(character APICharacter) string {
 	name := character.Name
 	switch character.AvatarID {
 	case 8002, 8004:

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -181,6 +183,30 @@ func TestAPISkillsFollowHandleBehaviorList(t *testing.T) {
 	}{{7, "1001_basic_atk.png"}, {10, "1001_skill.png"}, {12, "1001_ultimate.png"}, {10, "1001_talent.png"}} {
 		if skills[i].Level != want.level || skills[i].File != want.file {
 			t.Errorf("skill %d = %d %s, want %d %s", i, skills[i].Level, skills[i].File, want.level, want.file)
+		}
+	}
+}
+
+// The panel draws StarRail-plugin's default picture, and miao's splash for a
+// character it has none of, which 原图 then resends.
+func TestAPIPictureFallsBackToMiaoSplash(t *testing.T) {
+	a := pluginApp(t)
+	for _, name := range []string{"starrail-plugin/resources/panel/resources/char_image/1303.png", "miao-plugin/resources/meta-sr/character/长夜月/imgs/splash.webp"} {
+		file := filepath.Join(a.Artwork.Root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(file), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(file, []byte("image"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for id, want := range map[int]artworkFile{
+		1303: {"starrail-plugin", "resources/panel/resources/char_image/1303.png"},
+		1413: {"miao-plugin", "resources/meta-sr/character/长夜月/imgs/splash.webp"},
+		9999: {"starrail-plugin", "resources/panel/resources/char_image/9999.png"},
+	} {
+		if got := a.apiPicture(APICharacter{AvatarID: id, Name: "未知"}); got != want {
+			t.Errorf("%d = %v, want %v", id, got, want)
 		}
 	}
 }
