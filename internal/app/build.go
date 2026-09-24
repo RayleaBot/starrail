@@ -44,6 +44,9 @@ type BuildStat struct {
 	Key     string  `json:"key"`
 	Value   float64 `json:"value"`
 	Times   int     `json:"times,omitempty"`
+	// Max is a substat's largest single roll at the relic's rarity, which
+	// miao's efficiency counts in.
+	Max float64 `json:"max,omitempty"`
 }
 type BuildGear struct {
 	Slot    int         `json:"slot,omitempty"`

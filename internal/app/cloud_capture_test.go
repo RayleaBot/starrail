@@ -274,6 +274,30 @@ func TestPanelsScoreAsMiaoKeepsThem(t *testing.T) {
 	same("Mihomo panel", scored(homo), scored(shared))
 }
 
+// miao's efficiency counts a substat in largest rolls at its relic's rarity
+// (ArtisAttr's base + step * 2), shown divided by 0.9: 暴击伤害 of two largest
+// rolls counts 2 on a four-star relic as on a five-star one, not the 1.6 it
+// counts in five-star rolls.
+func TestEfficiencyCountsRollsAtTheRelicsRarity(t *testing.T) {
+	a := pluginApp(t)
+	player := cloudObject(t, `{"uid":"100000001","avatars":{"1102":{"id":1102,"elem":"quantum","level":80,"promote":6,"cons":0,"talent":{"a":6,"e":10,"t":10,"q":10},"trees":["1102101"],
+		"weapon":{"id":23001,"level":80,"promote":6,"affix":1},"artis":{"1":{"level":12,"star":4,"id":51011,"mainId":1,"attrIds":["9,2,4"]},
+		"2":{"level":15,"star":5,"id":61012,"mainId":1,"attrIds":["9,2,4"]}}}}}`)
+	panels := a.arkPlayerPanels(t.Context(), "100000001", player)
+	if len(panels) != 1 {
+		t.Fatalf("panels = %+v", panels)
+	}
+	scored, err := a.scorePanel(t.Context(), panels[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for slot, want := range map[int]string{1: "2.2", 2: "2.2"} {
+		if attrs := scored.ScoreDetail.Pieces[slot].Attrs; len(attrs) != 1 || attrs[0].Eff != want || attrs[0].UpNum != 2 {
+			t.Errorf("slot %d = %+v, want efficiency %s", slot, attrs, want)
+		}
+	}
+}
+
 // As miao computes a panel's attrIds once when it saves its player data, a
 // kept panel keeps its restored relics, which scoring, export and ark ranks
 // read. A panel kept before they were has them restored at its first read and

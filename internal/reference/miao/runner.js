@@ -375,11 +375,12 @@ function runScore(record, weapons, input) {
   const cfg = ArtisMarkCfg.getCfg(profile);
   // Substat detail as upstream's getMarkDetail shows it: rolls are the count
   // miao keeps in the substat's attrIds, one when none is given, efficiency is
-  // the value in maximum single rolls.
+  // the value in maximum single rolls at the relic's rarity (ArtisAttr's
+  // base + step * 2), else at five stars.
   const attrMap = Meta.getMeta(currentGame, 'arti').attrMap;
   const rolled = s => {
     const key = miaoKey(s.key);
-    const max = attrMap[key]?.value;
+    const max = s.max || attrMap[key]?.value;
     return { key, value: s.value, upNum: s.times || 1, eff: max ? s.value / max : 0 };
   };
   const pieces = [];

@@ -76,7 +76,7 @@ func (a *App) scorePanel(ctx context.Context, panel CharacterPanel) (CharacterPa
 	if err != nil {
 		return panel, gameError("score_unavailable", "缺少角色基准资料，暂不计算评分。")
 	}
-	input, err := miaoScoreInput(panel, miaoRelics(ctx, a.Game, panel))
+	input, err := miaoScoreInput(a.Game, panel, miaoRelics(ctx, a.Game, panel))
 	if err != nil {
 		return panel, err
 	}
@@ -151,7 +151,7 @@ func miaoRelics(ctx context.Context, g Game, panel CharacterPanel) map[int]Build
 				break
 			}
 			count, step := number(parts[1]), number(parts[2])
-			relic.Sub = append(relic.Sub, BuildStat{Key: attr.Key, Value: attr.Base*float64(count) + attr.Step*float64(step), Times: count})
+			relic.Sub = append(relic.Sub, BuildStat{Key: attr.Key, Value: attr.Base*float64(count) + attr.Step*float64(step), Times: count, Max: attr.Base + attr.Step*2})
 		}
 		if ok {
 			relics[number(slot)] = relic
@@ -175,8 +175,9 @@ func rolls(source string, stat PanelStat) int {
 
 // miaoScoreInput passes the attributes, eidolon or constellation, weapon and
 // complete equipment pieces that miao scoring rules read, each piece's stats
-// as relics gives them, else as the panel shows them.
-func miaoScoreInput(panel CharacterPanel, relics map[int]BuildGear) (map[string]any, error) {
+// as relics gives them, else as the panel shows them with the largest roll of
+// the relic's rarity.
+func miaoScoreInput(g Game, panel CharacterPanel, relics map[int]BuildGear) (map[string]any, error) {
 	if !panel.RankKnown || panel.Rank < 0 || panel.Rank > 6 {
 		return nil, gameError("score_unavailable", "面板缺少星魂信息，暂不计算评分。")
 	}
@@ -218,9 +219,15 @@ func miaoScoreInput(panel CharacterPanel, relics map[int]BuildGear) (map[string]
 			}
 			if i == 0 {
 				converted.Main = BuildStat{Key: stat.Key, Value: value}
-			} else {
-				converted.Sub = append(converted.Sub, BuildStat{Key: stat.Key, Value: value, Times: rolls(panel.Source, stat)})
+				continue
 			}
+			sub := BuildStat{Key: stat.Key, Value: value, Times: rolls(panel.Source, stat)}
+			if g.Data != nil && g.Data.CloudGear != nil {
+				if _, attr, ok := subAttr(g, number(piece.Rarity), stat.Key); ok {
+					sub.Max = attr.Base + attr.Step*2
+				}
+			}
+			converted.Sub = append(converted.Sub, sub)
 		}
 		if relic, ok := relics[piece.Slot]; ok {
 			converted.Main, converted.Sub = relic.Main, relic.Sub
