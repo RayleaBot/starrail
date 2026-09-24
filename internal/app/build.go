@@ -443,7 +443,7 @@ func (a *App) panelView(ctx context.Context, event *rayleabot.EventContext, pane
 			image.Rank = a.panelRank(ctx, event, panel, uid, change != "")
 			rows := image.Rank.Rows
 			if chart := image.Rank.Chart; chart != nil {
-				rows = []Row{{Label: "伤害排名", Value: chart.Places[0]}, {Label: "圣遗物排名", Value: chart.Places[1]}}
+				rows = []Row{{Label: "伤害排名", Value: chart.Places[0]}, {Label: "遗器排名", Value: chart.Places[1]}}
 			}
 			if len(rows) > 0 {
 				view.Sections = append(view.Sections, Section{Title: "ark 全服排名", Rows: rows})

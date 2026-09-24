@@ -1384,7 +1384,7 @@
       "id": "cloud-custom-rank",
       "name": "ark自定义排行",
       "description": "ark 收录的该角色面板全服排行，可按星魂、部位主词条等筛选、指定条数，按 miao 排行图出图",
-      "usage": "#ark<角色>[伤害|圣遗物]排行 [筛选] [数量:N]",
+      "usage": "#ark<角色>[伤害|遗器]排行 [筛选] [数量:N]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",

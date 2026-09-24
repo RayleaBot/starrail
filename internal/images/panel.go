@@ -154,7 +154,7 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 					artisMax = math.Trunc(chart.Artis.Top)
 				}
 				data["rank_chart"] = map[string]any{"hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "排名统计", "places": chart.Places,
-					"charts": []any{panelRankChart("damage", chart.Damage, "伤害评分", 100, 20), panelRankChart("artis", chart.Artis, "圣遗物评分", artisMax, 50)}}
+					"charts": []any{panelRankChart("damage", chart.Damage, "伤害评分", 100, 20), panelRankChart("artis", chart.Artis, "遗器评分", artisMax, 50)}}
 			}
 		}
 		// ark's DealLongDmgTitle for a changed panel, over every row with its

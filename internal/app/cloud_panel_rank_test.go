@@ -11,7 +11,7 @@ import (
 func TestReadPanelRankFollowsArk(t *testing.T) {
 	answers := asList(cloudList(t, `[{"retcode":100,"rank":"1148 / 60392","score_raw":64248.5,"score":74.17,"percent":"1.90"},{"retcode":102}]`))
 	rows := func(ark ArkSettings, changed bool) []Row { return readPanelRank(ark, answers, nil, changed).Rows }
-	both := []Row{{Label: "总伤害排名", Value: "1148 / 60392 (1.90%)"}, {Label: "圣遗物排名", Value: "暂无数据"}}
+	both := []Row{{Label: "总伤害排名", Value: "1148 / 60392 (1.90%)"}, {Label: "遗器排名", Value: "暂无数据"}}
 	if got := rows(ArkSettings{QueryType: 2, RankType: 2}, false); !reflect.DeepEqual(got, both) {
 		t.Fatal(got)
 	}
@@ -23,7 +23,7 @@ func TestReadPanelRankFollowsArk(t *testing.T) {
 		t.Fatal(got)
 	}
 	// queryType 1 reads the first answer as the relic rank.
-	if got := rows(ArkSettings{QueryType: 1, RankType: 0}, false); !reflect.DeepEqual(got, []Row{{Label: "圣遗物排名", Value: "1148 / 60392"}}) {
+	if got := rows(ArkSettings{QueryType: 1, RankType: 0}, false); !reflect.DeepEqual(got, []Row{{Label: "遗器排名", Value: "1148 / 60392"}}) {
 		t.Fatal(got)
 	}
 	if got := rows(ArkSettings{QueryType: 0, RankType: 2, MarkRankType: true}, true); got[0].Label != "总伤害排名(面板变换)" {
@@ -84,7 +84,7 @@ func TestGroupRankColumnFollowsArk(t *testing.T) {
 	if title != "伤害排名" || !reflect.DeepEqual(ranks, []string{"1148 / 60392", "暂无数据", ""}) {
 		t.Fatal(title, ranks)
 	}
-	if title, _ = groupRankColumn(ArkSettings{LocalGroupRank: true, MarkRankType: true}, "mark", entries, answer); title != "圣遗物排名(本地)" {
+	if title, _ = groupRankColumn(ArkSettings{LocalGroupRank: true, MarkRankType: true}, "mark", entries, answer); title != "遗器排名(本地)" {
 		t.Fatal(title)
 	}
 	// Without any rank the column is left out.

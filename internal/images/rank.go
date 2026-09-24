@@ -163,7 +163,7 @@ func CloudRank(context app.ImageContext, rank app.CloudRankImage) (app.Image, bo
 		}
 		rows = append(rows, row)
 	}
-	title := context.Game.Prefix + record.Name + map[string]string{"mark": "圣遗物评分"}[rank.Mode] + "排行"
+	title := context.Game.Prefix + record.Name + map[string]string{"mark": "遗器评分"}[rank.Mode] + "排行"
 	data := map[string]any{"elem": elem, "title": title, "mode": rank.Mode, "max": false, "time": "全服数据", "hash": context.Game.Prefix, "rows": rows, "width": width,
 		"limit": rank.Limit, "number": rank.Number}
 	return app.Image{Template: "rank", Data: data, Resources: page.resources.List}, true

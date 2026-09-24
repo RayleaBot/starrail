@@ -24,8 +24,8 @@ func TestCloudRankFollowsArk(t *testing.T) {
 		{UID: "10****494", Mark: 41.9},
 	}
 	drawn, ok := images.CloudRank(app.ImageContext{Game: game, Catalog: application.Catalog}, app.CloudRankImage{Character: character, Mode: "mark", DamageTitle: "战技伤害",
-		Limit: "排序: 圣遗物评分 降序 / 筛选: 无", Number: 20, Entries: entries})
-	if !ok || drawn.Template != "rank" || drawn.Data["title"] != "*希儿圣遗物评分排行" || drawn.Data["time"] != "全服数据" || drawn.Data["number"] != 20 {
+		Limit: "排序: 遗器评分 降序 / 筛选: 无", Number: 20, Entries: entries})
+	if !ok || drawn.Template != "rank" || drawn.Data["title"] != "*希儿遗器评分排行" || drawn.Data["time"] != "全服数据" || drawn.Data["number"] != 20 {
 		t.Fatalf("drawn = %+v", drawn.Data)
 	}
 	rows := drawn.Data["rows"].([]any)

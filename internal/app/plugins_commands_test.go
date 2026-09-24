@@ -60,6 +60,7 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"希儿行迹", "talent-wiki", []string{"希儿"}},
 			{"ark希儿排行", "cloud-custom-rank", nil},
 			{"ark符玄圣遗物排名", "cloud-custom-rank", nil},
+			{"ark符玄遗器排行", "cloud-custom-rank", nil},
 			{"ark自定义排行帮助", "cloud-custom-rank-help", nil},
 			{"ark获取面板3", "cloud-custom-rank-panel", []string{"3"}},
 			{"ARK获取面板20", "cloud-custom-rank-panel", []string{"20"}},

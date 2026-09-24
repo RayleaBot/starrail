@@ -19,16 +19,19 @@ import (
 // (排行|排名) lists the best panels ark keeps for a character, ordered by
 // damage or relic score and narrowed by the filters after it, drawn as miao's
 // character/rank-profile-list with ark's notes. The image is remembered for
-// five minutes, so ark获取面板N can open an entry's panel.
+// five minutes, so ark获取面板N can open an entry's panel. Upstream writes
+// relics as Genshin's 圣遗物 in Star Rail too; the replies write 遗器, as Star
+// Rail calls them, and the command and column names take both.
 
 // customRankColumns are the columns ark filters by (ALLOWED_COLS). Anyone
 // may filter by Eidolon; the rest need a super administrator and the ark
 // token.
 var customRankColumns = []string{"level", "promote", "cons", "talent_a", "talent_e", "talent_q", "weapon_level", "weapon_promote", "weapon_affix", "dmg_avg", "mark_score", "data_time", "artis_sets", "pos1", "pos2", "pos3", "pos4", "pos5", "pos6"}
 
-// customRankAliases are ark's Chinese names of the columns (ALIAS_MAP).
+// customRankAliases are ark's Chinese names of the columns (ALIAS_MAP), with
+// 遗器 beside its 圣遗物.
 var customRankAliases = map[string]string{"等级": "level", "突破": "promote", "命座": "cons", "命": "cons", "普攻": "talent_a", "战技": "talent_e", "爆发": "talent_q",
-	"武器等级": "weapon_level", "武器突破": "weapon_promote", "精炼": "weapon_affix", "伤害": "dmg_avg", "评分": "mark_score", "伤害均值": "dmg_avg", "圣遗物评分": "mark_score", "圣遗物": "artis_sets", "套装": "artis_sets"}
+	"武器等级": "weapon_level", "武器突破": "weapon_promote", "精炼": "weapon_affix", "伤害": "dmg_avg", "评分": "mark_score", "伤害均值": "dmg_avg", "圣遗物评分": "mark_score", "圣遗物": "artis_sets", "遗器评分": "mark_score", "遗器": "artis_sets", "套装": "artis_sets"}
 
 // customRankOperators are ark's comparison operators in the order of the rule
 // numbers it receives (OP_TO_RULE, RULE_LABEL).
@@ -49,7 +52,7 @@ var (
 )
 
 var (
-	customRankWord      = regexp.MustCompile(`^ark(.+?)(伤害|圣遗物)?(排行|排名)(?:\s+(.+))?$`)
+	customRankWord      = regexp.MustCompile(`^ark(.+?)(伤害|圣遗物|遗器)?(排行|排名)(?:\s+(.+))?$`)
 	customRankCount     = regexp.MustCompile(`(?i)^(?:nums|数量)[:：=](\d+)$`)
 	customRankSort      = regexp.MustCompile(`(?i)^(?:(?:sort|排序)[:：]|(?:升序|降序|asc|desc)$)`)
 	customRankCondition = regexp.MustCompile(`^([\w\x{4e00}-\x{9fff}]+)(>=|<=|!=|>|<|=)(.+)$`)
@@ -157,7 +160,7 @@ func customRankLimit(query customRankQuery) string {
 	if len(filters) == 0 {
 		filters = []string{"无"}
 	}
-	return "排序: " + map[string]string{"dmg_avg": "伤害均值", "mark_score": "圣遗物评分"}[query.Rank.Col] + " 降序 / 筛选: " + strings.Join(filters, " ")
+	return "排序: " + map[string]string{"dmg_avg": "伤害均值", "mark_score": "遗器评分"}[query.Rank.Col] + " 降序 / 筛选: " + strings.Join(filters, " ")
 }
 
 // CustomRankEntry is one row of ark's custom ranking: the UID as ark shows it
@@ -230,7 +233,7 @@ func cloudFloat(value any) float64 {
 	return number
 }
 
-// customRankCommand answers ark<角色>[伤害|圣遗物](排行|排名)[ 筛选] as ark's
+// customRankCommand answers ark<角色>[伤害|圣遗物|遗器](排行|排名)[ 筛选] as ark's
 // rank does. The words are read whole again, as upstream reads the message,
 // since the host splits them at spaces.
 func (a *App) customRankCommand(ctx context.Context, event *rayleabot.EventContext) error {
@@ -239,7 +242,7 @@ func (a *App) customRankCommand(ctx context.Context, event *rayleabot.EventConte
 		return event.Result(map[string]any{"handled": false})
 	}
 	sort := "dmg_avg"
-	if match[2] == "圣遗物" {
+	if match[2] == "圣遗物" || match[2] == "遗器" {
 		sort = "mark_score"
 	}
 	columns, denied := []string{"cons"}, "除 cons 之外的筛选仅主人可用"
@@ -327,7 +330,7 @@ func customRankKey(event *rayleabot.EventContext, messageID string) string {
 
 // customRankView is the custom ranking in text, for replies without images.
 func customRankView(game Game, image CloudRankImage) View {
-	title := image.Character.Name + map[string]string{"mark": "圣遗物评分"}[image.Mode] + "排行"
+	title := image.Character.Name + map[string]string{"mark": "遗器评分"}[image.Mode] + "排行"
 	v := View{Title: game.Name + " · " + title, Subtitle: "全服数据", Rows: []Row{}, Note: image.Limit}
 	for index, entry := range image.Entries {
 		value := "评分 " + strconv.FormatFloat(entry.Mark, 'f', 1, 64)
@@ -364,25 +367,25 @@ func (a *App) customRankHelp(ctx context.Context, event *rayleabot.EventContext)
 			"【ark自定义排行 · 高级】",
 			"用法：" + prefix + "ark<角色>排行 [筛选/数量...]（默认伤害）",
 			"用法：" + prefix + "ark<角色>伤害排行 [筛选/数量...]",
-			"用法：" + prefix + "ark<角色>圣遗物排行 [筛选/数量...]",
+			"用法：" + prefix + "ark<角色>遗器排行 [筛选/数量...]",
 			"",
 			"筛选：列+运算符+值，运算符支持 >= <= > < = !=",
-			"可用列：命座(命) 等级 突破 普攻 战技 爆发 武器等级 武器突破 精炼 伤害 评分 圣遗物",
-			"排序：由命令决定，伤害排行按伤害降序，圣遗物排行按圣遗物评分降序",
+			"可用列：命座(命) 等级 突破 普攻 战技 爆发 武器等级 武器突破 精炼 伤害 评分 遗器",
+			"排序：由命令决定，伤害排行按伤害降序，遗器排行按遗器评分降序",
 			"数量：nums:N 或 数量:N（1-50，默认20）",
 			"星铁可筛部位主词条：部位1~6=词条，如 部位3=暴击",
 			"",
 			"示例：",
 			prefix + "ark希儿排行 命=6",
 			prefix + "ark希儿伤害排行 等级>=80 精炼>=1 数量:10",
-			prefix + "ark符玄圣遗物排行 部位4=速度",
+			prefix + "ark符玄遗器排行 部位4=速度",
 		}, "\n"))
 	}
 	return event.SendText(strings.Join([]string{
 		"【ark自定义排行】",
 		"用法：" + prefix + "ark<角色>排行 [命座筛选]（默认伤害）",
 		"用法：" + prefix + "ark<角色>伤害排行 [命座筛选]",
-		"用法：" + prefix + "ark<角色>圣遗物排行 [命座筛选]",
+		"用法：" + prefix + "ark<角色>遗器排行 [命座筛选]",
 		"",
 		"普通用户仅支持按命座(cons)筛选，",
 		"更多筛选项需主人在米游社账号插件管理页配置 ark token 后使用。",
@@ -390,7 +393,7 @@ func (a *App) customRankHelp(ctx context.Context, event *rayleabot.EventContext)
 		"",
 		"示例：",
 		prefix + "ark希儿排行 cons=0",
-		prefix + "ark符玄圣遗物排行 命座<=2",
+		prefix + "ark符玄遗器排行 命座<=2",
 	}, "\n"))
 }
 

@@ -42,7 +42,7 @@ type RankCurve struct {
 var panelRankTitles = [][]struct {
 	index int
 	title string
-}{{{0, "总伤害排名"}}, {{0, "圣遗物排名"}}, {{0, "总伤害排名"}, {1, "圣遗物排名"}}, {{0, "总伤害排名"}, {1, "圣遗物排名"}}}
+}{{{0, "总伤害排名"}}, {{0, "遗器排名"}}, {{0, "总伤害排名"}, {1, "遗器排名"}}, {{0, "总伤害排名"}, {1, "遗器排名"}}}
 
 // panelRank asks ark for a panel's ranks as the ark settings choose: with
 // localPanelRank the panel itself under ark's stand-in UID 999999999, else
@@ -209,12 +209,13 @@ func (a *App) groupTotalRanks(ctx context.Context, event *rayleabot.EventContext
 
 // groupRankColumn reads ark's rank/group answer, one rank per listed UID in
 // order, as the column's title and texts. Upstream titles the relic ranks
-// 圣遗物排名 in Star Rail too.
+// 圣遗物排名 in Star Rail too; they are 遗器排名 here, as Star Rail calls
+// relics.
 func groupRankColumn(ark ArkSettings, mode string, entries []RankEntry, result map[string]any) (string, []string) {
 	if asText(result["retcode"]) != "100" {
 		return "", nil
 	}
-	title := map[string]string{"dmg": "伤害", "mark": "圣遗物"}[mode] + "排名"
+	title := map[string]string{"dmg": "伤害", "mark": "遗器"}[mode] + "排名"
 	if ark.MarkRankType && ark.LocalGroupRank {
 		title += "(本地)"
 	}

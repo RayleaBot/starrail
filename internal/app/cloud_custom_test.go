@@ -76,8 +76,24 @@ func TestCustomRankLimitWritesArkNote(t *testing.T) {
 	}
 	// ark notes the resolved column with the value as written.
 	_, query, _ = parseCustomRank("希儿 命=6 部位3=暴击", customRankColumns, "mark_score", "")
-	if got := customRankLimit(query); got != "排序: 圣遗物评分 降序 / 筛选: cons=6 部位3=暴击" {
+	if got := customRankLimit(query); got != "排序: 遗器评分 降序 / 筛选: cons=6 部位3=暴击" {
 		t.Fatal(got)
+	}
+}
+
+// Replies write 遗器 where ark writes Genshin's 圣遗物; the command and the
+// column names take both, so the usage the help writes works as sent.
+func TestCustomRankTakesRelicWords(t *testing.T) {
+	for _, message := range []string{"ark符玄遗器排行 部位4=速度", "ark符玄圣遗物排名 部位4=速度"} {
+		if match := customRankWord.FindStringSubmatch(message); match == nil || match[1] != "符玄" || match[2] != "遗器" && match[2] != "圣遗物" || match[4] != "部位4=速度" {
+			t.Errorf("%s = %q", message, match)
+		}
+	}
+	for _, raw := range []string{"希儿 遗器评分>=200 遗器=快枪手4", "希儿 圣遗物评分>=200 圣遗物=快枪手4"} {
+		_, query, err := parseCustomRank(raw, customRankColumns, "dmg_avg", "")
+		if err != nil || len(query.Filter) != 2 || query.Filter[0].Type != "mark_score" || query.Filter[1].Type != "artis_sets" {
+			t.Errorf("%s = %+v %v", raw, query, err)
+		}
 	}
 }
 
