@@ -156,8 +156,7 @@ func currencyWarsRecord(resources *challengeResources, record map[string]any, eq
 			for range app.Int(role["star"]) {
 				stars = append(stars, star)
 			}
-			card := map[string]any{"rarity": app.Text(role["rarity"]), "icon": resources.official(role["icon"]),
-				"trial": role["is_trial"] == true, "stars": stars}
+			card := resources.character(map[string]any{"rarity": app.Text(role["rarity"]), "trial": role["is_trial"] == true, "stars": stars}, role["role_id"], role["icon"])
 			if equipment {
 				equips, _ := role["equip_list"].([]any)
 				icons := []any{}

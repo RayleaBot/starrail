@@ -105,8 +105,8 @@ func (r *challengeResources) lineup(run map[string]any) []any {
 	for _, raw := range avatars {
 		avatar, _ := raw.(map[string]any)
 		element := app.Text(avatar["element"])
-		lineup = append(lineup, map[string]any{"rarity": app.Int(avatar["rarity"]), "rank": app.Int(avatar["rank"]), "level": app.Text(avatar["level"]),
-			"icon": r.official(avatar["icon"]), "element": r.local("element-"+element, "resources/common/element/"+element+".png"), "element_name": element})
+		lineup = append(lineup, r.character(map[string]any{"rarity": app.Int(avatar["rarity"]), "rank": app.Int(avatar["rank"]), "level": app.Text(avatar["level"]),
+			"element": r.local("element-"+element, "resources/common/element/"+element+".png"), "element_name": element}, avatar["id"], avatar["icon"]))
 	}
 	return lineup
 }
@@ -175,7 +175,7 @@ func Swarm(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 		cachedList, _ := run["cached_avatars"].([]any)
 		for _, rawAvatar := range cachedList {
 			avatar, _ := rawAvatar.(map[string]any)
-			cached = append(cached, map[string]any{"icon": resources.official(avatar["icon"]), "level": app.Text(avatar["level"])})
+			cached = append(cached, resources.character(map[string]any{"level": app.Text(avatar["level"])}, avatar["id"], avatar["icon"]))
 		}
 		passed := []any{}
 		blockList, _ := run["blocks"].([]any)

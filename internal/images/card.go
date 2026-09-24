@@ -50,9 +50,9 @@ func Card(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	for _, raw := range avatars {
 		avatar, _ := raw.(map[string]any)
 		element := app.Text(avatar["element"])
-		list = append(list, map[string]any{"rarity": app.Text(avatar["rarity"]), "icon": resources.official(avatar["icon"]), "level": app.Text(avatar["level"]),
+		list = append(list, resources.character(map[string]any{"rarity": app.Text(avatar["rarity"]), "level": app.Text(avatar["level"]),
 			"element": element, "element_icon": resources.local("element-"+element, "resources/common/element/"+element+".png"),
-			"rank": app.Int(avatar["rank"]), "name": app.Text(avatar["name"])})
+			"rank": app.Int(avatar["rank"]), "name": app.Text(avatar["name"])}, avatar["id"], avatar["icon"]))
 	}
 	return app.Image{Template: "card", Data: map[string]any{
 		"background": resources.official(theme), "head": resources.official(result.Data["cur_head_icon_url"]),

@@ -489,3 +489,6 @@ body {
   opacity: 0.9;
   z-index: -1;
 }
+
+/* miao's face, drawn when the official icon cannot be loaded, fills the icon's frame. */
+img.face { aspect-ratio: 160 / 188; object-fit: cover; object-position: top; }

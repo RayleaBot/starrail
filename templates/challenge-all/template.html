@@ -87,7 +87,7 @@
                   <div class="detail-avatar-border">
                     <span class="life life{{ .rank }}">{{ .rank }}魂</span>
                     <img class="element"{{ with .element }} data-render-resource="{{ . }}"{{ end }} alt="">
-                    <img class="char"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
+                    <img class="char{{ if .face }} face{{ end }}"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="">
                     <div class="level">等级 {{ .level }}</div>
                   </div>
                 </div>

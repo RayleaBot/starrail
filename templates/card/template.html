@@ -55,7 +55,7 @@
         {{ range .avatars }}
         <div class="avatar-box">
           <div class="avatar rarity{{ .rarity }}">
-            <div><img class="avatar-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+            <div><img class="avatar-img{{ if .face }} face{{ end }}"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
             <div class="avatar-inner"></div>
             <div class="avatar-banner">等级 {{ .level }}</div>
             <div class="avatar-element" style="border-color: var(--borderColor-{{ .element }});"><img{{ with .element_icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>

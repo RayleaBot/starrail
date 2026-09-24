@@ -145,3 +145,6 @@ img.buff-icon { width: 100%; height: 100%; }
 .chaos .detail-item { background-image: var(--render-resource-floor-bg-chaos, none); }
 .fiction .detail-item { background-image: var(--render-resource-floor-bg-fiction, none); }
 .shadow .detail-item { background-image: var(--render-resource-floor-bg-shadow, none); }
+
+/* miao's face, drawn when the official icon cannot be loaded, fills the icon's frame. */
+img.face { aspect-ratio: 160 / 188; object-fit: cover; object-position: top; }

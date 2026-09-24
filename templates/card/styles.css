@@ -487,3 +487,6 @@ html body .main .content .general .general-inner .avatar-box .avatar-name {
   font-size: 1em;
   text-align: center;
 }
+
+/* miao's face, drawn when the official icon cannot be loaded, fills the icon's frame. */
+img.face { aspect-ratio: 160 / 188; object-fit: cover; object-position: top; }

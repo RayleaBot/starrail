@@ -524,3 +524,6 @@ body {
   z-index: -1;
 }
 .avatar-element { border-color: var(--borderColor-lightning); }
+
+/* miao's face, drawn when the official icon cannot be loaded, fills the icon's frame. */
+img.face { aspect-ratio: 160 / 188; object-fit: cover; object-position: top; }

@@ -287,6 +287,28 @@ func (r *challengeResources) local(id, name string) string {
 
 func (r *challengeResources) official(url any) string { return r.URL("mihoyo", url) }
 
+// character sets a character card's picture on the pages that draw the icon
+// the official answer links to, as StarRail-plugin's pages load it. When the
+// icon cannot be loaded (the answer names none, or its download failed and
+// waits out the store's pause) the page would show an empty card; the face
+// miao's meta-sr keeps for the character's ID is drawn instead, the picture
+// 面板列表 draws, marked face so the page fits it into the official icon's
+// frame, as most of miao's faces are square.
+func (r *challengeResources) character(card map[string]any, id, icon any) map[string]any {
+	card["icon"] = r.official(icon)
+	if card["icon"] != "" || r.Context.Game.Calc == nil {
+		return card
+	}
+	for _, record := range r.Context.Game.Calc.Metadata().Characters {
+		if record.ID == app.Text(id) {
+			card["icon"] = r.Artwork("face-"+record.ID, "miao-plugin", "resources/meta-sr/character/"+record.Name+"/imgs/face.webp")
+			card["face"] = card["icon"] != ""
+			break
+		}
+	}
+	return card
+}
+
 // team lists a node's or record's characters as upstream's avatar cards show
 // them; the element files are lower case.
 func (r *challengeResources) team(record map[string]any) []any {
@@ -295,8 +317,8 @@ func (r *challengeResources) team(record map[string]any) []any {
 	for _, raw := range avatars {
 		avatar, _ := raw.(map[string]any)
 		element := strings.ToLower(app.Text(avatar["element"]))
-		list = append(list, map[string]any{"rarity": app.Int(avatar["rarity"]), "rank": app.Int(avatar["rank"]), "level": app.Text(avatar["level"]),
-			"element": r.local("element-"+element, "resources/common/element/"+element+".png"), "icon": r.official(avatar["icon"])})
+		list = append(list, r.character(map[string]any{"rarity": app.Int(avatar["rarity"]), "rank": app.Int(avatar["rank"]), "level": app.Text(avatar["level"]),
+			"element": r.local("element-"+element, "resources/common/element/"+element+".png")}, avatar["id"], avatar["icon"]))
 	}
 	return list
 }

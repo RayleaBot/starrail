@@ -148,3 +148,6 @@ body { width: 2496px; }
 .head .tag { font-size: 40px; }
 .column { float: left; width: 800px; padding: 20px; }
 .logo { clear: both; font-size: 60px; }
+
+/* miao's face, drawn when the official icon cannot be loaded, fills the icon's frame. */
+img.face { aspect-ratio: 160 / 188; object-fit: cover; object-position: top; }

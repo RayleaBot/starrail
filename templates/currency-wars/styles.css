@@ -481,3 +481,6 @@ body {
 /* gridFight.html */
 .header { background-image: var(--render-resource-grid-fight-header, none); background-size: cover; background-position: top; height: 250px; position: relative; }
 .meta-inner-container { background-image: var(--render-resource-grid-fight-record, none); }
+
+/* miao's face, drawn when the official icon cannot be loaded, fills the icon's frame. */
+img.face { aspect-ratio: 160 / 188; object-fit: cover; object-position: top; }

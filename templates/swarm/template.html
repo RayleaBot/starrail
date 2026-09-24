@@ -65,7 +65,7 @@
       <div class="avatar-box">
         <div class="avatar rarity{{ .rarity }}">
           <span class="life life{{ .rank }}">{{ .rank }}魂</span>
-          <div><img class="avatar-img"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
+          <div><img class="avatar-img{{ if .face }} face{{ end }}"{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
           <div class="avatar-inner"></div>
           <div class="avatar-banner">等级 {{ .level }}</div>
           <div class="avatar-element"><img{{ with .element }} data-render-resource="{{ . }}"{{ end }} alt=""></div>
@@ -85,7 +85,7 @@
   <div class="record-weakness">
     <div class="record-weakness-header"><span>已缓存角色</span></div>
     <div class="record-weakness-content">
-      {{ range .cached }}<div class="record-cache-role"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""><div style="text-align: center">等级{{ .level }}</div></div>{{ end }}
+      {{ range .cached }}<div class="record-cache-role"><img{{ if .face }} class="face"{{ end }}{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt=""><div style="text-align: center">等级{{ .level }}</div></div>{{ end }}
     </div>
   </div>
   <div class="record-wish-detail">

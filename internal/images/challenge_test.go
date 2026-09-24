@@ -3,12 +3,17 @@ package images
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/plugin-starrail/internal/artwork"
+	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/plugin-starrail/internal/reference/miao"
 )
 
 func clock(year, month, day int) map[string]any {
@@ -75,6 +80,55 @@ func TestChallengeFollowsStarRailPlugin(t *testing.T) {
 	image, _ = challengeImage(memoryOfChaos)(context, app.QueryResult{Data: data})
 	if image.Data["begin"] != "2026.08.10" || image.Data["badge"] != "expiring" || image.Data["floors"].([]any)[0].(map[string]any)["score"] != "" {
 		t.Errorf("memory of chaos = %v", image.Data)
+	}
+}
+
+// A character whose official icon cannot be loaded shows the face miao's
+// meta-sr keeps for its ID, which 面板列表 draws, on 深渊 and 卡片 alike; an
+// ID the pinned data lacks stays empty.
+func TestCharactersFallBackToMiaoFaces(t *testing.T) {
+	root := t.TempDir()
+	face := "miao-plugin/resources/meta-sr/character/长夜月/imgs/face.webp"
+	if err := os.MkdirAll(filepath.Join(root, filepath.Dir(filepath.FromSlash(face))), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(face)), []byte("webp"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	engine, err := reference.New(miao.Profile(os.DirFS("../assets/calc")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	context := app.ImageContext{Game: app.Game{Calc: engine}, Artwork: &artwork.Store{Root: root}, Now: time.Date(2026, 9, 12, 12, 0, 0, 0, chinaTime)}
+	avatars := []any{map[string]any{"id": json.Number("1413"), "icon": "http://insecure.example/1413.png", "rarity": json.Number("5"), "element": "Ice"},
+		map[string]any{"id": json.Number("9999"), "icon": "http://insecure.example/9999.png", "rarity": json.Number("5"), "element": "Ice"}}
+	paths := func(image app.Image) map[string]string {
+		out := map[string]string{"": ""}
+		for _, resource := range image.Resources {
+			out[resource.ID] = filepath.ToSlash(resource.Path)
+		}
+		return out
+	}
+	record := map[string]any{"begin_time": clock(2026, 8, 10), "end_time": clock(2026, 9, 21), "groups": []any{},
+		"all_floor_detail": []any{map[string]any{"name": "第1关", "star_num": json.Number("3"), "node_1": map[string]any{"challenge_time": clock(2026, 9, 10), "avatars": avatars}}}}
+	abyss, ok := challengeImage(memoryOfChaos)(context, app.QueryResult{Data: record})
+	if !ok {
+		t.Fatal("abyss")
+	}
+	team := abyss.Data["floors"].([]any)[0].(map[string]any)["nodes"].([]any)[0].(map[string]any)["avatars"].([]any)
+	card, ok := Card(context, app.QueryResult{Data: map[string]any{"stats": map[string]any{}, "avatar_list": avatars}})
+	if !ok {
+		t.Fatal("card")
+	}
+	for name, image := range map[string]struct {
+		image   app.Image
+		members []any
+	}{"深渊": {abyss, team}, "卡片": {card, card.Data["avatars"].([]any)}} {
+		found := paths(image.image)
+		first, second := image.members[0].(map[string]any), image.members[1].(map[string]any)
+		if found[first["icon"].(string)] != "assets/"+face || first["face"] != true || found[second["icon"].(string)] != "" || second["face"] != nil {
+			t.Errorf("%s = %v, %v", name, first, second)
+		}
 	}
 }
 

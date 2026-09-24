@@ -699,3 +699,6 @@ body {
 .strategy-icon-container.quality-1 { background-image: var(--render-resource-grid-fight-strategy-1, none); }
 .strategy-icon-container.quality-2 { background-image: var(--render-resource-grid-fight-strategy-2, none); }
 .strategy-icon-container.quality-3 { background-image: var(--render-resource-grid-fight-strategy-3, none); }
+
+/* miao's face, drawn when the official icon cannot be loaded, fills the icon's frame. */
+img.face { aspect-ratio: 160 / 188; object-fit: cover; object-position: top; }
