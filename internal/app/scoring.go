@@ -131,14 +131,14 @@ var miaoAttributeKeys = map[string]string{"1": "hp", "2": "atk", "3": "def", "4"
 // miaoRelics are a panel's relics as miao scores them, by slot: miao reads a
 // relic of its player data (ArtisAttr) as the main stat at the relic's level
 // and each substat's value and roll count from its attrIds, which panelArtis
-// restores as miao reads the panel's service. A piece that cannot be restored
-// is left out.
+// restores as miao reads the panel's service (a kept panel keeps them). A
+// piece that cannot be restored is left out.
 func miaoRelics(ctx context.Context, g Game, panel CharacterPanel) map[int]BuildGear {
 	relics := map[int]BuildGear{}
 	if g.Data == nil || g.Data.CloudGear == nil || g.Calc == nil {
 		return relics
 	}
-	artis, _ := restoreArtis(ctx, g, panel, nil, true)
+	artis, _, _ := restoreArtis(ctx, g, panel, nil, true)
 	for slot, piece := range artis {
 		table := g.Data.CloudGear.Meta.StarData[asText(piece["star"])]
 		key := g.Data.CloudGear.Meta.MainIdx[slot][asText(piece["mainId"])]

@@ -73,6 +73,11 @@ func (p SavedProfiles) Sorted(catalog Catalog, updated map[string]bool) []SavedP
 type PanelStore struct {
 	mu        sync.Mutex
 	Directory string
+	// Relics restores a panel's relics as miao keeps them in its player data,
+	// which is done once, when the panel is kept, as miao computes them when
+	// it saves the panel. A panel kept without them has them restored when it
+	// is first read, and kept with them. Nil keeps panels without them.
+	Relics func(CharacterPanel) *MiaoRelics
 }
 
 func (s *PanelStore) file(uid string) (string, error) {
@@ -94,15 +99,61 @@ func (s *PanelStore) read(uid string) (SavedProfiles, error) {
 	return value, err
 }
 
+// Read returns a UID's kept panels. Panels kept before their relics were
+// have them restored here, outside the lock, and kept with them unless the
+// panel was replaced meanwhile; when they cannot be written back, they are
+// restored again at the next read.
 func (s *PanelStore) Read(uid string) (SavedProfiles, error) {
 	s.mu.Lock()
+	value, err := s.read(uid)
+	s.mu.Unlock()
+	if err != nil || s.Relics == nil {
+		return value, err
+	}
+	restored := map[string]*MiaoRelics{}
+	for id, kept := range value.Panels {
+		if kept.Panel.Relics == nil {
+			if relics := s.Relics(kept.panel()); relics != nil {
+				restored[id] = relics
+				kept.Panel.Relics = relics
+				value.Panels[id] = kept
+			}
+		}
+	}
+	if len(restored) == 0 {
+		return value, nil
+	}
+	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.read(uid)
+	current, err := s.read(uid)
+	if err != nil {
+		return value, nil
+	}
+	changed := false
+	for id, relics := range restored {
+		if kept, ok := current.Panels[id]; ok && kept.Panel.Relics == nil && kept.UpdatedAtMS == value.Panels[id].UpdatedAtMS {
+			kept.Panel.Relics = relics
+			current.Panels[id] = kept
+			changed = true
+		}
+	}
+	if changed {
+		file, _ := s.file(uid)
+		_ = localdata.Write(file, current)
+	}
+	return value, nil
 }
 
 // Keep merges panels into a UID's kept panels, replacing each character's
-// older one; a player marks a 更新面板 and names the player.
+// older one; a player marks a 更新面板 and names the player. Each panel's
+// relics are restored before the store is locked.
 func (s *PanelStore) Keep(uid string, panels []CharacterPanel, service string, player *ShowcaseProfile) (SavedProfiles, error) {
+	panels = slices.Clone(panels)
+	for index, panel := range panels {
+		if panel.Relics == nil && s.Relics != nil {
+			panels[index].Relics = s.Relics(SavedPanel{Panel: panel, Official: panel.Official}.panel())
+		}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	value, err := s.read(uid)
@@ -341,7 +392,11 @@ func (a *App) characterPanel(ctx context.Context, event *rayleabot.EventContext,
 	if owner.Owned {
 		panel, err := a.queryCharacterPanel(ctx, a.accountClient(event), owner.Choice, id)
 		if err == nil {
-			_, _ = a.Profiles.Keep(owner.UID, []CharacterPanel{panel}, "米游社", nil)
+			// The kept panel carries the relics restored when it was kept.
+			saved, err := a.Profiles.Keep(owner.UID, []CharacterPanel{panel}, "米游社", nil)
+			if kept, ok := saved.Panels[panel.ID]; err == nil && ok {
+				return kept.panel(), nil
+			}
 			return panel, nil
 		}
 	}

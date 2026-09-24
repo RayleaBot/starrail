@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"math"
+	"os"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strconv"
@@ -270,6 +272,84 @@ func TestPanelsScoreAsMiaoKeepsThem(t *testing.T) {
 	homo := shownPanel(shared, "mihomo", map[string][2]any{"atk": {"7.7%", 1}, "speed": {"2.3", 0}, "2speed": {"4.6", 1}, "cdmg": {"18.1%", 2}, "cpct": {"2.5%", 0},
 		"hpPlus": {"71", 1}, "effPct": {"4.3%", 0}, "stance": {"5.1%", 0}})
 	same("Mihomo panel", scored(homo), scored(shared))
+}
+
+// As miao computes a panel's attrIds once when it saves its player data, a
+// kept panel keeps its restored relics, which scoring, export and ark ranks
+// read. A panel kept before they were has them restored at its first read and
+// kept.
+func TestKeptPanelsKeepTheirRelics(t *testing.T) {
+	a := pluginApp(t)
+	want := map[string][]string{"1": {"5,2,2", "7,1,2", "8,1,0", "9,3,4"}, "2": {"1,2,1", "10,1,2", "12,1,0", "7,2,2"}}
+	stored := func(uid string) (map[string][]string, bool) {
+		t.Helper()
+		var file struct {
+			Panels map[string]struct {
+				Panel struct {
+					Relics *struct {
+						Pieces   map[string]struct{ AttrIds []string } `json:"pieces"`
+						Complete bool                                  `json:"complete"`
+					} `json:"relics"`
+				} `json:"panel"`
+			} `json:"panels"`
+		}
+		raw, err := os.ReadFile(filepath.Join(a.Profiles.Directory, uid+".json"))
+		if err == nil {
+			err = json.Unmarshal(raw, &file)
+		}
+		relics := file.Panels["1102"].Panel.Relics
+		if err != nil || relics == nil {
+			return nil, false
+		}
+		out := map[string][]string{}
+		for slot, piece := range relics.Pieces {
+			out[slot] = slices.Sorted(slices.Values(piece.AttrIds))
+		}
+		return out, relics.Complete
+	}
+	if _, err := a.Profiles.Keep("100000001", []CharacterPanel{officialSeele(t, a)}, "米游社", nil); err != nil {
+		t.Fatal(err)
+	}
+	if got, complete := stored("100000001"); !complete || !reflect.DeepEqual(got, want) {
+		t.Fatalf("kept relics = %v %v, want %v", got, complete, want)
+	}
+	// Scoring reads the kept relics: here the first relic's 暴击伤害 kept at
+	// 9,3,0, 15.552%.
+	path := filepath.Join(a.Profiles.Directory, "100000001.json")
+	raw, _ := os.ReadFile(path)
+	if err := os.WriteFile(path, []byte(strings.Replace(string(raw), `"9,3,4"`, `"9,3,0"`, 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	saved, err := a.Profiles.Read("100000001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	scored, err := a.scorePanel(t.Context(), saved.Panels["1102"].panel())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, attr := range scored.ScoreDetail.Pieces[1].Attrs {
+		if attr.Key == "cdmg" && attr.Value != "15.6%" {
+			t.Errorf("scored 暴击伤害 = %+v", attr)
+		}
+	}
+	// A panel kept without relics has them restored and kept at its first
+	// read.
+	restore := a.Profiles.Relics
+	a.Profiles.Relics = nil
+	if _, err := a.Profiles.Keep("100000002", []CharacterPanel{officialSeele(t, a)}, "米游社", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, found := stored("100000002"); found {
+		t.Fatal("relics kept without restoring them")
+	}
+	a.Profiles.Relics = restore
+	if saved, err = a.Profiles.Read("100000002"); err != nil || saved.Panels["1102"].Panel.Relics == nil {
+		t.Fatalf("read = %v", err)
+	}
+	if got, complete := stored("100000002"); !complete || !reflect.DeepEqual(got, want) {
+		t.Fatalf("relics kept at the first read = %v %v, want %v", got, complete, want)
+	}
 }
 
 // 导出面板 writes every kept panel back as miao keeps it: a panel ark handed

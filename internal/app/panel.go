@@ -75,6 +75,9 @@ type CharacterPanel struct {
 	// UpdatedAtMS is when the kept panel was saved; it is not stored with the
 	// panel.
 	UpdatedAtMS int64 `json:"-"`
+	// Relics are the relics as miao keeps them, restored when the panel was
+	// kept; nil for a panel not kept, or kept before they were.
+	Relics *MiaoRelics `json:"relics,omitempty"`
 }
 
 var markup = regexp.MustCompile(`<[^>]*>`)

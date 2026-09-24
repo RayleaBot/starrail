@@ -226,15 +226,46 @@ func resolvePanelBasis(ctx context.Context, g Game, panel CharacterPanel) (panel
 // Mihomo's roll count; a panel from ark and a piece read by its OCR keep
 // miao's values. A changed panel's piece keeps the substats of the panel it
 // was taken from, as miao's ProfileChange copies the relics. basis is the
-// panel's own, or nil to resolve it only when the speed needs it.
+// panel's own, or nil to resolve it only when the speed needs it. A kept
+// panel's relics were restored when it was kept, as miao computes them once
+// when it saves its player data.
 func panelArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelBasis) (map[string]map[string]any, error) {
-	return restoreArtis(ctx, g, panel, basis, false)
+	artis, _, err := restoreArtis(ctx, g, panel, basis, false)
+	return artis, err
 }
 
-// restoreArtis is panelArtis; partial leaves out the pieces that cannot be
-// restored instead of failing, and then corrects no speed, which needs every
-// piece.
-func restoreArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelBasis, partial bool) (map[string]map[string]any, error) {
+// MiaoRelics are a kept panel's relics as miao keeps them in its player data,
+// by slot, restored once when the panel is kept; Complete tells that every
+// piece could be restored (and an official panel's speed corrected).
+type MiaoRelics struct {
+	Pieces   map[string]map[string]any `json:"pieces"`
+	Complete bool                      `json:"complete"`
+}
+
+// restoreRelics restores a panel's relics for keeping; nil when the fixed
+// data to restore them is unavailable.
+func restoreRelics(ctx context.Context, g Game, panel CharacterPanel) *MiaoRelics {
+	if g.Data == nil || g.Data.CloudGear == nil || g.Calc == nil {
+		return nil
+	}
+	pieces, complete, _ := restoreArtis(ctx, g, panel, nil, true)
+	return &MiaoRelics{Pieces: pieces, Complete: complete}
+}
+
+// restoreArtis is panelArtis and tells whether every piece was restored;
+// partial leaves out the pieces that cannot be restored instead of failing,
+// and then corrects no speed, which needs every piece. The relics a panel
+// keeps are read as they are, unless a complete restoration is asked of a
+// panel whose relics were not all restored, which then fails as it did.
+func restoreArtis(ctx context.Context, g Game, panel CharacterPanel, basis *panelBasis, partial bool) (map[string]map[string]any, bool, error) {
+	if kept := panel.Relics; kept != nil && (partial || kept.Complete) {
+		artis := map[string]map[string]any{}
+		for slot, piece := range kept.Pieces {
+			artis[slot] = maps.Clone(piece)
+			artis[slot]["attrIds"] = slices.Clone(asList(piece["attrIds"]))
+		}
+		return artis, kept.Complete, nil
+	}
 	// A panel kept before the roll counts were kept has them in the official
 	// entry.
 	official := map[int]map[string]int{}
@@ -259,8 +290,8 @@ func restoreArtis(ctx context.Context, g Game, panel CharacterPanel, basis *pane
 			kept, ok := taken[from]
 			if !ok {
 				var err error
-				if kept, err = restoreArtis(ctx, g, *from, nil, partial); err != nil {
-					return nil, err
+				if kept, _, err = restoreArtis(ctx, g, *from, nil, partial); err != nil {
+					return nil, false, err
 				}
 				taken[from] = kept
 			}
@@ -292,7 +323,7 @@ func restoreArtis(ctx context.Context, g Game, panel CharacterPanel, basis *pane
 			continue
 		}
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		if copied != nil {
 			piece["attrIds"] = copied
@@ -302,7 +333,7 @@ func restoreArtis(ctx context.Context, g Game, panel CharacterPanel, basis *pane
 	if panel.Source == "mihoyo" && !skipped {
 		officialSpeed(ctx, g, panel, basis, artis)
 	}
-	return artis, nil
+	return artis, !skipped, nil
 }
 
 // officialSpeed is MysPanelHSRData's 速度修正. The record API shows speed
