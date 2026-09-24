@@ -15,17 +15,23 @@ import (
 // APICard draws 面板列表 and 面板更新 the way StarRail-plugin's new_card page
 // does: each kept character's avatar, name and eidolons, those the query
 // returned marked after 面板更新, with the UID, the service, the update time
-// and the sender's name.
+// and the sender's name. StarRail-plugin's avatars cover only its older
+// characters; one it lacks shows miao's face, marked face so the page crops it
+// to the round frame.
 func APICard(context app.ImageContext, image app.APICardImage) (app.Image, bool) {
 	resources := &app.ImageResources{Context: context}
 	resources.Artwork("SR", "starrail-plugin", "resources/common/font/SR.ttf")
 	characters := []any{}
 	for _, character := range image.Characters {
 		id := strconv.Itoa(character.AvatarID)
-		characters = append(characters, map[string]any{
-			"avatar": resources.Artwork("avatar-"+id, "starrail-plugin", "resources/panel/resources/avatar/"+id+".png"),
-			"name":   character.Name, "rank": character.Rank, "updated": image.Update && character.IsNew,
-		})
+		card := map[string]any{"avatar": resources.Artwork("avatar-"+id, "starrail-plugin", "resources/panel/resources/avatar/"+id+".png"),
+			"name": character.Name, "rank": character.Rank, "updated": image.Update && character.IsNew}
+		if card["avatar"] == "" {
+			if face := miaoFace(resources, id); face != "" {
+				card["avatar"], card["face"] = face, true
+			}
+		}
+		characters = append(characters, card)
 	}
 	kind := ""
 	if image.Update {

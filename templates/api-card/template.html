@@ -32,7 +32,7 @@
     {{ range .characters }}
     <div class="item" data-isUpdate="{{ .updated }}">
       <div class="avatar">
-        <img{{ with .avatar }} data-render-resource="{{ . }}"{{ end }} alt="">
+        <img{{ if .face }} class="face"{{ end }}{{ with .avatar }} data-render-resource="{{ . }}"{{ end }} alt="">
       </div>
       <div class="text" data-isCircle="{{ $.type }}">
         {{ .name }}

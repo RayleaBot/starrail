@@ -295,18 +295,27 @@ func (r *challengeResources) official(url any) string { return r.URL("mihoyo", u
 // 面板列表 draws, marked face so the page fits it into the official icon's
 // frame, as most of miao's faces are square.
 func (r *challengeResources) character(card map[string]any, id, icon any) map[string]any {
-	card["icon"] = r.official(icon)
-	if card["icon"] != "" || r.Context.Game.Calc == nil {
+	if card["icon"] = r.official(icon); card["icon"] != "" {
 		return card
 	}
-	for _, record := range r.Context.Game.Calc.Metadata().Characters {
-		if record.ID == app.Text(id) {
-			card["icon"] = r.Artwork("face-"+record.ID, "miao-plugin", "resources/meta-sr/character/"+record.Name+"/imgs/face.webp")
-			card["face"] = card["icon"] != ""
-			break
-		}
+	if face := miaoFace(&r.ImageResources, app.Text(id)); face != "" {
+		card["icon"], card["face"] = face, true
 	}
 	return card
+}
+
+// miaoFace adds the face miao's meta-sr keeps for the character with an
+// official ID, found by the pinned record's name; "" when there is none.
+func miaoFace(resources *app.ImageResources, id string) string {
+	if resources.Context.Game.Calc == nil {
+		return ""
+	}
+	for _, record := range resources.Context.Game.Calc.Metadata().Characters {
+		if record.ID == id {
+			return resources.Artwork("face-"+id, "miao-plugin", "resources/meta-sr/character/"+record.Name+"/imgs/face.webp")
+		}
+	}
+	return ""
 }
 
 // team lists a node's or record's characters as upstream's avatar cards show

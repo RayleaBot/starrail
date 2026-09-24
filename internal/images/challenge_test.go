@@ -130,6 +130,23 @@ func TestCharactersFallBackToMiaoFaces(t *testing.T) {
 			t.Errorf("%s = %v, %v", name, first, second)
 		}
 	}
+
+	// 面板列表 of StarRail-plugin's panel service draws its own avatar, and
+	// miao's face for a character it has none of.
+	own := "starrail-plugin/resources/panel/resources/avatar/1303.png"
+	if err := os.MkdirAll(filepath.Join(root, filepath.Dir(filepath.FromSlash(own))), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(own)), []byte("png"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	list, _ := APICard(context, app.APICardImage{Characters: []app.APICharacter{{AvatarID: 1303}, {AvatarID: 1413}}})
+	found := paths(list)
+	cards := list.Data["characters"].([]any)
+	if first, second := cards[0].(map[string]any), cards[1].(map[string]any); found[first["avatar"].(string)] != "assets/"+own || first["face"] != nil ||
+		found[second["avatar"].(string)] != "assets/"+face || second["face"] != true {
+		t.Errorf("panel list = %v, %v", first, second)
+	}
 }
 
 func TestChallengeRoutesFollowStarRailPlugin(t *testing.T) {

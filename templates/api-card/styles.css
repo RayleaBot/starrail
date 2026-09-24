@@ -306,3 +306,6 @@ body {
   font-size: 15px;
   text-shadow: 0 0 2px #000;
 }
+
+/* miao's face, drawn for a character StarRail-plugin has no avatar of, cropped to the round frame. */
+.data .item-list .item .avatar img.face { height: 100%; object-fit: cover; object-position: top; border-radius: 50%; }
