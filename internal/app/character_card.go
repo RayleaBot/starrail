@@ -120,7 +120,7 @@ func (a *App) cardImages(entry Entry) ([]MediaEntry, []artworkFile) {
 	a.Media.mu.Unlock()
 	media := []MediaEntry{}
 	for _, item := range all {
-		if item.CatalogID == entry.ID && item.Category == "photo" {
+		if item.CatalogID == entry.ID {
 			media = append(media, item)
 		}
 	}

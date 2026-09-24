@@ -154,7 +154,7 @@ func (a *App) pictureCommand(ctx context.Context, event *rayleabot.EventContext,
 			if command == "panel-image-upload" {
 				err = a.PanelPictures.Add(pictures, data)
 			} else {
-				_, err = a.Media.add(MediaEntry{Title: entry.Name + "照片" + strconv.Itoa(index+1), Category: "photo", CatalogID: entry.ID, Source: "聊天上传", License: "聊天上传"}, data)
+				_, err = a.Media.add(MediaEntry{Title: entry.Name + "照片" + strconv.Itoa(index+1), Category: mediaPhoto, CatalogID: entry.ID, Source: "聊天上传", License: "聊天上传"}, data)
 			}
 			if err != nil {
 				return event.SendText(friendlyError(err))

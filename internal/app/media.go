@@ -26,7 +26,12 @@ import (
 const mediaMaxBytes = 4 * 1024 * 1024
 
 var mediaRefPattern = regexp.MustCompile(`^[A-Z2-7]{26}$`)
-var mediaKinds = []string{"character", "weapon", "food", "enemy", "domain", "artifact", "material", "guide", "birthday", "photo", "other"}
+
+// mediaPhoto is the library's one category, a character's photos, which 照片
+// and the character card read as miao reads its upload directory. Images an
+// earlier version filed under other categories stay on disk but are no
+// longer read.
+const mediaPhoto = "photo"
 
 type MediaEntry struct {
 	Ref       string `json:"ref"`
@@ -69,7 +74,7 @@ func (s *MediaStore) read(ref string) (mediaFile, error) {
 	if err := localdata.Read(s.file(ref), &v); err != nil {
 		return v, err
 	}
-	if v.Entry.Ref != ref || len(v.Data) != v.Entry.Bytes {
+	if v.Entry.Ref != ref || len(v.Data) != v.Entry.Bytes || v.Entry.Category != mediaPhoto {
 		return v, gameError("media_missing", "素材不存在或文件不完整。")
 	}
 	return v, nil
@@ -115,7 +120,9 @@ func (s *MediaStore) entries() ([]MediaEntry, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, entry)
+		if entry.Category == mediaPhoto {
+			out = append(out, entry)
+		}
 	}
 	slices.SortFunc(out, func(a, b MediaEntry) int {
 		if a.CreatedMS > b.CreatedMS {
@@ -215,12 +222,12 @@ func webpDimensions(raw []byte) (int, int, error) {
 	return w, h, nil
 }
 func validateMediaEntry(entry MediaEntry, catalog Catalog) error {
-	if len([]rune(strings.TrimSpace(entry.Title))) < 1 || len([]rune(entry.Title)) > 120 || !slices.Contains(mediaKinds, entry.Category) || len([]rune(entry.Source)) > 512 || len([]rune(strings.TrimSpace(entry.License))) < 1 || len([]rune(entry.License)) > 256 {
+	if len([]rune(strings.TrimSpace(entry.Title))) < 1 || len([]rune(entry.Title)) > 120 || entry.Category != mediaPhoto || len([]rune(entry.Source)) > 512 || len([]rune(strings.TrimSpace(entry.License))) < 1 || len([]rune(entry.License)) > 256 {
 		return gameError("input_invalid", "请填写有效素材名称、分类、来源及使用许可。")
 	}
 	if entry.CatalogID != "" {
-		if _, ok := catalog.Get(entry.CatalogID); !ok {
-			return gameError("input_invalid", "关联资料条目不存在。")
+		if item, ok := catalog.Get(entry.CatalogID); !ok || item.Kind != "character" {
+			return gameError("input_invalid", "关联角色不存在。")
 		}
 	}
 	return nil
@@ -347,7 +354,6 @@ func (a *App) mediaAction(action string, input map[string]any) (map[string]any, 
 	if action == "media.list" {
 		var q struct {
 			Query     string `json:"query"`
-			Category  string `json:"category"`
 			CatalogID string `json:"catalog_id"`
 			Offset    int    `json:"offset"`
 		}
@@ -362,7 +368,7 @@ func (a *App) mediaAction(action string, input map[string]any) (map[string]any, 
 		totalBytes := 0
 		for _, e := range all {
 			totalBytes += e.Bytes
-			if q.Category != "" && e.Category != q.Category || q.CatalogID != "" && e.CatalogID != q.CatalogID || q.Query != "" && !strings.Contains(strings.ToLower(e.Title+" "+e.Source+" "+e.CatalogID), strings.ToLower(q.Query)) {
+			if q.CatalogID != "" && e.CatalogID != q.CatalogID || q.Query != "" && !strings.Contains(strings.ToLower(e.Title+" "+e.Source+" "+e.CatalogID), strings.ToLower(q.Query)) {
 				continue
 			}
 			items = append(items, e)
@@ -372,7 +378,7 @@ func (a *App) mediaAction(action string, input map[string]any) (map[string]any, 
 		if end < len(items) {
 			next = &end
 		}
-		return map[string]any{"items": items[start:end], "total": len(items), "next_offset": next, "total_bytes": totalBytes, "all_count": len(all), "categories": mediaKinds}, nil
+		return map[string]any{"items": items[start:end], "total": len(items), "next_offset": next, "total_bytes": totalBytes, "all_count": len(all)}, nil
 	}
 	ref := asText(input["ref"])
 	v, err := s.read(ref)

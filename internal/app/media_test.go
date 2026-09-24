@@ -62,14 +62,27 @@ func TestMediaAtomicChunksOriginalBytesEditAndRemoval(t *testing.T) {
 	if !bytes.Equal(raw, data) {
 		t.Fatal("original changed")
 	}
+	// An image an earlier version filed under another category stays on
+	// disk but is no longer read.
+	old, err := a.Media.add(MediaEntry{Title: "旧分类", Category: "guide", License: "fixture"}, raw)
+	if err != nil {
+		t.Fatal(err)
+	}
 	listed, err := a.mediaAction("media.list", nil)
 	if err != nil || listed["all_count"] != 1 {
 		t.Fatal(listed, err)
 	}
+	if _, err = a.mediaAction("media.read", map[string]any{"ref": old.Ref}); err == nil {
+		t.Fatal("another category read")
+	}
 	if _, err = a.mediaAction("media.remove", map[string]any{"ref": ref, "revision": 0, "confirm": true}); err == nil {
 		t.Fatal("stale remove")
 	}
-	if _, err = a.mediaAction("media.update", map[string]any{"ref": ref, "revision": 1, "title": "修改标题", "category": "guide", "license": "fixture"}); err != nil {
+	// The library keeps a character's photos only.
+	if _, err = a.mediaAction("media.update", map[string]any{"ref": ref, "revision": 1, "title": "修改标题", "category": "guide", "license": "fixture"}); err == nil {
+		t.Fatal("another category accepted")
+	}
+	if _, err = a.mediaAction("media.update", map[string]any{"ref": ref, "revision": 1, "title": "修改标题", "category": "photo", "license": "fixture"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = a.mediaAction("media.remove", map[string]any{"ref": ref, "revision": 2, "confirm": true}); err != nil {
