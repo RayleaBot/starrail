@@ -398,7 +398,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.onlineCommand(ctx, event)
 	case "artwork", "artwork-status":
 		return a.artworkCommand(event, command, args)
-	case "photo", "image-library", "original-image":
+	case "photo", "original-image":
 		return a.interactionCommand(ctx, event, command, args)
 	case "guides":
 		// StarRail-plugin's strategy passes the message on after answering,
