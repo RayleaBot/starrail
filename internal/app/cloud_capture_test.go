@@ -59,7 +59,7 @@ func TestCloudAvatarWritesEverySource(t *testing.T) {
 	}
 	written := func(panel CharacterPanel) map[string][]string {
 		t.Helper()
-		_, raw, err := cloudAvatar(t.Context(), a.Game, panel)
+		_, raw, err := cloudAvatar(t.Context(), a.Game, panel, "share")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -100,6 +100,43 @@ func TestCloudAvatarWritesEverySource(t *testing.T) {
 	}
 	if got := written(panel); !reflect.DeepEqual(got, want) {
 		t.Fatalf("Mihomo panel = %v, want %v", got, want)
+	}
+	// The file is the one miao saves: the player's name, level and last
+	// refresh, and each character under the name miao gives its service,
+	// with the time it was kept.
+	official := panels[0]
+	official.Source = "mihoyo"
+	kept := map[string]CharacterPanel{"100000001": panels[0], "100000002": panel, "100000003": official}
+	sources := map[string]string{"100000001": "share", "100000002": "homo", "100000003": "mysPanelHSR"}
+	for uid, source := range sources {
+		saved, err := a.Profiles.Keep(uid, []CharacterPanel{kept[uid]}, "test", &ShowcaseProfile{Nickname: "开拓者", Level: 70})
+		if err != nil {
+			t.Fatal(err)
+		}
+		content, count, err := a.playerDataFile(t.Context(), saved)
+		var file struct {
+			UID     string `json:"uid"`
+			Name    string `json:"name"`
+			Level   int    `json:"level"`
+			Info    bool   `json:"info"`
+			Profile int64  `json:"_profile"`
+			Avatars map[string]struct {
+				Source string `json:"_source"`
+				Time   int64  `json:"_time"`
+			} `json:"avatars"`
+		}
+		if err == nil {
+			err = json.Unmarshal(content, &file)
+		}
+		avatar := file.Avatars["1102"]
+		if err != nil || count != 1 || file.UID != uid || file.Name != "开拓者" || file.Level != 70 || file.Info || file.Profile != saved.RefreshedAtMS || avatar.Source != source || avatar.Time != saved.Panels["1102"].UpdatedAtMS {
+			t.Fatalf("%s file = %s %d %v", uid, content, count, err)
+		}
+		// 导入面板数据 reads the uploaded file back.
+		data, err := cloudPlayerObject(string(content))
+		if avatars, e := cleanCloudPlayer(uid, data); err != nil || e != nil || len(avatars) != 1 {
+			t.Fatalf("%s read back = %v %v %v", uid, avatars, err, e)
+		}
 	}
 }
 

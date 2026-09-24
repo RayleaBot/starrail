@@ -143,11 +143,10 @@ func readRankStats(entry Entry, decoded any) (RankStatsImage, error) {
 }
 
 // cloudExchangeCommand is ark-plugin's 导出面板数据 and 导入面板数据<UID>:
-// export uploads every panel kept for the UID, whichever service it came
-// from, as upstream uploads miao's player data, in the exchange format, for
-// ten minutes (a panel that cannot be written out is left out); import
-// downloads a UID's upload into the UID's kept panels. Who may do either is ark's exportPanelData and
-// importPanelData; the UID is the one named, mentioned or in use.
+// export uploads the UID's player data file as upstream uploads miao's, for
+// ten minutes; import downloads a UID's upload into the UID's kept panels.
+// Who may do either is ark's exportPanelData and importPanelData; the UID is
+// the one named, mentioned or in use.
 func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	level := settings(event).Ark.ImportPanelData
 	if command == "cloud-export" {
@@ -166,16 +165,13 @@ func (a *App) cloudExchangeCommand(ctx context.Context, event *rayleabot.EventCo
 		if err != nil {
 			return event.SendText(friendlyError(err))
 		}
-		avatars := map[string]json.RawMessage{}
-		for _, kept := range saved.Panels {
-			if id, raw, err := cloudAvatar(ctx, a.Game, kept.panel()); err == nil {
-				avatars[id] = raw
-			}
+		raw, count, err := a.playerDataFile(ctx, saved)
+		if err != nil {
+			return event.SendText(friendlyError(err))
 		}
-		if len(avatars) == 0 {
+		if count == 0 {
 			return event.SendText("面板数据文件不存在，请先更新面板数据")
 		}
-		raw, _ := json.Marshal(map[string]any{"uid": owner.UID, "avatars": avatars})
 		job, err := a.arkExchange(ctx, event, CloudInput{Mode: "exchange_upload", UID: owner.UID, Consent: true, exchangeData: string(raw)})
 		if err == nil && job.State == "completed" {
 			return event.SendText("导出成功，请在另一个安装此插件的Bot上输入 " + a.Game.Prefix + "导入面板数据" + owner.UID + " ，有效期十分钟~")

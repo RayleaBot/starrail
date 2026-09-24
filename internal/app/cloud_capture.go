@@ -185,8 +185,11 @@ func originalCloudTalents(record reference.Character, profile BuildProfile) map[
 // an official panel keeps the value shown and the official roll count, as
 // miao's MysPanelHSR reads them; a Mihomo panel the value cut as the game
 // shows it and Mihomo's roll count; a panel from ark and a changed panel the
-// value alone, the rolls that give it closest.
-func cloudAvatar(ctx context.Context, g Game, panel CharacterPanel) (string, json.RawMessage, error) {
+// value alone, the rolls that give it closest. source is the service the
+// character is saved under (_source): share for data exchanged with ark, or
+// miao's name for the service a kept panel came from; the times are when the
+// panel was kept, or now for one that was not.
+func cloudAvatar(ctx context.Context, g Game, panel CharacterPanel, source string) (string, json.RawMessage, error) {
 	game, engine := g.ID, g.Calc
 	if g.Data == nil || g.Data.CloudGear == nil {
 		return "", nil, gameError("cloud_invalid", "固定装备资料无法读取。")
@@ -205,8 +208,11 @@ func cloudAvatar(ctx context.Context, g Game, panel CharacterPanel) (string, jso
 		return "", nil, err
 	}
 	id := record.ID
-	now := time.Now().UnixMilli()
-	avatar := map[string]any{"_time": now, "_update": now, "_talent": now, "id": id, "name": record.Name, "elem": record.Element, "level": panel.Level, "promote": promote, "cons": panel.Rank, "talent": originalCloudTalents(record, profile), "trees": profile.Trees, "_source": "share", "artis": map[string]any{}}
+	saved := panel.UpdatedAtMS
+	if saved <= 0 {
+		saved = time.Now().UnixMilli()
+	}
+	avatar := map[string]any{"_time": saved, "_update": saved, "_talent": saved, "id": id, "name": record.Name, "elem": record.Element, "level": panel.Level, "promote": promote, "cons": panel.Rank, "talent": originalCloudTalents(record, profile), "trees": profile.Trees, "artis": map[string]any{}}
 	if panel.Weapon == nil {
 		avatar["weapon"] = nil
 	} else {
@@ -247,7 +253,18 @@ func cloudAvatar(ctx context.Context, g Game, panel CharacterPanel) (string, jso
 	// Normalize through JSON so exported slices use the same representation as imported files.
 	var data map[string]any
 	_ = decodeObject(avatar, &data)
-	return cleanCloudAvatar(data)
+	exportID, raw, err := cleanCloudAvatar(data)
+	if err != nil || source == "share" {
+		return exportID, raw, err
+	}
+	// The clean-up marks every character share, as it marks imported data.
+	var cleaned map[string]any
+	if err = json.Unmarshal(raw, &cleaned); err != nil {
+		return "", nil, err
+	}
+	cleaned["_source"] = source
+	raw, err = json.Marshal(cleaned)
+	return exportID, raw, err
 }
 func (a *App) captureCloudPanel(ctx context.Context, client AccountsClient, choice Selection, role Role, archive CloudArchive, id string) (map[string]any, error) {
 	if _, err := strconv.Atoi(id); err != nil {
@@ -276,7 +293,7 @@ func (a *App) captureCloudPanel(ctx context.Context, client AccountsClient, choi
 	if panel == nil {
 		return nil, gameError("character_missing", "官方未返回此角色。")
 	}
-	exportID, data, err := cloudAvatar(ctx, a.Game, *panel)
+	exportID, data, err := cloudAvatar(ctx, a.Game, *panel, "share")
 	if err != nil {
 		return nil, err
 	}

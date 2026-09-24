@@ -25,18 +25,12 @@ func (a *App) panelExportCommand(ctx context.Context, event *rayleabot.EventCont
 	if err != nil {
 		return event.SendText("面板数据文件不存在，请先更新面板数据")
 	}
-	avatars := map[string]json.RawMessage{}
-	for _, kept := range saved.Panels {
-		if id, raw, err := cloudAvatar(ctx, a.Game, kept.panel()); err == nil {
-			avatars[id] = raw
-		}
-	}
-	if len(avatars) == 0 {
-		return event.SendText("面板数据文件不存在，请先更新面板数据")
-	}
-	content, err := json.Marshal(map[string]any{"uid": owner.UID, "avatars": avatars})
+	content, count, err := a.playerDataFile(ctx, saved)
 	if err != nil {
 		return err
+	}
+	if count == 0 {
+		return event.SendText("面板数据文件不存在，请先更新面板数据")
 	}
 	if len(content) > gachaFileLimit {
 		return event.SendText("导出失败：面板文件超过 5 MB")
@@ -65,4 +59,45 @@ func (a *App) panelExportAllowed(ctx context.Context, event *rayleabot.EventCont
 	}
 	decoded, err := a.arkRequest(ctx, event, "verify/user", map[string]any{"uid": uid, "qq": event.Event.Actor.ID, "type": arkGame})
 	return err == nil && asText(asObject(decoded)["retcode"]) == "100"
+}
+
+// miaoSources are the names miao saves a service's characters under (their
+// _source): MysPanelHSR's for the official panel and HomoApi's for
+// Mihomo's. A panel from ark keeps share.
+var miaoSources = map[string]string{"mihoyo": "mysPanelHSR", "mihomo": "homo"}
+
+// miaoPlayer is miao's player data file in the order Player.save writes it:
+// the UID, the player's name and level, the fields miao leaves empty when no
+// service fills them, when the panels were last refreshed, and the
+// characters.
+type miaoPlayer struct {
+	UID     string                     `json:"uid"`
+	Name    string                     `json:"name"`
+	Level   any                        `json:"level"`
+	Word    string                     `json:"word"`
+	Face    string                     `json:"face"`
+	Card    string                     `json:"card"`
+	Sign    string                     `json:"sign"`
+	Info    bool                       `json:"info"`
+	Profile int64                      `json:"_profile,omitempty"`
+	Avatars map[string]json.RawMessage `json:"avatars"`
+}
+
+// playerDataFile writes a UID's kept panels as the player data file miao
+// saves, which ark-plugin's 导出面板 sends and its 导出面板数据 uploads as it
+// is: every character that can be written out, under the service it came
+// from. It returns the file and how many characters it holds.
+func (a *App) playerDataFile(ctx context.Context, saved SavedProfiles) ([]byte, int, error) {
+	player := miaoPlayer{UID: saved.UID, Name: saved.Nickname, Level: "", Profile: saved.RefreshedAtMS, Avatars: map[string]json.RawMessage{}}
+	if saved.Level > 0 {
+		player.Level = saved.Level
+	}
+	for _, kept := range saved.Panels {
+		panel := kept.panel()
+		if id, raw, err := cloudAvatar(ctx, a.Game, panel, cmpOr(miaoSources[panel.Source], panel.Source)); err == nil {
+			player.Avatars[id] = raw
+		}
+	}
+	content, err := json.Marshal(player)
+	return content, len(player.Avatars), err
 }
