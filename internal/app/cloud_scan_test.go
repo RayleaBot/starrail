@@ -61,8 +61,12 @@ func TestDistributionKeepsArkPercentileScores(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if text := result.View.Text(); !strings.Contains(text, "TOP 1%：295.2") || !strings.Contains(text, "TOP 99%：996.34") {
-		t.Fatal(text)
+	// The relic scores come first, then the damage.
+	text := result.View.Text()
+	for _, part := range []string{"遗器评分\n收录总量：10994", "遗器评分 · 排名趋势\nTOP 1%：295.2", "伤害\n收录总量：11471", "伤害 · 排名趋势\nTOP 1%：95589.83", "TOP 99%：996.34"} {
+		if !strings.Contains(text, part) {
+			t.Fatalf("text lacks %q:\n%s", part, text)
+		}
 	}
 }
 

@@ -408,7 +408,11 @@ func projectCloud(game Game, input CloudInput, decoded any) (CloudResult, error)
 			return CloudResult{}, gameError("cloud_invalid", "云服务列表格式暂不兼容。")
 		}
 		combined := View{Title: game.Name + "角色云统计", Rows: []Row{}, Note: "来源：ark.ivny.cn；同一角色的不同计算条目分别显示。固定服务结果不代表官方结论。"}
-		for _, raw := range list {
+		// ark answers the relic score distribution first and the damage one
+		// second, as its panel page reads them; both carry the name of the
+		// damage's calculation.
+		labels := []string{"遗器评分", "伤害"}
+		for index, raw := range list {
 			item := asObject(raw)
 			if asText(item["retcode"]) != "100" {
 				return CloudResult{}, gameError("cloud_rejected", "云服务未能提供完整统计条目。")
@@ -417,10 +421,14 @@ func projectCloud(game Game, input CloudInput, decoded any) (CloudResult, error)
 			if err != nil {
 				return CloudResult{}, err
 			}
-			section := Section{Title: view.Subtitle, Rows: view.Rows}
+			title := view.Subtitle
+			if index < len(labels) {
+				title, combined.Subtitle = labels[index], view.Subtitle
+			}
+			section := Section{Title: title, Rows: view.Rows}
 			combined.Sections = append(combined.Sections, section)
 			for _, s := range view.Sections {
-				s.Title = view.Subtitle + " · " + s.Title
+				s.Title = title + " · " + s.Title
 				combined.Sections = append(combined.Sections, s)
 			}
 		}
