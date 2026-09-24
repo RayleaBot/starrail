@@ -15,3 +15,24 @@ func TestCardQueryFollowsMiaoCheck(t *testing.T) {
 		}
 	}
 }
+
+// 照片 and the card draw from what miao's CharImg.getCardImg reads: the
+// character's photos, uploaded or imported as its photos, and the downloaded
+// character-img directory; other images of the library are not read.
+func TestCardImagesReadTheCharacterPhotos(t *testing.T) {
+	a := &App{Media: &MediaStore{Directory: t.TempDir()}}
+	defer a.Close()
+	for _, entry := range []MediaEntry{
+		{Title: "希儿照片1", Category: "photo", CatalogID: "1102", License: "聊天上传"},
+		{Title: "希儿图鉴", Category: "character", CatalogID: "1102", License: "本人有权使用"},
+		{Title: "卡芙卡照片1", Category: "photo", CatalogID: "1005", License: "聊天上传"},
+	} {
+		if _, err := a.Media.add(entry, pngFixture(t)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	media, photos := a.cardImages(Entry{ID: "1102", Name: "希儿"})
+	if len(media) != 1 || media[0].Title != "希儿照片1" || len(photos) != 0 {
+		t.Fatalf("media = %+v, photos = %+v", media, photos)
+	}
+}

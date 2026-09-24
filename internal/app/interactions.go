@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -84,81 +83,70 @@ func chatOwner(event *rayleabot.EventContext) Subject {
 func validInteractionOwner(s Subject) bool {
 	return s.SourceProtocol != "" && s.SourceAdapter != "" && s.BotID != "" && s.ActorID != "" && len(s.ActorID) <= 256 && len(s.BotID) <= 256
 }
-func (a *App) sendMedia(event *rayleabot.EventContext, entry MediaEntry) error {
-	a.Media.mu.Lock()
-	v, err := a.Media.read(entry.Ref)
-	a.Media.mu.Unlock()
-	if err != nil {
-		return event.SendText(friendlyError(err))
-	}
-	if err = a.rememberImage(event, entry.Ref); err != nil {
-		return event.SendText(friendlyError(err))
-	}
-	return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Text(entry.Title+"\n来源："+entry.Source), rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(v.Data)))
-}
-func (a *App) sendCharacterMedia(ctx context.Context, event *rayleabot.EventContext, entry Entry, photoOnly bool) error {
-	a.Media.mu.Lock()
-	all, err := a.Media.entries()
-	a.Media.mu.Unlock()
-	if err != nil {
-		return event.SendText(friendlyError(err))
-	}
-	matches := []MediaEntry{}
-	for _, v := range all {
-		if v.CatalogID == entry.ID && (v.Category == "photo" || v.Category == "character" || v.Category == "birthday") {
-			matches = append(matches, v)
-		}
-	}
-	// Imported images and downloaded photos are drawn from together, as
-	// miao draws from character-img and its upload directory.
-	photos := a.characterPhotos(entry)
-	if total := len(matches) + len(photos); total > 0 {
-		if pick := rand.IntN(total); pick < len(matches) {
-			return a.sendMedia(event, matches[pick])
-		} else {
-			return a.sendArtwork(event, photos[pick-len(matches)])
-		}
-	}
-	if photoOnly {
-		return event.SendText(strings.TrimSpace("暂无图片。" + a.pictureHint(a.Game.Pictures.photoSources()...) + "机器人管理员也可在图库中导入图片并关联角色。"))
-	}
-	return a.sendView(ctx, event, EntryView(a.Game, entry))
-}
 
-func (a *App) interactionCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
-	owner := chatOwner(event)
-	if !validInteractionOwner(owner) {
-		return event.SendText("聊天身份不完整。")
+// photoCommand is miao's CharWiki in its pic mode: a message ending in 照片,
+// 写真, 图片 or 图像 after a character miao knows gets a random picture of
+// what CharImg.getCardImg reads for it, sent alone, or 暂无图片. Any other
+// message is left to other plugins.
+func (a *App) photoCommand(event *rayleabot.EventContext, args []string) error {
+	entry, ok := Entry{}, false
+	if len(args) == 1 {
+		entry, ok = a.miaoCharacter(args[0], a.aliasMap(event))
 	}
-	switch command {
-	case "original-image":
-		p, err := a.Interactions.Get(owner)
-		if err != nil {
-			return event.SendText(friendlyError(err))
-		}
-		if p.LastImage == "" || time.Now().UnixMilli()-p.LastImageMS > 600000 || p.LastImageTargetType != event.Event.Target.Type || p.LastImageTargetID != event.Event.Target.ID {
-			return event.SendText("最近十分钟没有由你查询的本地图片。")
-		}
-		if ref, ok := strings.CutPrefix(p.LastImage, "panel:"); ok {
-			return a.sendPanelPicture(event, ref)
-		}
-		if ref, ok := strings.CutPrefix(p.LastImage, "artwork:"); ok {
-			source, file, _ := strings.Cut(ref, "/")
-			return a.sendArtwork(event, artworkFile{source, file})
-		}
+	if !ok {
+		return event.Result(map[string]any{"handled": false})
+	}
+	media, photos := a.cardImages(entry)
+	total := len(media) + len(photos)
+	if total == 0 {
+		return event.SendText("暂无图片")
+	}
+	var data []byte
+	if pick := rand.IntN(total); pick < len(media) {
 		a.Media.mu.Lock()
-		v, err := a.Media.read(p.LastImage)
+		v, err := a.Media.read(media[pick].Ref)
 		a.Media.mu.Unlock()
 		if err != nil {
 			return event.SendText(friendlyError(err))
 		}
-		return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(v.Data)))
-	case "photo":
-		entry, ok := a.Catalog.Resolve(strings.Join(args, " "), "character", a.aliasMap(event))
-		if len(args) == 0 || !ok {
-			return event.SendText("请提供可唯一识别的角色名。")
+		data = v.Data
+	} else {
+		file := photos[pick-len(media)]
+		raw, err := a.Artwork.Open(file.Source, file.Path)
+		if err != nil {
+			return event.SendText("图片素材读取失败，请重新下载素材。")
 		}
-		return a.sendCharacterMedia(ctx, event, entry, true)
+		data = raw
 	}
-	return event.Result(map[string]any{"handled": false})
+	return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(data)))
+}
+
+// originalImageCommand is 原图: the image the sender last asked for in this
+// chat within ten minutes.
+func (a *App) originalImageCommand(event *rayleabot.EventContext) error {
+	owner := chatOwner(event)
+	if !validInteractionOwner(owner) {
+		return event.SendText("聊天身份不完整。")
+	}
+	p, err := a.Interactions.Get(owner)
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	if p.LastImage == "" || time.Now().UnixMilli()-p.LastImageMS > 600000 || p.LastImageTargetType != event.Event.Target.Type || p.LastImageTargetID != event.Event.Target.ID {
+		return event.SendText("最近十分钟没有由你查询的本地图片。")
+	}
+	if ref, ok := strings.CutPrefix(p.LastImage, "panel:"); ok {
+		return a.sendPanelPicture(event, ref)
+	}
+	if ref, ok := strings.CutPrefix(p.LastImage, "artwork:"); ok {
+		source, file, _ := strings.Cut(ref, "/")
+		return a.sendArtwork(event, artworkFile{source, file})
+	}
+	a.Media.mu.Lock()
+	v, err := a.Media.read(p.LastImage)
+	a.Media.mu.Unlock()
+	if err != nil {
+		return event.SendText(friendlyError(err))
+	}
+	return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image("base64://"+base64.StdEncoding.EncodeToString(v.Data)))
 }

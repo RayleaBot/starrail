@@ -100,6 +100,11 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 			{"删除希儿面板图1", "panel-image-remove", []string{"希儿", "1"}},
 			{"希儿面板图列表", "panel-image-list", []string{"希儿"}},
 			{"希儿", "character-card", nil},
+			// miao's CharWiki takes a character's 照片, 写真, 图片 or 图像;
+			// the word alone is not its.
+			{"希儿照片", "photo", []string{"希儿"}},
+			{"希儿写真", "photo", []string{"希儿"}},
+			{"照片", "character-card", nil},
 			// A UID glued to the word, as upstream's rules accept it, is the
 			// same leading argument as a spaced one. StarRail-plugin's
 			// challenge rules have no end anchor and read the first number in

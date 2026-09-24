@@ -398,8 +398,10 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.onlineCommand(ctx, event)
 	case "artwork", "artwork-status":
 		return a.artworkCommand(event, command, args)
-	case "photo", "original-image":
-		return a.interactionCommand(ctx, event, command, args)
+	case "photo":
+		return a.photoCommand(event, args)
+	case "original-image":
+		return a.originalImageCommand(event)
 	case "guides":
 		// StarRail-plugin's strategy passes the message on after answering,
 		// to Atlas, whose guide for role module takes the same words.

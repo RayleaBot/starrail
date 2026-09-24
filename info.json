@@ -1079,12 +1079,12 @@
     {
       "id": "photo",
       "name": "照片",
-      "description": "随机发送导入图库中该角色的照片",
+      "description": "按 miao 随机发送该角色的照片（上传或导入为角色照片的图片），没有时回复暂无图片",
       "usage": "#<角色>照片",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:照片|(?P<character>.+?)(?:照片|写真|图片|图像))$"
+        "pattern": "^(?P<character>.+?)(?:照片|写真|图片|图像)$"
       }
     },
     {

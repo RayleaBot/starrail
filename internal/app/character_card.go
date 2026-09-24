@@ -109,21 +109,29 @@ func (a *App) miaoAccept(msg string, aliases func() map[string]string) string {
 	return msg
 }
 
-// cardPicture picks the card's photo from the same pool as 照片: imported
-// images of the character and its downloaded photos (miao has none for Star
-// Rail). It returns the render resource, the size and the reference 原图
-// resends.
-func (a *App) cardPicture(ctx context.Context, entry Entry) (rayleabot.RenderImageResource, int, int, string) {
+// cardImages are the pictures miao's CharImg.getCardImg picks from for a
+// character's 照片 and card: its character-img directory, the downloaded
+// photos, and the upload directory 上传X照片 fills, the imported photos. Its
+// se directory is read only with charPicSe, which is off by default and has
+// no pictures here, and the miao-res-plus package is not installed.
+func (a *App) cardImages(entry Entry) ([]MediaEntry, []artworkFile) {
 	a.Media.mu.Lock()
 	all, _ := a.Media.entries()
 	a.Media.mu.Unlock()
 	media := []MediaEntry{}
 	for _, item := range all {
-		if item.CatalogID == entry.ID && (item.Category == "photo" || item.Category == "character" || item.Category == "birthday") {
+		if item.CatalogID == entry.ID && item.Category == "photo" {
 			media = append(media, item)
 		}
 	}
-	photos := a.characterPhotos(entry)
+	return media, a.characterPhotos(entry)
+}
+
+// cardPicture picks the card's photo as miao's AvatarCard does, from the same
+// pictures as 照片. It returns the render resource, the size and the
+// reference 原图 resends.
+func (a *App) cardPicture(ctx context.Context, entry Entry) (rayleabot.RenderImageResource, int, int, string) {
+	media, photos := a.cardImages(entry)
 	total := len(media) + len(photos)
 	if total == 0 {
 		return rayleabot.RenderImageResource{}, 0, 0, ""

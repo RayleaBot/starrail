@@ -32,15 +32,6 @@ type PictureSource struct {
 	Paths  []string `json:"paths"`
 }
 
-// photoSources are the sources of the character photos.
-func (p Pictures) photoSources() []string {
-	sources := []string{}
-	for _, source := range p.Photos {
-		sources = append(sources, source.Source)
-	}
-	return sources
-}
-
 // catalogSources are the sources of the 图鉴 pictures, the Atlas libraries.
 func (p Pictures) catalogSources() []string {
 	sources := []string{}
