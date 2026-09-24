@@ -98,3 +98,37 @@ func TestAPIPanelDrawsTheSkillTree(t *testing.T) {
 		t.Errorf("minor trace = %v", minor)
 	}
 }
+
+// A relic draws the icon upstream's relic data names, and miao's picture of
+// the piece for a set upstream's data lacks, by the relic's set and slot.
+func TestAPIPanelRelicsFallBackToMiao(t *testing.T) {
+	root := t.TempDir()
+	for name, content := range map[string]string{
+		"starrail-plugin/resources/panel/data/relics.json":          "{\"61011\":{\"icon\":\"101_0.png\"}}",
+		"starrail-plugin/resources/panel/resources/relic/101_0.png": "png",
+		"miao-plugin/resources/meta-sr/artifact/谧宁拾骨地/arti-5.webp":  "webp",
+	} {
+		path := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	context := app.ImageContext{Artwork: &artwork.Store{Root: root}, Catalog: app.Catalog{ArtifactSets: map[string]string{"61011": "云无留迹的过客", "63195": "谧宁拾骨地", "61291": "闪耀功勋的魔法少女"}}}
+	drawn, _ := images.APIPanel(context, app.APIPanelImage{Character: app.APICharacter{AvatarID: 1413, Relics: []app.APIRelic{{ID: 61011}, {ID: 63195}, {ID: 61291}}}})
+	paths := map[string]string{"": ""}
+	for _, resource := range drawn.Resources {
+		paths[resource.ID] = filepath.ToSlash(resource.Path)
+	}
+	relics := drawn.Data["relics"].([]any)
+	got := []string{}
+	for _, relic := range relics {
+		got = append(got, paths[relic.(map[string]any)["icon"].(string)])
+	}
+	want := []string{"assets/starrail-plugin/resources/panel/resources/relic/101_0.png", "assets/miao-plugin/resources/meta-sr/artifact/谧宁拾骨地/arti-5.webp", ""}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("relic icons = %v, want %v", got, want)
+	}
+}

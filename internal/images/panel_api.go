@@ -101,7 +101,7 @@ func APIPanel(context app.ImageContext, image app.APIPanelImage) (app.Image, boo
 		"element": local("resources/common/element/" + strings.ToLower(element) + ".png"), "path": lifePath,
 		"level": character.Level, "rank": character.Rank, "attributes": attributes,
 		"skills": apiPanelSkills(local, image.Skills), "uid": image.UID, "api": image.API,
-		"relics": apiPanelRelics(context, local, character.Relics), "tree": apiPanelTree(context, resources, lifePath, character.Behaviors),
+		"relics": apiPanelRelics(context, resources, local, character.Relics), "tree": apiPanelTree(context, resources, lifePath, character.Behaviors),
 		"damaged": image.Damages != nil, "damages": apiPanelDamages(image.Damages),
 	}
 	if equipment := character.Equipment; equipment.ID > 0 {
@@ -127,8 +127,10 @@ func apiPanelSkills(local func(string) string, skills []app.APISkill) []any {
 // apiPanelRelics are the relic cards: the icon upstream's relic data names,
 // the rarity as a third of the top level, the service's score, and each
 // substat by the weight the service gives it, with a mark for each roll after
-// the first.
-func apiPanelRelics(context app.ImageContext, local func(string) string, relics []app.APIRelic) []any {
+// the first. Upstream's relic data stops at its older sets; a relic it lacks
+// shows miao's picture of the piece, found by the relic's set and slot (the
+// ID's last digit), as 面板 draws it.
+func apiPanelRelics(context app.ImageContext, resources *app.ImageResources, local func(string) string, relics []app.APIRelic) []any {
 	var icons map[string]struct {
 		Icon string `json:"icon"`
 	}
@@ -154,6 +156,10 @@ func apiPanelRelics(context app.ImageContext, local func(string) string, relics 
 		icon := ""
 		if file := icons[strconv.Itoa(relic.ID)].Icon; file != "" {
 			icon = local("resources/panel/resources/relic/" + file)
+		}
+		if set := context.Catalog.ArtifactSets[strconv.Itoa(relic.ID)]; icon == "" && set != "" {
+			slot := strconv.Itoa(relic.ID % 10)
+			icon = resources.Artwork("relic-"+strconv.Itoa(relic.ID), "miao-plugin", "resources/meta-sr/artifact/"+set+"/arti-"+slot+".webp")
 		}
 		list = append(list, map[string]any{"rank": rarity, "icon": icon, "level": relic.Level, "star": local("resources/panel/resources/star/LightCore_Rarity" + rarity + ".png"),
 			"name": relic.Name, "score": score, "main_name": relic.MainName, "main_value": apiRelicValue(relic.MainValue), "affixes": affixes})
