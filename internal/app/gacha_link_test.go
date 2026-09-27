@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"github.com/RayleaBot/plugin-starrail/internal/gacha"
 )
 
@@ -103,5 +104,30 @@ func TestGachaLinkUpdatesAUIDAtMostHourly(t *testing.T) {
 	}
 	if _, ok := jobs.owner(Subject{ActorID: "other"}); ok {
 		t.Fatal("another sender got the link")
+	}
+}
+
+// A link read within its event answers there as Yunzai does: the notice, the
+// records each pool gained, the record page and, in a group, the request to
+// recall the link.
+func TestGachaLinkReadWithinItsEventAnswersInFull(t *testing.T) {
+	a := pluginApp(t)
+	a.LinkHTTP = &http.Client{Transport: warpHistory{}}
+	host := newSDKHost(t, a, func(rayleabot.ServiceCallRequest, bool) (map[string]any, string) {
+		return nil, "plugin.service_unavailable"
+	})
+	end, _ := host.groupMessage("https://webstatic.mihoyo.com/hkrpg/event/e20211215gacha-v2/index.html?authkey_ver=1&region=prod_gf_cn&authkey=abcdefghij&game_biz=hkrpg_cn#/log", "")
+	if end["type"] != "result" {
+		t.Fatalf("the link event ended with %v", end)
+	}
+	texts := []string{}
+	for _, sent := range host.sent {
+		if sent.TargetType != "group" || sent.TargetID != "g" {
+			t.Fatalf("answered in %+v", sent)
+		}
+		texts = append(texts, sentText(sent.Message))
+	}
+	if len(texts) != 4 || texts[0] != "链接发送成功，数据获取中……" || !strings.HasPrefix(texts[1], "[角色]记录获取成功，更新21条") || !strings.Contains(texts[2], "100000001") || texts[3] != "已收到链接，请撤回" {
+		t.Fatalf("answered %q", texts)
 	}
 }
