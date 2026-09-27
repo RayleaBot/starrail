@@ -332,12 +332,16 @@ func (a *App) rankSwitch(event *rayleabot.EventContext, scope GroupScope, word s
 }
 
 // rankRefresh is miao's 刷新排名: every recorded panel is scored and
-// calculated again with the pinned rules, four at a time.
+// calculated again with the pinned rules, four at a time, in the event moved
+// to the background as a large ranking takes longer than an event.
 func (a *App) rankRefresh(ctx context.Context, event *rayleabot.EventContext, scope GroupScope) error {
 	if !groupAdministrator(event) {
 		return event.SendText("只有主人及群管理员可刷新排名...")
 	}
 	data, err := a.Groups.Read(scope)
+	if err == nil {
+		err = detach(ctx, event, nil)
+	}
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}

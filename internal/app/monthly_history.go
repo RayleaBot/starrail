@@ -318,11 +318,20 @@ func ledgerMonth(word string, now time.Time) (int, error) {
 	return year*100 + month, nil
 }
 
+// monthlyTaskMargin is how long before its background deadline 星琼任务 stops
+// starting accounts, to leave time for its reply.
+const monthlyTaskMargin = time.Minute
+
 // monthlyTask is Yunzai's 星琼任务 for a super administrator: every account's
 // 开拓月历 is saved as refreshMonthly saves one, as upstream saves each bound
-// CK's. What one event cannot finish is left for the command sent again,
-// which skips the accounts saved in the last hour.
+// CK's, in the event moved to the background. What the background deadline
+// leaves unfinished is left for the command sent again, which skips the
+// accounts saved in the last hour.
 func (a *App) monthlyTask(ctx context.Context, event *rayleabot.EventContext) error {
+	// Every bound account's months can take longer than an event.
+	if err := detach(ctx, event, nil); err != nil {
+		return event.SendText(friendlyError(err))
+	}
 	client := a.accountClient(event)
 	choices := []Selection{}
 	for page := 0; ; {
@@ -357,7 +366,7 @@ func (a *App) monthlyTask(ctx context.Context, event *rayleabot.EventContext) er
 	notice(ctx, event, "开始任务：保存星琼数据，完成前请勿重复执行")
 	notice(ctx, event, "开拓月历ck："+strconv.Itoa(len(choices))+"个\n预计需要："+took+"\n完成时间："+start.Add(cost).In(time.FixedZone("UTC+8", 28800)).Format("01-02 15:04:05"))
 	for index, choice := range choices {
-		if time.Since(start) > 45*time.Second {
+		if time.Until(event.Deadline()) < monthlyTaskMargin {
 			return event.SendText("星琼任务未完成：剩余" + strconv.Itoa(len(choices)-index) + "个，请稍后再次发送“" + a.Game.Prefix + "星琼任务”继续")
 		}
 		archive, err := a.Monthly.Read(client.Provider, choice)

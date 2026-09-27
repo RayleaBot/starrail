@@ -352,6 +352,11 @@ func (a *App) apiPanelRefresh(ctx context.Context, event *rayleabot.EventContext
 	if refusal != "" {
 		return event.SendText(refusal)
 	}
+	// The service's query and miao's 面板更新 after it can take longer than
+	// an event.
+	if err := detach(ctx, event, nil); err != nil {
+		return event.SendText(friendlyError(err))
+	}
 	_, api := a.panelAPI(event)
 	characters, err := a.apiCharacters(ctx, event, uid, api, true)
 	if err != nil {
