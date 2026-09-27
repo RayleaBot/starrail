@@ -42,6 +42,13 @@ type sdkHost struct {
 	// refuses them as a plugin holding its limit of background events.
 	detached []map[string]any
 	busy     bool
+	// onSend sees each message.send before the host answers it, while the
+	// event sending it waits; it may post and await other events.
+	onSend func(rayleabot.MessageSendRequest)
+	// pending are the events posted and not yet ended; ended are the frames
+	// that ended events while another was awaited.
+	pending map[string]bool
+	ended   map[string]map[string]any
 }
 
 // hostAction is an action the plugin asked for during one event.
@@ -61,7 +68,7 @@ func newSDKHost(t *testing.T, a *App, service func(rayleabot.ServiceCallRequest,
 		finished <- rayleabot.Run(context.Background(), rayleabot.Options{Stdin: inReader, Stdout: outWriter, Stderr: io.Discard}, a)
 		outWriter.Close()
 	}()
-	h := &sdkHost{t: t, writer: hostWriter, lines: make(chan []byte, 64), service: service, jobs: map[string]map[string]any{}, triggers: map[string]bool{}}
+	h := &sdkHost{t: t, writer: hostWriter, lines: make(chan []byte, 64), service: service, jobs: map[string]map[string]any{}, triggers: map[string]bool{}, pending: map[string]bool{}, ended: map[string]map[string]any{}}
 	t.Cleanup(func() {
 		hostWriter.Close()
 		select {
@@ -106,10 +113,29 @@ const (
 // ending frame and the actions asked for.
 func (h *sdkHost) exchange(id string, frame map[string]any) (map[string]any, []hostAction) {
 	h.t.Helper()
+	h.post(id, frame)
+	return h.await(id)
+}
+
+// post sends a frame without waiting for its end; an event gets the host's
+// default deadline.
+func (h *sdkHost) post(id string, frame map[string]any) {
+	h.t.Helper()
 	if frame["type"] == "event" {
 		frame["deadline_at_ms"] = time.Now().Add(eventTimeout).UnixMilli()
+		h.pending[id] = true
 	}
 	h.write(frame)
+}
+
+// await answers the plugin's actions until the request id ends, and returns
+// the ending frame and the actions asked for meanwhile.
+func (h *sdkHost) await(id string) (map[string]any, []hostAction) {
+	h.t.Helper()
+	if frame, ok := h.ended[id]; ok {
+		delete(h.ended, id)
+		return frame, nil
+	}
 	var actions []hostAction
 	for {
 		var raw []byte
@@ -126,7 +152,13 @@ func (h *sdkHost) exchange(id string, frame map[string]any) (map[string]any, []h
 			h.t.Fatal("invalid SDK frame")
 		}
 		if response["request_id"] == id {
+			delete(h.pending, id)
 			return response, actions
+		}
+		if other := asText(response["request_id"]); h.pending[other] {
+			h.ended[other] = response
+			delete(h.pending, other)
+			continue
 		}
 		if response["type"] != "action" {
 			continue
@@ -175,6 +207,9 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 			h.t.Fatal("invalid message.send")
 		}
 		h.sent = append(h.sent, request)
+		if h.onSend != nil {
+			h.onSend(request)
+		}
 		return map[string]any{"message_id": fmt.Sprintf("sent-%d", len(h.sent)), "delivery_kind": "send"}, ""
 	case "event.detach":
 		if h.busy {
@@ -219,15 +254,28 @@ func (h *sdkHost) groupMessage(text, command string, args ...string) (map[string
 // manage runs an action of the management page.
 func (h *sdkHost) manage(action string, input map[string]any) (map[string]any, []hostAction) {
 	h.t.Helper()
+	return h.await(h.postManage(action, input))
+}
+
+// postManage posts an action of the management page and returns its ID.
+func (h *sdkHost) postManage(action string, input map[string]any) string {
+	h.t.Helper()
 	h.next++
 	id := fmt.Sprintf("manage-%d", h.next)
-	return h.exchange(id, map[string]any{"type": "event", "request_id": id, "event": map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": map[string]any{"action": action, "payload": input}}})
+	h.post(id, map[string]any{"type": "event", "request_id": id, "event": map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": map[string]any{"action": action, "payload": input}}})
+	return id
 }
 
 // trigger runs a job the plugin created as the host's scheduler does: the
 // event has no target, and its payload holds the task ID beside the job's
 // payload (and its action), if it has one.
 func (h *sdkHost) trigger(taskID string) (map[string]any, []hostAction) {
+	h.t.Helper()
+	return h.await(h.postTrigger(taskID))
+}
+
+// postTrigger posts a trigger of the job as trigger does and returns its ID.
+func (h *sdkHost) postTrigger(taskID string) string {
 	h.t.Helper()
 	job, exists := h.jobs[taskID]
 	if !exists {
@@ -243,7 +291,8 @@ func (h *sdkHost) trigger(taskID string) (map[string]any, []hostAction) {
 	if action, ok := job["action"].(string); ok && action != "" {
 		payload["action"] = action
 	}
-	return h.exchange(id, map[string]any{"type": "event", "request_id": id, "event": map[string]any{"event_id": "scheduler-" + taskID + "-" + id, "event_type": "scheduler.trigger", "source_protocol": "scheduler", "source_adapter": "scheduler.internal", "timestamp": time.Now().Unix(), "payload": payload}})
+	h.post(id, map[string]any{"type": "event", "request_id": id, "event": map[string]any{"event_id": "scheduler-" + taskID + "-" + id, "event_type": "scheduler.trigger", "source_protocol": "scheduler", "source_adapter": "scheduler.internal", "timestamp": time.Now().Unix(), "payload": payload}})
+	return id
 }
 
 // job is the only job of the plugin whose task ID starts with prefix.

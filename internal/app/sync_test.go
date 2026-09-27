@@ -289,3 +289,43 @@ func detachedBeforeReading(actions []hostAction) bool {
 	}
 	return false
 }
+
+// The owner may act as soon as a completed sync's notification arrives: a
+// background sync of the same role started right then is accepted, as the
+// finished one no longer counts as running.
+func TestBackgroundSyncStartedRightAfterItsNotificationIsAccepted(t *testing.T) {
+	_, host, accounts := syncHost(t)
+	var followUp map[string]any
+	host.onSend = func(rayleabot.MessageSendRequest) {
+		if followUp == nil {
+			followUp = map[string]any{}
+			followUp, _ = host.await(host.postManage("gacha.task.start", map[string]any{"account_ref": "account", "role_ref": "role", "confirm": true}))
+		}
+	}
+	if end, _ := startSync(host, map[string]any{"notify": true}); end["type"] != "result" {
+		t.Fatalf("the first sync ended with %v", end)
+	}
+	// The second, incremental sync reads a page of each pool.
+	if followUp["type"] != "result" || len(host.detached) != 2 || len(accounts.reads) != 21 {
+		t.Fatalf("the sync started after the notification ended with %v after %d pages", followUp, len(accounts.reads)-15)
+	}
+}
+
+// A trigger the host hands over as soon as a daily sync's notification
+// arrives finds the task free rather than still being read.
+func TestDailySyncTriggerRightAfterItsNotificationFindsTheTaskFree(t *testing.T) {
+	_, host, _ := syncHost(t)
+	host.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "hour": 0, "days": 30, "notify": true, "confirm": true})
+	ref := host.job("game.sync.")
+	var followUp map[string]any
+	host.onSend = func(rayleabot.MessageSendRequest) {
+		if followUp == nil {
+			followUp = map[string]any{}
+			followUp, _ = host.await(host.postTrigger(ref))
+		}
+	}
+	host.trigger(ref)
+	if followUp["type"] != "result" || asObject(followUp["data"])["checked"] != true {
+		t.Fatalf("the trigger right after the notification ended with %v", followUp)
+	}
+}

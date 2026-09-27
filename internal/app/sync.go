@@ -231,21 +231,40 @@ func (a *App) startBackgroundSync(ctx context.Context, event *rayleabot.EventCon
 	if err != nil {
 		return nil, syncError(err)
 	}
-	defer a.Syncs.Forget(info.Ref)
 	item := BackgroundSync{Ref: info.Ref, Role: role, Owner: account.Owner, Full: q.Full, Notify: q.Notify, State: "running", LastCode: "sync_running", StartedMS: time.Now().UnixMilli(), Progress: info}
 	if !a.BackgroundSyncs.begin(item) {
+		a.Syncs.Forget(info.Ref)
 		return nil, gameError("sync_task_running", "此角色正在后台同步，请查看进度。")
 	}
 	if err = detach(ctx, event, map[string]any{"task": item}); err != nil {
+		a.Syncs.Forget(info.Ref)
 		a.BackgroundSyncs.drop(item.Ref)
 		return nil, err
 	}
+	finished, err := a.readBackgroundSync(ctx, client, choice, info, item.Ref)
+	if err != nil {
+		return nil, syncError(err)
+	}
+	if finished.LastCode == "sync_completed" && q.Notify && tellOwner(ctx, event, item.Owner, syncNotice(item.Role, *finished.Progress.Result)) != nil {
+		a.BackgroundSyncs.edit(item.Ref, func(listed *BackgroundSync) { listed.LastCode = "sync_completed.notification_failed" })
+	}
+	return map[string]any{"task": finished}, nil
+}
+
+// readBackgroundSync reads a started background sync's pages until it
+// completes, fails, is canceled or the background deadline passes, and
+// returns the listed sync as it ended, with the failure that ended it. The
+// sync is forgotten and listed as ended before anything is sent: the owner
+// may start the next one as soon as the notification arrives.
+func (a *App) readBackgroundSync(ctx context.Context, client AccountsClient, choice gacha.SyncChoice, info gacha.SyncInfo, ref string) (BackgroundSync, error) {
+	defer a.Syncs.Forget(info.Ref)
 	fetch := a.syncPage(client, choice)
+	var err error
 	for info.State == "running" {
 		if info.Pages > 0 {
 			err = a.sleep(ctx, syncPageGap)
 		}
-		if err != nil || !a.BackgroundSyncs.running(item.Ref) {
+		if err != nil || !a.BackgroundSyncs.running(ref) {
 			break
 		}
 		var next gacha.SyncInfo
@@ -253,7 +272,7 @@ func (a *App) startBackgroundSync(ctx context.Context, event *rayleabot.EventCon
 			break
 		}
 		info = next
-		a.BackgroundSyncs.edit(item.Ref, func(listed *BackgroundSync) { listed.Progress = info })
+		a.BackgroundSyncs.edit(ref, func(listed *BackgroundSync) { listed.Progress = info })
 	}
 	code := "sync_completed"
 	switch {
@@ -261,13 +280,10 @@ func (a *App) startBackgroundSync(ctx context.Context, event *rayleabot.EventCon
 		code = "sync_timeout"
 	case err != nil:
 		code = PublicError(syncError(err)).Code
-	case info.State != "completed":
-		// Canceled: the listed sync already says so.
-	case q.Notify && a.notifySync(ctx, event, item, *info.Result) != nil:
-		code = "sync_completed.notification_failed"
 	}
+	var ended BackgroundSync
 	failed := false
-	a.BackgroundSyncs.edit(item.Ref, func(listed *BackgroundSync) {
+	a.BackgroundSyncs.edit(ref, func(listed *BackgroundSync) {
 		// A sync the page or an archive removal canceled keeps that code.
 		if listed.State == "running" {
 			listed.State, listed.LastCode, listed.FinishedMS, failed = "completed", code, time.Now().UnixMilli(), err != nil
@@ -276,24 +292,27 @@ func (a *App) startBackgroundSync(ctx context.Context, event *rayleabot.EventCon
 			}
 		}
 		listed.Progress = info
-		item = *listed
+		ended = *listed
 	})
-	if failed {
-		return nil, syncError(err)
+	if !failed {
+		err = nil
 	}
-	return map[string]any{"task": item}, nil
+	return ended, err
 }
 
-// notifySync tells the account's chat user, through the bot the account
-// belongs to, what a completed background sync added.
-func (a *App) notifySync(ctx context.Context, event *rayleabot.EventContext, item BackgroundSync, result gacha.ImportResult) error {
-	owner := item.Owner
+// syncNotice is what a completed sync tells the account's chat user.
+func syncNotice(role Role, result gacha.ImportResult) string {
+	return fmt.Sprintf("抽卡后台同步完成\n%s · %s\n新增 %d 条，档案共 %d 条。", role.Nickname, role.UID, result.Added, result.Total)
+}
+
+// tellOwner sends text to an account's chat user privately, through the bot
+// the account belongs to.
+func tellOwner(ctx context.Context, event *rayleabot.EventContext, owner Subject, text string) error {
 	if !slices.ContainsFunc(event.Bots, func(bot rayleabot.Bot) bool {
 		return bot.ID == owner.BotID && bot.SourceProtocol == owner.SourceProtocol && bot.SourceAdapter == owner.SourceAdapter
 	}) {
 		return gameError("bot_missing", "所属机器人暂不可用。")
 	}
-	text := fmt.Sprintf("抽卡后台同步完成\n%s · %s\n新增 %d 条，档案共 %d 条。", item.Role.Nickname, item.Role.UID, result.Added, result.Total)
 	_, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: owner.SourceProtocol, SourceAdapter: owner.SourceAdapter, TargetType: "private", TargetID: owner.ActorID, Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.Text(text)}}})
 	return err
 }

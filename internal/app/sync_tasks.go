@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"slices"
+	"sync"
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -176,7 +177,9 @@ func (a *App) createSyncTask(ctx context.Context, event *rayleabot.EventContext,
 // trigger to the background and reads every page there, under the task's
 // delegation; when the host refuses, as the plugin holds its limit of
 // background events, the next trigger tries again. Another trigger still
-// reading the task leaves it alone.
+// reading the task leaves it alone. The trigger lets go of the task before it
+// sends anything: the host hands over the next trigger, and the owner may
+// act, as soon as the notification or the trigger's result arrives.
 func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext, ref string) error {
 	task, claimed, err := a.SyncTasks.claim(ref)
 	switch {
@@ -189,12 +192,14 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext, re
 	case !claimed:
 		return event.Result(map[string]any{"checked": false})
 	}
-	defer a.SyncTasks.release(ref)
+	release := sync.OnceFunc(func() { a.SyncTasks.release(ref) })
+	defer release()
 	due, err := a.SyncTasks.due(&task, time.Now())
 	if err != nil || !due || detach(ctx, event, nil) != nil {
+		release()
 		return event.Result(map[string]any{"checked": err == nil})
 	}
-	err = a.SyncTasks.run(ctx, &task, &a.Syncs, a.Gacha, a.sleep, func(ctx context.Context, task SyncTask, pool, end string, page int) (gacha.RemotePage, error) {
+	notice, err := a.SyncTasks.run(ctx, &task, &a.Syncs, a.Gacha, a.sleep, func(ctx context.Context, task SyncTask, pool, end string, page int) (gacha.RemotePage, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 		var response QueryResult
 		err := client.call(ctx, "execute", map[string]any{"account_ref": task.AccountRef, "role_ref": task.RoleRef, "operation": a.Game.ID + ".gacha", "delegation_ref": task.DelegationRef, "input": map[string]any{"gacha_type": pool, "end_id": end, "page": page}}, &response)
@@ -205,15 +210,11 @@ func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext, re
 			return gacha.RemotePage{}, gacha.ErrInvalid
 		}
 		return gacha.ParsePage(response.Role.UID, response.Role.Region, pool, end, response.Data)
-	}, func(ctx context.Context, task SyncTask, text string) error {
-		if !slices.ContainsFunc(event.Bots, func(bot rayleabot.Bot) bool {
-			return bot.ID == task.Owner.BotID && bot.SourceProtocol == task.Owner.SourceProtocol && bot.SourceAdapter == task.Owner.SourceAdapter
-		}) {
-			return gameError("bot_missing", "所属机器人暂不可用。")
-		}
-		_, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: task.Owner.SourceProtocol, SourceAdapter: task.Owner.SourceAdapter, TargetType: "private", TargetID: task.Owner.ActorID, Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.Text(text)}}})
-		return err
 	})
+	release()
+	if err == nil && notice != "" && tellOwner(ctx, event, task.Owner, notice) != nil {
+		err = a.SyncTasks.notificationFailed(ref, task.LastFinishedMS)
+	}
 	if err != nil && !errors.Is(err, errTaskChanged) {
 		failure := PublicError(err)
 		return event.Fail(failure.Code, failure.Message)

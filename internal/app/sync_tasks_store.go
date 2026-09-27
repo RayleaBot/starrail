@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"path/filepath"
 	"time"
 
@@ -86,7 +85,6 @@ func syncTaskFailure(task *SyncTask, code string, now time.Time) {
 }
 
 type SyncTaskFetch func(context.Context, SyncTask, string, string, int) (gacha.RemotePage, error)
-type SyncTaskSend func(context.Context, SyncTask, string) error
 
 // syncTaskGap is the least time between two pages of a daily sync, to stay
 // under the official rate limits.
@@ -122,19 +120,20 @@ func (s *SyncTaskStore) due(task *SyncTask, now time.Time) (bool, error) {
 // syncTaskGap apart, each page written back with the task so the page shows
 // its progress. It stops without writing anything more once the task was
 // removed, paused or run again meanwhile. A completed round waits for the
-// next day and tells the account's chat user when asked; the notification is
-// marked before it is sent, so a restart does not send it again.
-func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, jobs *gacha.Syncs, archive *gacha.Store, pause func(context.Context, time.Duration) error, fetch SyncTaskFetch, send SyncTaskSend) error {
+// next day; when the account's chat user is to be told, the notification is
+// marked and its text returned, for the trigger to send once it let go of
+// the task, and a restart does not send it again.
+func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, jobs *gacha.Syncs, archive *gacha.Store, pause func(context.Context, time.Duration) error, fetch SyncTaskFetch) (string, error) {
 	task.LastCheckedMS, task.LastCode = time.Now().UnixMilli(), "sync_running"
 	info, err := jobs.Start(archive, gacha.SyncChoice{AccountRef: task.AccountRef, RoleRef: task.RoleRef}, task.Role.UID, task.Role.Region, task.Full)
 	if err != nil {
 		syncTaskFailure(task, syncTaskError(err), time.Now())
-		return s.save(*task)
+		return "", s.save(*task)
 	}
 	defer jobs.Forget(info.Ref)
 	task.Progress = info
 	if err = s.save(*task); err != nil {
-		return err
+		return "", err
 	}
 	for task.Progress.State == "running" {
 		if task.Progress.Pages > 0 {
@@ -151,11 +150,11 @@ func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, jobs *gacha.Syn
 				code = "sync_timeout"
 			}
 			syncTaskFailure(task, code, time.Now())
-			return s.save(*task)
+			return "", s.save(*task)
 		}
 		task.Progress, task.Failures = info, 0
 		if err = s.save(*task); err != nil {
-			return err
+			return "", err
 		}
 	}
 	now := time.Now()
@@ -164,15 +163,21 @@ func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, jobs *gacha.Syn
 	if task.Notify {
 		task.LastNotificationMS = now.UnixMilli()
 	}
-	if err = s.save(*task); err != nil || !task.Notify || send == nil {
-		return err
+	if err = s.save(*task); err != nil || !task.Notify {
+		return "", err
 	}
-	result := task.Progress.Result
-	if err = send(ctx, *task, fmt.Sprintf("抽卡后台同步完成\n%s · %s\n新增 %d 条，档案共 %d 条。", task.Role.Nickname, task.Role.UID, result.Added, result.Total)); err != nil {
-		task.LastCode = "sync_completed.notification_failed"
-		return s.save(*task)
-	}
-	return nil
+	return syncNotice(task.Role, *task.Progress.Result), nil
+}
+
+// notificationFailed marks the notification of the round that finished at
+// finished as not sent, unless the task changed since.
+func (s *SyncTaskStore) notificationFailed(ref string, finished int64) error {
+	return s.edit(ref, func(items *[]SyncTask, i int) error {
+		if i >= 0 && (*items)[i].LastFinishedMS == finished && (*items)[i].LastCode == "sync_completed" {
+			(*items)[i].LastCode = "sync_completed.notification_failed"
+		}
+		return nil
+	})
 }
 
 // PauseArchive pauses the daily syncs of an archive being removed; a round

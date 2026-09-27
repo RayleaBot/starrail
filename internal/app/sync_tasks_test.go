@@ -47,7 +47,7 @@ func (s *SyncTaskStore) triggerAt(t *testing.T, jobs *gacha.Syncs, archive *gach
 	defer s.release(task.Ref)
 	due, err := s.due(&task, now)
 	if err == nil && due {
-		err = s.run(t.Context(), &task, jobs, archive, func(ctx context.Context, _ time.Duration) error { return ctx.Err() }, fetch, nil)
+		_, err = s.run(t.Context(), &task, jobs, archive, func(ctx context.Context, _ time.Duration) error { return ctx.Err() }, fetch)
 	}
 	if err != nil {
 		t.Fatal(err)
