@@ -13,11 +13,13 @@ import (
 // taskAccounts answers the account plugin's service for one account of user
 // "u" holding one overseas role: the role checks, delegation.create, which
 // grants "d1", and the requests of the jobs, which it records by operation
-// and refuses. Only a trigger may make a job's request, and with the
-// delegation.
+// and refuses, but for gacha, when set, which answers the gacha record
+// requests with their data. Only a trigger may make a job's request, and
+// with the delegation.
 type taskAccounts struct {
 	t        *testing.T
 	executed []string
+	gacha    func(input map[string]any) (map[string]any, string)
 }
 
 func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bool) (map[string]any, string) {
@@ -40,6 +42,13 @@ func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 			s.t.Errorf("%s was requested outside its job", operation)
 		}
 		s.executed = append(s.executed, operation)
+		if operation == "starrail.gacha" && s.gacha != nil {
+			data, failure := s.gacha(asObject(request.Params["input"]))
+			if failure != "" {
+				return nil, failure
+			}
+			return map[string]any{"operation": operation, "role": role, "data": data}, ""
+		}
 		return nil, "plugin.upstream_unavailable"
 	}
 	s.t.Errorf("unexpected %s", request.Method)
@@ -47,9 +56,11 @@ func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 }
 
 // jobsHost is the plugin on the SDK host with taskAccounts' account and 米游社
-// news without posts, whose reads it counts.
+// news without posts, whose reads it counts. The plugin's clock starts at
+// the current time.
 type jobsHost struct {
 	a        *App
+	clock    *fakeClock
 	host     *sdkHost
 	accounts *taskAccounts
 	news     int
@@ -57,7 +68,8 @@ type jobsHost struct {
 
 func newJobsHost(t *testing.T) *jobsHost {
 	t.Helper()
-	j := &jobsHost{a: pluginApp(t), accounts: &taskAccounts{t: t}}
+	j := &jobsHost{a: pluginApp(t), clock: &fakeClock{at: time.Now()}, accounts: &taskAccounts{t: t}}
+	j.a.clock = j.clock
 	j.a.Content = PublicContentClient{HTTP: doerFunc(func(r *http.Request) (*http.Response, error) {
 		if !strings.HasSuffix(r.URL.Path, "/getNewsList") {
 			t.Errorf("content request %s", r.URL)

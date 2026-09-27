@@ -3,8 +3,10 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -34,11 +36,15 @@ func syncPage(_ context.Context, _ SyncTask, pool, end string, page int) (gacha.
 	}
 	return p, nil
 }
+
+// fixedPace is a trigger at now whose clock stands still.
+func fixedPace(now int64) SyncPace {
+	at := time.UnixMilli(now)
+	return SyncPace{Now: func() time.Time { return at }, Sleep: func(ctx context.Context, _ time.Duration) error { return ctx.Err() }, Stop: at.Add(chatTaskBudget)}
+}
 func tickOne(t *testing.T, s *SyncTaskStore, j *gacha.Syncs, a *gacha.Store, task SyncTask, now int64, fetch SyncTaskFetch, send SyncTaskSend) SyncTask {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
-	defer cancel()
-	if err := s.Tick(ctx, task.Ref, now, j, a, fetch, send); err != nil {
+	if err := s.Tick(t.Context(), task.Ref, fixedPace(now), j, a, fetch, send); err != nil {
 		t.Fatal(err)
 	}
 	items, err := s.List()
@@ -50,7 +56,7 @@ func tickOne(t *testing.T, s *SyncTaskStore, j *gacha.Syncs, a *gacha.Store, tas
 func TestBackgroundSyncContinuesWithoutUIAndRestartsSafely(t *testing.T) {
 	s, j, a, task, now := syncTaskFixture(t, "once")
 	task = tickOne(t, s, j, a, task, now, syncPage, nil)
-	if task.Progress.Pages != 1 || task.State != "running" {
+	if task.Progress.Pages != syncTaskPages || task.State != "running" {
 		t.Fatal(task)
 	}
 	if _, err := a.Read(task.Role.UID, task.Role.Region); !errors.Is(err, os.ErrNotExist) {
@@ -83,16 +89,14 @@ func TestBackgroundSyncDeletionAndConcurrentAdmission(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ctx, cancel := context.WithTimeout(t.Context(), time.Second)
-			defer cancel()
-			if err := s.Tick(ctx, task.Ref, now, j, a, syncPage, nil); err != nil {
+			if err := s.Tick(t.Context(), task.Ref, fixedPace(now), j, a, syncPage, nil); err != nil {
 				t.Error(err)
 			}
 		}()
 	}
 	wg.Wait()
 	items, _ := s.List()
-	if items[0].Progress.Pages != 1 {
+	if items[0].Progress.Pages != syncTaskPages {
 		t.Fatal("duplicate tick advanced pages", items)
 	}
 	if err := s.RemoveArchive(j, a, task.Role.UID, task.Role.Region); err != nil {
@@ -133,7 +137,7 @@ func TestBackgroundSyncDailyHourCompletionAndNotifyOnce(t *testing.T) {
 		return gacha.RemotePage{}, nil
 	}, send)
 	task = tickOne(t, s, j, a, task, now+86400000, syncPage, send)
-	if task.State != "running" || task.Progress.Pages != 1 || sent != 1 {
+	if task.State != "running" || task.Progress.Pages != syncTaskPages || sent != 1 {
 		t.Fatal(task, sent)
 	}
 }
@@ -190,6 +194,106 @@ func TestBackgroundSyncFailuresExpiryAndMergeConflict(t *testing.T) {
 				t.Fatal(task)
 			}
 		})
+	}
+}
+
+// syncRead is a gacha record request: when it came and what it asked for.
+type syncRead struct {
+	at        time.Time
+	pool, end string
+	page      int
+}
+
+// A background sync run through the SDK as the host runs it: each trigger
+// asks for at most three pages, a second or more apart, and starts none
+// after the event budget; the page still open when the event's time is up
+// is asked for again by the next trigger without counting as a failure,
+// and the triggers finish the sync.
+func TestBackgroundSyncTriggersStayWithinTheirEvents(t *testing.T) {
+	j := newJobsHost(t)
+	reads := []syncRead{}
+	// Pages take five seconds; slow gives some their own time, and the
+	// page that answers after the host timed its event out.
+	slow := map[int]time.Duration{}
+	timeout := -1
+	j.accounts.gacha = func(input map[string]any) (map[string]any, string) {
+		pool, end := asText(input["gacha_type"]), asText(input["end_id"])
+		page, _ := strconv.Atoi(asText(input["page"]))
+		reads = append(reads, syncRead{j.clock.Now(), pool, end, page})
+		n := len(reads) - 1
+		if n == timeout {
+			j.clock.set(j.clock.Now().Add(time.Minute))
+			return nil, "plugin.event_timeout"
+		}
+		took := 5 * time.Second
+		if d, ok := slow[n]; ok {
+			took = d
+		}
+		j.clock.set(j.clock.Now().Add(took))
+		records := []any{}
+		if pool == "11" {
+			first := 1
+			if id, _ := strconv.Atoi(end); id != 0 {
+				first = 5000 - id + 1
+			}
+			for k := first; k <= 45 && len(records) < 20; k++ {
+				records = append(records, map[string]any{"uid": "600000001", "gacha_id": "2003", "gacha_type": "11", "item_id": "1308", "count": "1", "time": fmt.Sprintf("2024-01-01 00:%02d:00", 59-k), "name": "黄泉", "item_type": "角色", "rank_type": "5", "id": strconv.Itoa(5000 - k)})
+			}
+		}
+		return map[string]any{"list": records, "region": "prod_official_usa"}, ""
+	}
+	if end, _ := j.host.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "kind": "once", "days": 30, "confirm": true}); end["type"] != "result" {
+		t.Fatalf("gacha.task.create ended with %v", end)
+	}
+	ref := j.host.job("game.sync.")
+	start := j.clock.Now()
+	trigger := func(minute int) SyncTask {
+		t.Helper()
+		j.clock.set(start.Add(time.Duration(minute) * time.Minute))
+		if end, _ := j.host.trigger(ref); end["type"] != "result" {
+			t.Fatalf("trigger %d ended with %v", minute, end)
+		}
+		items, _ := j.a.SyncTasks.List()
+		return items[0]
+	}
+	// Three pages, the second and third each a second after the previous
+	// answer.
+	if task := trigger(1); len(reads) != 3 || task.Progress.Pages != 3 || task.State != "running" {
+		t.Fatalf("the first trigger read %v, task %+v", reads, task)
+	}
+	for i := 1; i < 3; i++ {
+		if gap := reads[i].at.Sub(reads[i-1].at); gap != 6*time.Second {
+			t.Fatalf("read %d came %v after the previous", i, gap)
+		}
+	}
+	// Slow pages: the second answers 51 seconds in, past the budget, so no
+	// third is asked for.
+	slow[3], slow[4] = 25*time.Second, 25*time.Second
+	if task := trigger(2); len(reads) != 5 || task.Progress.Pages != 5 {
+		t.Fatalf("the slow trigger read %v, task %+v", reads[3:], task)
+	}
+	// The page still open when the event's time is up is asked for again by
+	// the next trigger.
+	timeout = 5
+	task := trigger(3)
+	if len(reads) != 6 || task.Progress.Pages != 5 || task.Failures != 0 || task.State != "running" || task.NextCheckMS > start.Add(4*time.Minute).UnixMilli() {
+		t.Fatalf("the trigger that ran out read %v, task %+v", reads[5:], task)
+	}
+	task = trigger(4)
+	if reads[6].pool != reads[5].pool || reads[6].end != reads[5].end || reads[6].page != reads[5].page {
+		t.Fatalf("the next trigger read %+v instead of %+v", reads[6], reads[5])
+	}
+	for minute := 5; task.State == "running"; minute++ {
+		if minute > 8 {
+			t.Fatalf("the sync did not finish: %+v", task)
+		}
+		task = trigger(minute)
+	}
+	if task.State != "completed" || task.Progress.Result.Added != 45 {
+		t.Fatalf("task %+v", task)
+	}
+	if archive, err := j.a.Gacha.Read("600000001", "prod_official_usa"); err != nil || len(archive.Records) != 45 {
+		t.Fatalf("kept %d records, %v", len(archive.Records), err)
 	}
 }
 

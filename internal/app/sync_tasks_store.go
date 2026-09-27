@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand/v2"
 	"path/filepath"
 	"sync"
 	"time"
@@ -88,22 +87,40 @@ func syncTaskFailure(task *SyncTask, err error, now int64) {
 type SyncTaskFetch func(context.Context, SyncTask, string, string, int) (gacha.RemotePage, error)
 type SyncTaskSend func(context.Context, SyncTask, string) error
 
-// Tick runs one trigger of a task: it advances the sync for pages until the
-// event deadline nears and writes the task once at the end. Only the current
-// scheduler event may supply fetch; it is never retained.
-func (s *SyncTaskStore) Tick(ctx context.Context, ref string, now int64, jobs *gacha.Syncs, archive *gacha.Store, fetch SyncTaskFetch, send SyncTaskSend) error {
+const (
+	// syncTaskPages is how many pages a trigger advances a sync at most, and
+	// syncTaskGap the least time between two of them.
+	syncTaskPages = 3
+	syncTaskGap   = time.Second
+)
+
+// SyncPace is how a trigger paces its pages: the time and waiting by the
+// plugin's clock, and stop, from when it starts no page.
+type SyncPace struct {
+	Now   func() time.Time
+	Sleep func(context.Context, time.Duration) error
+	Stop  time.Time
+}
+
+// Tick runs one trigger of a task: it advances the sync by at most
+// syncTaskPages pages, syncTaskGap apart, none starting at or after the
+// pace's stop, and writes the task once at the end. A page open when ctx
+// ends is read again by the next trigger. Only the current scheduler event
+// may supply fetch; it is never retained.
+func (s *SyncTaskStore) Tick(ctx context.Context, ref string, pace SyncPace, jobs *gacha.Syncs, archive *gacha.Store, fetch SyncTaskFetch, send SyncTaskSend) error {
 	claimed, ok, err := s.claim(ref)
 	if err != nil || !ok {
 		return err
 	}
 	defer s.release(ref)
-	if err = s.run(ctx, &claimed, now, jobs, archive, fetch, send); errors.Is(err, errTaskChanged) {
+	if err = s.run(ctx, &claimed, pace, jobs, archive, fetch, send); errors.Is(err, errTaskChanged) {
 		return nil
 	}
 	return err
 }
 
-func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, now int64, jobs *gacha.Syncs, archive *gacha.Store, fetch SyncTaskFetch, send SyncTaskSend) error {
+func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, pace SyncPace, jobs *gacha.Syncs, archive *gacha.Store, fetch SyncTaskFetch, send SyncTaskSend) error {
+	now := pace.Now().UnixMilli()
 	if task.State != "running" && task.State != "waiting" || task.NextCheckMS > now {
 		return nil
 	}
@@ -147,24 +164,17 @@ func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, now int64, jobs
 		}
 	}
 	task.Progress = info
-	// Pull pages back to back, 300 to 500 ms apart as upstream does, until
-	// the event deadline is near; the next tick continues from there.
+	// The next trigger continues from the page this one stops before.
 	for page := 0; task.Progress.State == "running"; page++ {
-		if page > 0 {
-			if deadline, ok := ctx.Deadline(); ok && time.Until(deadline) < 1500*time.Millisecond {
-				break
-			}
-			timer := time.NewTimer(time.Duration(300+rand.IntN(201)) * time.Millisecond)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				return s.save(*task)
-			case <-timer.C:
-			}
+		if page > 0 && (page == syncTaskPages || !pace.Now().Add(syncTaskGap).Before(pace.Stop) || pace.Sleep(ctx, syncTaskGap) != nil) {
+			break
 		}
 		info, err = jobs.Step(ctx, archive, task.Progress.Ref, task.Progress.Sequence, func(ctx context.Context, pool, end string, page int) (gacha.RemotePage, error) {
 			return fetch(ctx, *task, pool, end, page)
 		})
+		if err != nil && ctx.Err() != nil {
+			break
+		}
 		if err != nil {
 			syncTaskFailure(task, err, now)
 			if task.State != "running" {
