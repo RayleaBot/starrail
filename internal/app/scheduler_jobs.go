@@ -25,11 +25,6 @@ func (a *App) reminderJob(task Reminder) rayleabot.SchedulerCreateRequest {
 	return rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: cron, LogLabel: a.Game.Name + label, Payload: taskPayload(kind, task.Ref)}
 }
 
-// syncJob is the scheduler job of a background gacha sync.
-func (a *App) syncJob(task SyncTask) rayleabot.SchedulerCreateRequest {
-	return rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: "* * * * *", LogLabel: a.Game.Name + "抽卡后台同步", Payload: taskPayload("gacha_sync", task.Ref)}
-}
-
 // contentJob is the scheduler job of a group's 米游社 pushes.
 func (a *App) contentJob(ref string) rayleabot.SchedulerCreateRequest {
 	return rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "*/5 * * * *", LogLabel: a.Game.Name + "米游社推送", Payload: taskPayload("public_content", ref)}
@@ -93,13 +88,6 @@ func (a *App) recreateJobs(ctx context.Context, actions *rayleabot.Actions) erro
 	}
 	for _, task := range reminders {
 		requests = append(requests, a.reminderJob(task))
-	}
-	syncs, err := a.SyncTasks.List()
-	if err != nil {
-		return err
-	}
-	for _, task := range syncs {
-		requests = append(requests, a.syncJob(task))
 	}
 	subscriptions, err := a.Subscriptions.List()
 	if err != nil {

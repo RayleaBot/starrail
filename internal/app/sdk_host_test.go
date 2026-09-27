@@ -37,6 +37,10 @@ type sdkHost struct {
 	sent []rayleabot.MessageSendRequest
 	// triggers are the request IDs of scheduler triggers.
 	triggers map[string]bool
+	// detached are the event.detach requests the host accepted; busy
+	// refuses them as a plugin holding its limit of background events.
+	detached []map[string]any
+	busy     bool
 }
 
 // hostAction is an action the plugin asked for during one event.
@@ -89,8 +93,12 @@ func (h *sdkHost) write(frame map[string]any) {
 	}
 }
 
-// eventTimeout is the host's default event deadline.
-const eventTimeout = 60 * time.Second
+// eventTimeout and detachedTimeout are the host's default event and
+// background deadlines.
+const (
+	eventTimeout    = 60 * time.Second
+	detachedTimeout = 900 * time.Second
+)
 
 // exchange sends a frame, an event with the host's default deadline, and
 // answers the plugin's actions until it ends the request; it returns the
@@ -126,7 +134,11 @@ func (h *sdkHost) exchange(id string, frame map[string]any) (map[string]any, []h
 		actions = append(actions, hostAction{Name: asText(response["action"]), Data: data})
 		result, failure := h.answer(asText(response["action"]), data, h.triggers[asText(response["parent_request_id"])])
 		if failure != "" {
-			h.write(map[string]any{"type": "error", "request_id": response["request_id"], "code": failure, "message": failure})
+			frame := map[string]any{"type": "error", "request_id": response["request_id"], "code": failure, "message": failure}
+			if failure == "platform.rate_limited" {
+				frame["details"] = map[string]any{"limit": 8}
+			}
+			h.write(frame)
 			continue
 		}
 		h.write(map[string]any{"type": "result", "request_id": response["request_id"], "status": "success", "data": result})
@@ -163,6 +175,12 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		}
 		h.sent = append(h.sent, request)
 		return map[string]any{"message_id": fmt.Sprintf("sent-%d", len(h.sent)), "delivery_kind": "send"}, ""
+	case "event.detach":
+		if h.busy {
+			return nil, "platform.rate_limited"
+		}
+		h.detached = append(h.detached, data)
+		return map[string]any{"deadline_at_ms": time.Now().Add(detachedTimeout).UnixMilli()}, ""
 	case "render.image":
 		return nil, "platform.render_unavailable"
 	case "logger.write":

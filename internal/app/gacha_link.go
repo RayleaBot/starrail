@@ -229,6 +229,11 @@ func (a *App) checkGachaLink(ctx context.Context, link *gachaLink, length int) (
 	return "", gameError("gacha_link_empty", "暂无数据，请等待记录后再查询")
 }
 
+// syncOwner is the chat user who sent the event.
+func syncOwner(event *rayleabot.EventContext) Subject {
+	return Subject{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, BotID: event.Bot.ID, ActorID: event.Event.Actor.ID}
+}
+
 // gachaLinkMessage answers a message holding a warp link; handled is false
 // for any other message.
 func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContext) (handled bool, err error) {

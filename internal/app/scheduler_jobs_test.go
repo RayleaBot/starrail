@@ -110,7 +110,6 @@ func (j *jobsHost) createJobs(t *testing.T) []createdJob {
 		{"signin.task.create", role(map[string]any{"hour": 0}), "game.sign.", "starrail.sign"},
 		{"monthly.task.create", role(map[string]any{"hour": 0}), "game.monthly.", "starrail.monthly"},
 		{"community.task.create", role(map[string]any{"once": true, "read": true}), "game.community.", "starrail.community_run"},
-		{"gacha.task.create", role(map[string]any{"kind": "once"}), "game.sync.", "starrail.gacha"},
 	} {
 		if end, _ := j.host.manage(job.action, job.input); end["type"] != "result" {
 			t.Fatalf("%s ended with %v", job.action, end)
@@ -193,10 +192,6 @@ func TestRemovedTasksDeleteTheirJobs(t *testing.T) {
 		},
 		func(ref string) map[string]any {
 			end, _ := j.host.manage("community.task.remove", map[string]any{"ref": ref})
-			return end
-		},
-		func(ref string) map[string]any {
-			end, _ := j.host.manage("gacha.task.remove", map[string]any{"ref": ref})
 			return end
 		},
 		func(ref string) map[string]any {
