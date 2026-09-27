@@ -75,8 +75,7 @@ type PanelStore struct {
 	Directory string
 	// Relics restores a panel's relics as miao keeps them in its player data,
 	// which is done once, when the panel is kept, as miao computes them when
-	// it saves the panel. A panel kept without them has them restored when it
-	// is first read, and kept with them. Nil keeps panels without them.
+	// it saves the panel. Nil keeps panels without them.
 	Relics func(CharacterPanel) *MiaoRelics
 }
 
@@ -99,49 +98,11 @@ func (s *PanelStore) read(uid string) (SavedProfiles, error) {
 	return value, err
 }
 
-// Read returns a UID's kept panels. Panels kept before their relics were
-// have them restored here, outside the lock, and kept with them unless the
-// panel was replaced meanwhile; when they cannot be written back, they are
-// restored again at the next read.
+// Read returns a UID's kept panels.
 func (s *PanelStore) Read(uid string) (SavedProfiles, error) {
 	s.mu.Lock()
-	value, err := s.read(uid)
-	s.mu.Unlock()
-	if err != nil || s.Relics == nil {
-		return value, err
-	}
-	restored := map[string]*MiaoRelics{}
-	for id, kept := range value.Panels {
-		if kept.Panel.Relics == nil {
-			if relics := s.Relics(kept.panel()); relics != nil {
-				restored[id] = relics
-				kept.Panel.Relics = relics
-				value.Panels[id] = kept
-			}
-		}
-	}
-	if len(restored) == 0 {
-		return value, nil
-	}
-	s.mu.Lock()
 	defer s.mu.Unlock()
-	current, err := s.read(uid)
-	if err != nil {
-		return value, nil
-	}
-	changed := false
-	for id, relics := range restored {
-		if kept, ok := current.Panels[id]; ok && kept.Panel.Relics == nil && kept.UpdatedAtMS == value.Panels[id].UpdatedAtMS {
-			kept.Panel.Relics = relics
-			current.Panels[id] = kept
-			changed = true
-		}
-	}
-	if changed {
-		file, _ := s.file(uid)
-		_ = localdata.Write(file, current)
-	}
-	return value, nil
+	return s.read(uid)
 }
 
 // Keep merges panels into a UID's kept panels, replacing each character's
@@ -151,7 +112,7 @@ func (s *PanelStore) Keep(uid string, panels []CharacterPanel, service string, p
 	panels = slices.Clone(panels)
 	for index, panel := range panels {
 		if panel.Relics == nil && s.Relics != nil {
-			panels[index].Relics = s.Relics(SavedPanel{Panel: panel, Official: panel.Official}.panel())
+			panels[index].Relics = s.Relics(panel)
 		}
 	}
 	s.mu.Lock()
@@ -188,30 +149,10 @@ func (s *PanelStore) Delete(uid string) error {
 	return err
 }
 
-// panel returns the kept panel with its official entry. A panel kept before
-// previewed substats were left out loses them here, as miao's MysPanelHSR
-// reads the official entry without them.
+// panel returns the kept panel with its official entry.
 func (s SavedPanel) panel() CharacterPanel {
 	panel := s.Panel
 	panel.Official, panel.UpdatedAtMS = s.Official, s.UpdatedAtMS
-	previews := map[int][]string{}
-	for _, field := range []string{"relics", "ornaments"} {
-		for _, raw := range asList(s.Official[field]) {
-			gear := asObject(raw)
-			for _, item := range asList(gear["properties"]) {
-				if property := asObject(item); property["is_preview"] == true {
-					previews[number(gear["pos"])] = append(previews[number(gear["pos"])], asText(property["property_type"]))
-				}
-			}
-		}
-	}
-	if len(previews) == 0 {
-		return panel
-	}
-	panel.Equipment = slices.Clone(panel.Equipment)
-	for index, gear := range panel.Equipment {
-		panel.Equipment[index].Sub = slices.DeleteFunc(slices.Clone(gear.Sub), func(stat PanelStat) bool { return slices.Contains(previews[gear.Slot], stat.ID) })
-	}
 	return panel
 }
 

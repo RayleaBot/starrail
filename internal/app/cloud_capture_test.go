@@ -184,11 +184,11 @@ func writtenRelics(t *testing.T, a *App, panel CharacterPanel) map[string][]stri
 var officialShown = map[string][2]any{"atk": {"7.7%", 2}, "1speed": {"2", 1}, "2speed": {"4", 2}, "cdmg": {"18.1%", 3}, "cpct": {"2.5%", 1},
 	"hpPlus": {"71", 2}, "effPct": {"4.3%", 1}, "stance": {"5.1%", 1}}
 
-// officialSeele is sharedSeele as the record API shows it, as a panel kept
-// before previewed substats were left out keeps it: the first relic, below
-// +3, still lists the substat it will gain. The first relic's speed is 2.6
-// (7,1,2), which the record API shows as 2; the total speed, 0.3 above the
-// shared panel's, shows cut too.
+// officialSeele is sharedSeele as read from the record API: the first relic,
+// below +3, lists in the official entry the substat it will gain, which the
+// panel leaves out. The first relic's speed is 2.6 (7,1,2), which the record
+// API shows as 2; the total speed, 0.3 above the shared panel's, shows cut
+// too.
 func officialSeele(t *testing.T, a *App) CharacterPanel {
 	t.Helper()
 	official := shownPanel(sharedSeele(t, a), "mihoyo", officialShown)
@@ -198,7 +198,6 @@ func officialSeele(t *testing.T, a *App) CharacterPanel {
 			official.Stats[i].Value = strconv.Itoa(int(value + 0.3))
 		}
 	}
-	official.Equipment[0].Sub = append(official.Equipment[0].Sub, PanelStat{ID: "31", Key: "defPlus", Value: "19", Times: 1})
 	official.Official = map[string]any{"relics": []any{map[string]any{"pos": json.Number("1"),
 		"properties": []any{map[string]any{"property_type": json.Number("31"), "times": json.Number("1"), "value": "19", "is_preview": true}}}}}
 	return official
@@ -300,8 +299,7 @@ func TestEfficiencyCountsRollsAtTheRelicsRarity(t *testing.T) {
 
 // As miao computes a panel's attrIds once when it saves its player data, a
 // kept panel keeps its restored relics, which scoring, export and ark ranks
-// read. A panel kept before they were has them restored at its first read and
-// kept.
+// read.
 func TestKeptPanelsKeepTheirRelics(t *testing.T) {
 	a := pluginApp(t)
 	want := map[string][]string{"1": {"5,2,2", "7,1,2", "8,1,0", "9,3,4"}, "2": {"1,2,1", "10,1,2", "12,1,0", "7,2,2"}}
@@ -356,23 +354,6 @@ func TestKeptPanelsKeepTheirRelics(t *testing.T) {
 		if attr.Key == "cdmg" && attr.Value != "15.6%" {
 			t.Errorf("scored 暴击伤害 = %+v", attr)
 		}
-	}
-	// A panel kept without relics has them restored and kept at its first
-	// read.
-	restore := a.Profiles.Relics
-	a.Profiles.Relics = nil
-	if _, err := a.Profiles.Keep("100000002", []CharacterPanel{officialSeele(t, a)}, "米游社", nil); err != nil {
-		t.Fatal(err)
-	}
-	if _, found := stored("100000002"); found {
-		t.Fatal("relics kept without restoring them")
-	}
-	a.Profiles.Relics = restore
-	if saved, err = a.Profiles.Read("100000002"); err != nil || saved.Panels["1102"].Panel.Relics == nil {
-		t.Fatalf("read = %v", err)
-	}
-	if got, complete := stored("100000002"); !complete || !reflect.DeepEqual(got, want) {
-		t.Fatalf("relics kept at the first read = %v %v, want %v", got, complete, want)
 	}
 }
 

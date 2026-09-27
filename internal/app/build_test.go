@@ -41,19 +41,13 @@ func TestEquipmentSetMappingUsesKnownCatalogEntries(t *testing.T) {
 }
 
 // A relic below +3 previews the substat it will gain; miao's MysPanelHSR
-// leaves it out, and so do the panel, its score and its damage, whether the
-// panel is read now or was kept with it.
+// leaves it out, and so do the panel, its score and its damage.
 func TestOfficialPanelsLeaveOutPreviewedSubstats(t *testing.T) {
 	data := decoded(t, `{"avatar_list":[{"id":1001,"relics":[{"id":61301,"pos":1,"level":0,"rarity":5,"main_property":{"property_type":27,"value":"112","is_preview":false},
 		"properties":[{"property_type":56,"times":1,"value":"4.3%","is_preview":false},{"property_type":31,"times":1,"value":"19","is_preview":true}]}]}]}`)
 	panels := NormalizePanels(QueryResult{Data: data}, Catalog{})
 	if subs := panels[0].Equipment[0].Sub; len(subs) != 1 || subs[0].ID != "56" {
 		t.Fatalf("read = %+v", subs)
-	}
-	kept := SavedPanel{Panel: panels[0], Official: panels[0].Official}
-	kept.Panel.Equipment = []PanelEquipment{{Slot: 1, Sub: []PanelStat{{ID: "56", Value: "4.3%"}, {ID: "31", Value: "19"}}}}
-	if subs := kept.panel().Equipment[0].Sub; len(subs) != 1 || subs[0].ID != "56" || len(kept.Panel.Equipment[0].Sub) != 2 {
-		t.Fatalf("kept = %+v", subs)
 	}
 }
 

@@ -266,20 +266,6 @@ func restoreArtis(ctx context.Context, g Game, panel CharacterPanel, basis *pane
 		}
 		return artis, kept.Complete, nil
 	}
-	// A panel kept before the roll counts were kept has them in the official
-	// entry.
-	official := map[int]map[string]int{}
-	for _, field := range []string{"relics", "ornaments"} {
-		for _, raw := range asList(panel.Official[field]) {
-			gear := asObject(raw)
-			times := map[string]int{}
-			for _, item := range asList(gear["properties"]) {
-				property := asObject(item)
-				times[asText(property["property_type"])] = number(property["times"])
-			}
-			official[number(gear["pos"])] = times
-		}
-	}
 	taken := map[*CharacterPanel]map[string]map[string]any{}
 	artis := map[string]map[string]any{}
 	skipped := false
@@ -306,12 +292,8 @@ func restoreArtis(ctx context.Context, g Game, panel CharacterPanel, basis *pane
 			}
 			switch panel.Source {
 			case "mihoyo":
-				times, ok := official[gear.Slot][stat.ID]
-				if !ok {
-					times = stat.Times
-				}
-				if times > 0 {
-					return officialRolls(g, star, stat, times)
+				if stat.Times > 0 {
+					return officialRolls(g, star, stat, stat.Times)
 				}
 			case "mihomo":
 				return showcaseRolls(g, star, stat)

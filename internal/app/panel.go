@@ -76,7 +76,7 @@ type CharacterPanel struct {
 	// panel.
 	UpdatedAtMS int64 `json:"-"`
 	// Relics are the relics as miao keeps them, restored when the panel was
-	// kept; nil for a panel not kept, or kept before they were.
+	// kept; nil for a panel not kept.
 	Relics *MiaoRelics `json:"relics,omitempty"`
 }
 
