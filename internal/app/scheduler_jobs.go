@@ -3,9 +3,23 @@ package app
 import (
 	"context"
 	"sync"
+	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
+
+// triggerLimit is when a trigger's work ends, leaving the rest of the host's
+// default 60 seconds for the trigger's own result.
+const triggerLimit = 55 * time.Second
+
+// eventWork bounds the work of a trigger that started at start: it ends, the
+// actions it asked for included, triggerLimit after start.
+func (a *App) eventWork(ctx context.Context, start time.Time) (context.Context, context.CancelFunc) {
+	if a.clock != nil {
+		return a.clock.Until(ctx, start.Add(triggerLimit))
+	}
+	return context.WithDeadline(ctx, start.Add(triggerLimit))
+}
 
 // timedTaskLabels name the timed tasks signinTask creates, by kind.
 var timedTaskLabels = map[string]string{"signin": "每日签到", "monthly": "每日月报收集", "community": "米游社任务"}

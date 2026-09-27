@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"io"
@@ -24,14 +23,14 @@ import (
 // a group the sender is asked to recall the link. No account is needed. As
 // StarRail-plugin binds a link to its sender for 更新跃迁记录, the last link a
 // sender pasted is kept in memory for a day, the authkey's lifetime; it is
-// never written to disk. A history too long for one event is finished as a
-// chat task, which is dropped if the plugin restarts.
+// never written to disk. Reading every pool can outlast the event deadline,
+// so both read in their event moved to the background.
 
 const (
 	gachaLinkCN = "https://public-operation-hkrpg.mihoyo.com/common/gacha_record/api/"
 	gachaLinkOS = "https://public-operation-hkrpg-sg.hoyoverse.com/common/gacha_record/api/"
-	// gachaLinkTask prefixes the scheduled tasks that finish long histories.
-	gachaLinkTask = "game.link."
+	// gachaLinkGap is the time between two pages of a link.
+	gachaLinkGap = 300 * time.Millisecond
 )
 
 // gachaLinkPools are the pools Yunzai reports after a link, in its order.
@@ -39,22 +38,6 @@ var gachaLinkPools = [][2]string{{"11", "角色"}, {"12", "光锥"}, {"21", "角
 
 type gachaLink struct {
 	key, region, biz string
-}
-
-// gachaLinkJob is a link whose records are being fetched. update marks a
-// 更新跃迁记录, answered with StarRail-plugin's replies instead of Yunzai's;
-// images is the image replies setting of the chat it answers in.
-type gachaLinkJob struct {
-	link     gachaLink
-	uid      string
-	sync     string
-	sequence int
-	before   map[string]int
-	update   bool
-	images   bool
-	// result is the finished fetch, kept while its answer waits for an
-	// event with time to draw it.
-	result *gacha.ImportResult
 }
 
 // ownedLink is the last link a sender pasted, for 更新跃迁记录.
@@ -107,6 +90,14 @@ func (j *gachaLinks) markUpdated(uid string) time.Time {
 	}
 	j.updated[uid] = time.Now()
 	return time.Time{}
+}
+
+// forgetUpdate drops an update of uid that did not happen, as StarRail-plugin
+// clears the time of an update that failed.
+func (j *gachaLinks) forgetUpdate(uid string) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	delete(j.updated, uid)
 }
 
 // parseGachaLink reads a warp history link as Yunzai's dealUrl does: 〈= is a
@@ -229,13 +220,15 @@ func (a *App) checkGachaLink(ctx context.Context, link *gachaLink, length int) (
 	return "", gameError("gacha_link_empty", "暂无数据，请等待记录后再查询")
 }
 
-// syncOwner is the chat user who sent the event.
-func syncOwner(event *rayleabot.EventContext) Subject {
+// sender is the chat user who sent the event.
+func sender(event *rayleabot.EventContext) Subject {
 	return Subject{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, BotID: event.Bot.ID, ActorID: event.Event.Actor.ID}
 }
 
-// gachaLinkMessage answers a message holding a warp link; handled is false
-// for any other message.
+// gachaLinkMessage answers a message holding a warp link as Yunzai's logUrl
+// does: the notice, the records each pool gained, the record page and, in a
+// group, the request to recall the link. handled is false for any other
+// message.
 func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContext) (handled bool, err error) {
 	text := event.Event.Message.PlainText
 	link, ok, err := parseGachaLink(text)
@@ -249,150 +242,98 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 			return false, nil
 		}
 	}
+	if err == nil {
+		err = detach(ctx, event, nil)
+	}
 	if err != nil {
 		return true, event.SendText(friendlyError(err))
 	}
-	start := a.now()
-	work, cancel := a.eventWork(ctx, start)
-	defer cancel()
-	uid, err := a.checkGachaLink(work, &link, len([]rune(text)))
+	uid, err := a.checkGachaLink(ctx, &link, len([]rune(text)))
 	if err != nil {
 		return true, event.SendText(friendlyError(err))
 	}
-	a.Links.own(syncOwner(event), link, uid)
-	notice(work, event, "链接发送成功，数据获取中……")
-	a.useLinkUID(work, event, uid)
-	reply := a.fetchByLink(work, event, start, &gachaLinkJob{link: link, uid: uid})
-	if group {
-		reply = append(reply, []rayleabot.Segment{rayleabot.Text("已收到链接，请撤回")})
+	a.Links.own(sender(event), link, uid)
+	notice(ctx, event, "链接发送成功，数据获取中……")
+	a.useLinkUID(ctx, event, uid)
+	before := gachaPoolCounts(a.archiveOrEmpty(uid, link.region))
+	result, err := a.readLink(ctx, link, uid)
+	if err != nil {
+		return true, event.SendText(friendlyError(syncError(err)))
 	}
-	return true, answerChat(ctx, event, reply)
+	archive, err := a.Gacha.Read(result.UID, result.Region)
+	if err != nil {
+		return true, event.SendText(friendlyError(err))
+	}
+	notice(ctx, event, gachaLinkSummary(a.Game.Prefix, before, gachaPoolCounts(archive)))
+	page := a.gachaLogPage(ctx, event, archive)
+	if !group {
+		return true, event.Send(event.Event.Target.Type, event.Event.Target.ID, page...)
+	}
+	_, _ = post(ctx, event, page...)
+	return true, event.SendText("已收到链接，请撤回")
 }
 
 // updateByLink is StarRail-plugin's 更新跃迁记录 with the sender's last link:
-// at most once an hour for a UID.
+// at most once an hour for a UID, answered with its list of analysis
+// commands, or its expiry reply when the link no longer reads.
 func (a *App) updateByLink(ctx context.Context, event *rayleabot.EventContext, owned ownedLink) error {
 	if last := a.Links.markUpdated(owned.uid); !last.IsZero() {
 		return event.SendText("[" + owned.uid + "]近期已经更新过数据了，上次更新时间：" + last.In(time.FixedZone("UTC+8", 8*3600)).Format("2006-01-02 15:04:05") + "，两次更新间隔请大于1小时")
 	}
-	start := a.now()
-	work, cancel := a.eventWork(ctx, start)
-	defer cancel()
-	notice(work, event, "正在获取["+owned.uid+"]的跃迁数据...")
-	return answerChat(ctx, event, a.fetchByLink(work, event, start, &gachaLinkJob{link: owned.link, uid: owned.uid, update: true}))
+	if err := detach(ctx, event, nil); err != nil {
+		a.Links.forgetUpdate(owned.uid)
+		return event.SendText(friendlyError(err))
+	}
+	notice(ctx, event, "正在获取["+owned.uid+"]的跃迁数据...")
+	prefix := a.Game.Prefix
+	if _, err := a.readLink(ctx, owned.link, owned.uid); err != nil {
+		a.Links.forgetUpdate(owned.uid)
+		return event.SendText("抽卡链接已过期，请重新获取并绑定\n输入【" + prefix + "抽卡帮助】以查看抽卡链接获取方法")
+	}
+	return event.SendText("跃迁数据获取成功，你可以使用：\n" + prefix + "跃迁分析\n" + prefix + "角色分析\n" + prefix + "光锥分析\n" + prefix + "常驻分析\n查看具体的跃迁数据")
 }
 
-// fetchByLink merges a link's records within its chat event until the chat
-// task budget, counted from start, runs out, and hands the rest to a chat
-// task that answers in this chat. It returns the event's reply.
-func (a *App) fetchByLink(ctx context.Context, event *rayleabot.EventContext, start time.Time, job *gachaLinkJob) chatReply {
-	job.before = gachaPoolCounts(a.archiveOrEmpty(job.uid, job.link.region))
-	job.images = settings(event).ImageReplies
-	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, job.uid, job.link.region, false)
+// readLink merges every page of a link's records into the UID's archive,
+// gachaLinkGap apart; the archive changes only once every pool is read.
+func (a *App) readLink(ctx context.Context, link gachaLink, uid string) (*gacha.ImportResult, error) {
+	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, uid, link.region, false)
 	if err != nil {
-		return textReply(a.gachaLinkFailure(job, err))
+		return nil, err
 	}
-	job.sync = info.Ref
-	task := a.beginChatTask(event, gachaLinkTask+rand.Text(), a.Game.Name+"抽卡链接记录", "gacha_link", 15*time.Minute, job)
-	reply, done, err := a.stepChatTask(ctx, event.Actions(), task, start.Add(chatTaskBudget))
-	switch {
-	case err != nil:
-		_ = a.Syncs.Cancel(job.sync)
-		return textReply("记录较多，本次未能全部获取，请稍后重试。")
-	case !done:
-		return textReply("记录较多，将在后台继续获取，完成后在此回复。")
-	}
-	return reply
-}
-
-// step fetches the link's pages until stop and answers, once all are
-// merged, with the records gained or the failure. Drawing the answer has
-// the rest of an event: when the pages end at stop, or the event's time is
-// up, the next trigger draws it.
-func (job *gachaLinkJob) step(ctx context.Context, a *App, host taskHost, stop time.Time) (chatReply, bool) {
-	if job.result == nil {
-		result, err := a.stepGachaLink(ctx, job, stop)
-		switch {
-		case err != nil:
-			return job.fail(a, err), true
-		case result == nil:
-			return nil, false
+	defer a.Syncs.Forget(info.Ref)
+	fetch := func(ctx context.Context, pool, endID string, page int) (gacha.RemotePage, error) {
+		data, err := a.gachaLinkPage(ctx, link, pool, endID, page, 20)
+		if err != nil {
+			return gacha.RemotePage{}, err
 		}
-		job.result = result
+		return gacha.ParsePage(uid, link.region, pool, endID, data)
 	}
-	if !a.now().Before(stop) || ctx.Err() != nil {
-		return nil, false
-	}
-	return a.gachaLinkReply(ctx, host, job), true
-}
-
-// fail cancels the link's sync and replies with the failure.
-func (job *gachaLinkJob) fail(a *App, err error) chatReply {
-	_ = a.Syncs.Cancel(job.sync)
-	return textReply(a.gachaLinkFailure(job, err))
-}
-
-// gachaLinkFailure words a failed fetch: StarRail-plugin's expiry reply for
-// 更新跃迁记录, else the error itself.
-func (a *App) gachaLinkFailure(job *gachaLinkJob, err error) string {
-	if job.update {
-		return "抽卡链接已过期，请重新获取并绑定\n输入【" + a.Game.Prefix + "抽卡帮助】以查看抽卡链接获取方法"
-	}
-	return friendlyError(syncError(err))
-}
-
-// stepGachaLink fetches pages until the sync completes or stop passes; the
-// result is nil while pages remain. A page open when ctx ends is fetched
-// again by the next trigger.
-func (a *App) stepGachaLink(ctx context.Context, job *gachaLinkJob, stop time.Time) (*gacha.ImportResult, error) {
 	for {
-		info, err := a.Syncs.Step(ctx, a.Gacha, job.sync, job.sequence, func(ctx context.Context, pool, endID string, page int) (gacha.RemotePage, error) {
-			data, err := a.gachaLinkPage(ctx, job.link, pool, endID, page, 20)
-			if err != nil {
-				return gacha.RemotePage{}, err
-			}
-			return gacha.ParsePage(job.uid, job.link.region, pool, endID, data)
-		})
-		switch {
-		case err != nil && ctx.Err() != nil:
-			return nil, nil
-		case err != nil:
+		if info, err = a.Syncs.Step(ctx, a.Gacha, info.Ref, info.Sequence, fetch); err != nil {
 			return nil, err
 		}
-		job.sequence = info.Sequence
 		if info.State == "completed" {
 			return info.Result, nil
 		}
-		if !a.now().Before(stop) || a.sleep(ctx, 300*time.Millisecond) != nil {
-			return nil, nil
+		if err = a.sleep(ctx, gachaLinkGap); err != nil {
+			return nil, err
 		}
 	}
 }
 
-// gachaLinkReply answers a finished fetch: after a pasted link, Yunzai's
-// report of each pool and its gacha-log page of the character event warp;
-// after 更新跃迁记录, StarRail-plugin's list of analysis commands.
-func (a *App) gachaLinkReply(ctx context.Context, host imageRenderer, job *gachaLinkJob) chatReply {
-	prefix := a.Game.Prefix
-	if job.update {
-		return textReply("跃迁数据获取成功，你可以使用：\n" + prefix + "跃迁分析\n" + prefix + "角色分析\n" + prefix + "光锥分析\n" + prefix + "常驻分析\n查看具体的跃迁数据")
-	}
-	result := job.result
-	archive, err := a.Gacha.Read(result.UID, result.Region)
-	if err != nil {
-		return textReply(friendlyError(err))
-	}
+// gachaLogPage is Yunzai's gacha-log page of the archive's character event
+// warp, or its text when it cannot be drawn.
+func (a *App) gachaLogPage(ctx context.Context, event *rayleabot.EventContext, archive gacha.Archive) []rayleabot.Segment {
 	view := GachaView(a.Game, archive)
 	if a.gacha != nil {
-		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: result.UID, Role: Role{Game: a.Game.ID, UID: result.UID, Region: result.Region}, Command: "gacha-log", Archive: archive}); ok {
+		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: archive.UID, Role: Role{Game: a.Game.ID, UID: archive.UID, Region: archive.Region}, Command: "gacha-log", Archive: archive}); ok {
 			view.Image = &drawn
 		}
 	}
-	page := []rayleabot.Segment{rayleabot.Text(view.Text())}
-	if image := drawView(ctx, host, job.images, view); image != "" {
-		page = []rayleabot.Segment{rayleabot.Image(image)}
+	if image := a.renderView(ctx, event, view); image != "" {
+		return []rayleabot.Segment{rayleabot.Image(image)}
 	}
-	return chatReply{{rayleabot.Text(gachaLinkSummary(prefix, job.before, gachaPoolCounts(archive)))}, page}
+	return []rayleabot.Segment{rayleabot.Text(view.Text())}
 }
 
 // gachaLinkSummary is Yunzai's reply after a link: the records each pool

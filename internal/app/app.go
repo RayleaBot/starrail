@@ -195,9 +195,6 @@ type App struct {
 	// LinkHTTP reads the official wish history (nil uses a default client).
 	Links    gachaLinks
 	LinkHTTP *http.Client
-	// ChatTasks is chat work that continues past its event, as gacha links
-	// whose records are still being fetched.
-	ChatTasks chatTasks
 	// BackgroundSyncs are the official syncs the management page left to
 	// run in the background.
 	BackgroundSyncs backgroundSyncs
@@ -345,7 +342,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	})
 	if event.Event.EventType == "scheduler.trigger" {
 		// Every trigger's work, the actions it asks for included, ends
-		// chatTaskLimit after it starts, within the host's event time.
+		// triggerLimit after it starts, within the host's event time.
 		ctx, cancel := a.eventWork(ctx, a.now())
 		defer cancel()
 		task := triggerTask(event)
@@ -354,8 +351,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return a.runLegacyTrigger(ctx, event)
 		case strings.HasPrefix(task, "game.content."):
 			return a.runContentSubscription(ctx, event)
-		case strings.HasPrefix(task, gachaLinkTask):
-			return a.runChatTask(ctx, event)
 		}
 		return a.runReminder(ctx, event)
 	}
@@ -473,7 +468,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.gachaLinkCommand(event)
 	case "gacha-background":
 		// StarRail-plugin's 更新跃迁记录 reads the link the sender bound.
-		if owned, ok := a.Links.owner(syncOwner(event)); ok && (len(args) == 0 || args[len(args)-1] == owned.uid) {
+		if owned, ok := a.Links.owner(sender(event)); ok && (len(args) == 0 || args[len(args)-1] == owned.uid) {
 			return a.updateByLink(ctx, event, owned)
 		}
 		return event.SendText("未绑定抽卡链接，请点击链接查看说明\nhttps://mp.weixin.qq.com/s/FFHTor5DiG3W_rfQVs3KJQ\n发送[" + prefix + "抽卡链接]绑定")
@@ -1117,18 +1112,7 @@ func (a *App) sendView(ctx context.Context, event *rayleabot.EventContext, view 
 // card, and returns the image path; it is empty when image replies are off
 // or rendering failed.
 func (a *App) renderView(ctx context.Context, event *rayleabot.EventContext, view View) string {
-	return drawView(ctx, event.Actions(), settings(event).ImageReplies, view)
-}
-
-// imageRenderer renders images: an event's actions.
-type imageRenderer interface {
-	RenderImage(context.Context, rayleabot.RenderImageRequest) (rayleabot.ActionResult, error)
-}
-
-// drawView is renderView for work that has its host's actions and the image
-// replies setting rather than its event.
-func drawView(ctx context.Context, host imageRenderer, images bool, view View) string {
-	if !images {
+	if !settings(event).ImageReplies {
 		return ""
 	}
 	text := view.Text()
@@ -1140,7 +1124,7 @@ func drawView(ctx context.Context, host imageRenderer, images bool, view View) s
 	_ = decodeObject(view, &data)
 	requests = append(requests, rayleabot.RenderImageRequest{Template: "summary", Output: "png", FallbackText: text, Data: data})
 	for _, request := range requests {
-		if result, err := host.RenderImage(ctx, request); err == nil {
+		if result, err := event.Actions().RenderImage(ctx, request); err == nil {
 			if path := asText(result["image_path"]); path != "" {
 				return path
 			}

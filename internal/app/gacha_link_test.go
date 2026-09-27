@@ -1,9 +1,9 @@
 package app
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -12,7 +12,6 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
 )
 
 func TestGachaLinkParsesStarRailLinksOnly(t *testing.T) {
@@ -32,11 +31,18 @@ func TestGachaLinkParsesStarRailLinksOnly(t *testing.T) {
 	}
 }
 
-// warpHistory serves the official warp history for UID 100000001: 21
-// character event warps, and one collaboration warp on its own page.
-type warpHistory struct{}
+// warpHistory serves the official warp history for UID 100000001: records
+// character event warps (21 when zero) and one collaboration warp on its own
+// page, answering an authkey other than abcdefghij with -101. deadlines are
+// the deadlines of the requests.
+type warpHistory struct {
+	records   int
+	deadlines []time.Time
+}
 
-func (warpHistory) RoundTrip(request *http.Request) (*http.Response, error) {
+func (w *warpHistory) RoundTrip(request *http.Request) (*http.Response, error) {
+	deadline, _ := request.Context().Deadline()
+	w.deadlines = append(w.deadlines, deadline)
 	query := request.URL.Query()
 	pool := query.Get("gacha_type")
 	body := map[string]any{"retcode": 0, "message": ""}
@@ -45,14 +51,15 @@ func (warpHistory) RoundTrip(request *http.Request) (*http.Response, error) {
 		body["retcode"] = -101
 	} else {
 		records := []any{}
-		count, base := map[string]int{"11": 21, "21": 1}[pool], map[string]int{"11": 5000, "21": 4000}[pool]
+		count, base := map[string]int{"11": cmp.Or(w.records, 21), "21": 1}[pool], map[string]int{"11": 5000, "21": 4000}[pool]
 		first := 1
 		if end, _ := strconv.Atoi(query.Get("end_id")); end != 0 {
 			first = base - end + 1
 		}
 		size, _ := strconv.Atoi(query.Get("size"))
 		for n := first; n <= count && len(records) < size; n++ {
-			records = append(records, map[string]any{"uid": "100000001", "gacha_id": "2003", "gacha_type": pool, "item_id": "1308", "count": "1", "time": fmt.Sprintf("2024-01-01 00:00:%02d", 59-n), "name": "黄泉", "item_type": "角色", "rank_type": "5", "id": strconv.Itoa(base - n)})
+			at := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC).Add(-time.Duration(n) * time.Minute)
+			records = append(records, map[string]any{"uid": "100000001", "gacha_id": "2003", "gacha_type": pool, "item_id": "1308", "count": "1", "time": at.Format(time.DateTime), "name": "黄泉", "item_type": "角色", "rank_type": "5", "id": strconv.Itoa(base - n)})
 		}
 		body["data"] = map[string]any{"list": records, "region": "prod_gf_cn", "region_time_zone": 8}
 	}
@@ -64,23 +71,18 @@ func (warpHistory) RoundTrip(request *http.Request) (*http.Response, error) {
 
 func TestGachaLinkFetchesTheWholeWarpHistory(t *testing.T) {
 	a := pluginApp(t)
-	a.LinkHTTP = &http.Client{Transport: warpHistory{}}
+	a.LinkHTTP = &http.Client{Transport: &warpHistory{}}
 	link := gachaLink{key: "abcdefghij"}
 	uid, err := a.checkGachaLink(context.Background(), &link, 80)
 	if err != nil || uid != "100000001" || link.region != "prod_gf_cn" {
 		t.Fatal(uid, link.region, err)
 	}
-	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, uid, link.region, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	job := &gachaLinkJob{link: link, uid: uid, sync: info.Ref, before: map[string]int{}}
-	result, err := a.stepGachaLink(context.Background(), job, time.Now().Add(time.Minute))
+	result, err := a.readLink(context.Background(), link, uid)
 	if err != nil || result == nil || result.Added != 22 {
 		t.Fatal(result, err)
 	}
 	archive, _ := a.Gacha.Read(uid, link.region)
-	summary := gachaLinkSummary("*", job.before, gachaPoolCounts(archive))
+	summary := gachaLinkSummary("*", map[string]int{}, gachaPoolCounts(archive))
 	if !strings.HasPrefix(summary, "[角色]记录获取成功，更新21条\n[角色联动]记录获取成功，更新1条\n\n抽卡记录更新完成") {
 		t.Fatal(summary)
 	}
@@ -97,6 +99,10 @@ func TestGachaLinkUpdatesAUIDAtMostHourly(t *testing.T) {
 	if !jobs.markUpdated("100000002").IsZero() {
 		t.Fatal("another UID refused")
 	}
+	jobs.forgetUpdate("100000001")
+	if !jobs.markUpdated("100000001").IsZero() {
+		t.Fatal("an update that did not happen still counts")
+	}
 	owner := Subject{SourceProtocol: "onebot11", SourceAdapter: "adapter", BotID: "bot", ActorID: "user"}
 	jobs.own(owner, gachaLink{key: "abcdefghij", region: "prod_gf_cn"}, "100000001")
 	if owned, ok := jobs.owner(owner); !ok || owned.uid != "100000001" {
@@ -107,140 +113,115 @@ func TestGachaLinkUpdatesAUIDAtMostHourly(t *testing.T) {
 	}
 }
 
-// A link read within its event answers there as Yunzai does: the notice, the
-// records each pool gained, the record page and, in a group, the request to
-// recall the link.
-func TestGachaLinkReadWithinItsEventAnswersInFull(t *testing.T) {
+// warpLink is a link to warpHistory.
+const warpLink = "https://webstatic.mihoyo.com/hkrpg/event/e20211215gacha-v2/index.html?authkey_ver=1&region=prod_gf_cn&authkey=abcdefghij&game_biz=hkrpg_cn#/log"
+
+// linkHost is the plugin reading history on the SDK host without the account
+// plugin, its pages paced by a clock that does not wait.
+func linkHost(t *testing.T, history *warpHistory) (*App, *sdkHost) {
+	t.Helper()
 	a := pluginApp(t)
-	a.LinkHTTP = &http.Client{Transport: warpHistory{}}
-	host := newSDKHost(t, a, func(rayleabot.ServiceCallRequest, bool) (map[string]any, string) {
+	a.clock = &fakeClock{at: time.Now()}
+	a.LinkHTTP = &http.Client{Transport: history}
+	return a, newSDKHost(t, a, func(rayleabot.ServiceCallRequest, bool) (map[string]any, string) {
 		return nil, "plugin.service_unavailable"
 	})
-	end, _ := host.groupMessage(warpLink, "")
+}
+
+// sentTexts are the texts of the messages sent into target, which a detached
+// event sends all its replies as.
+func sentTexts(t *testing.T, h *sdkHost, targetType, targetID string) []string {
+	t.Helper()
 	texts := []string{}
-	for _, sent := range host.sent {
-		if sent.TargetType != "group" || sent.TargetID != "g" {
+	for _, sent := range h.sent {
+		if sent.TargetType != targetType || sent.TargetID != targetID {
 			t.Fatalf("answered in %+v", sent)
 		}
 		texts = append(texts, sentText(sent.Message))
 	}
-	if data := asObject(end["data"]); end["action"] != "message.send" || data["target_type"] != "group" || data["target_id"] != "g" {
-		t.Fatalf("the link event ended with %v", end)
+	return texts
+}
+
+// A link with many pages is read in its own event moved to the background:
+// every page under the background deadline, then Yunzai's answers in order
+// in the chat, and in a group the request to recall the link.
+func TestGachaLinkWithManyPagesReadsInOneBackgroundEvent(t *testing.T) {
+	history := &warpHistory{records: 1000}
+	a, host := linkHost(t, history)
+	sent := time.Now()
+	end, _ := host.groupMessage(warpLink, "")
+	if end["type"] != "result" || len(host.detached) != 1 || len(host.created) != 0 {
+		t.Fatalf("the link ended with %v after %d detaches and jobs %v", end, len(host.detached), host.created)
 	}
-	texts = append(texts, terminalText(end))
-	if len(texts) != 4 || texts[0] != "链接发送成功，数据获取中……" || !strings.HasPrefix(texts[1], "[角色]记录获取成功，更新21条") || !strings.Contains(texts[2], "100000001") || texts[3] != "已收到链接，请撤回" {
+	// Fifty pages and more of the character event warp alone.
+	if len(history.deadlines) < 50 {
+		t.Fatalf("read %d pages", len(history.deadlines))
+	}
+	for _, deadline := range history.deadlines {
+		if deadline.Before(sent.Add(eventTimeout)) {
+			t.Fatalf("a page was read under the event deadline %v", deadline)
+		}
+	}
+	texts := sentTexts(t, host, "group", "g")
+	if len(texts) != 4 || texts[0] != "链接发送成功，数据获取中……" || !strings.HasPrefix(texts[1], "[角色]记录获取成功，更新1000条\n[角色联动]记录获取成功，更新1条") || !strings.Contains(texts[2], "100000001") || texts[3] != "已收到链接，请撤回" {
 		t.Fatalf("answered %q", texts)
 	}
-}
-
-// roundTripFunc answers a client's requests with a function.
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
-
-// warpLink is a link to warpHistory.
-const warpLink = "https://webstatic.mihoyo.com/hkrpg/event/e20211215gacha-v2/index.html?authkey_ver=1&region=prod_gf_cn&authkey=abcdefghij&game_biz=hkrpg_cn#/log"
-
-// slowLinkOnHost sends warpLink in a private chat through the SDK, each page
-// of the history taking ten seconds and slow answering a page instead when
-// it returns true, and checks that the event handed the rest to a job, whose
-// ID it returns.
-func slowLinkOnHost(t *testing.T, slow func(clock *fakeClock) bool) (*fakeClock, *sdkHost, string) {
-	t.Helper()
-	a := pluginApp(t)
-	clock := &fakeClock{at: time.Unix(1_800_000_000, 0)}
-	a.clock = clock
-	a.LinkHTTP = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		if slow != nil && slow(clock) {
-			return nil, context.DeadlineExceeded
-		}
-		clock.set(clock.Now().Add(10 * time.Second))
-		return warpHistory{}.RoundTrip(r)
-	})}
-	host := newSDKHost(t, a, func(rayleabot.ServiceCallRequest, bool) (map[string]any, string) {
-		return nil, "plugin.service_unavailable"
-	})
-	end, _ := host.message(warpLink, "")
-	if terminalText(end) != "记录较多，将在后台继续获取，完成后在此回复。" || len(host.sent) != 1 || sentText(host.sent[0].Message) != "链接发送成功，数据获取中……" {
-		t.Fatalf("the link event ended with %v after %v", end, host.sent)
-	}
-	return clock, host, host.job(gachaLinkTask)
-}
-
-// triggerUntilDone runs the job each minute after start, as the host's
-// scheduler does, until the plugin deletes it.
-func triggerUntilDone(t *testing.T, clock *fakeClock, host *sdkHost, ref string, start time.Time, limit int) {
-	t.Helper()
-	for minute := 1; len(host.deleted) == 0; minute++ {
-		if minute > limit {
-			t.Fatalf("%d triggers of %s did not finish it", limit, ref)
-		}
-		clock.set(start.Add(time.Duration(minute) * time.Minute))
-		if end, _ := host.trigger(ref); end["type"] != "result" {
-			t.Fatalf("trigger %d ended with %v", minute, end)
-		}
+	if archive, err := a.Gacha.Read("100000001", "prod_gf_cn"); err != nil || len(archive.Records) != 1001 {
+		t.Fatalf("kept %d records, %v", len(archive.Records), err)
 	}
 }
 
-// checkLinkAnswer checks that the job ref was removed and the records were
-// answered after the first message in the private chat of the link.
-func checkLinkAnswer(t *testing.T, host *sdkHost, ref string) {
-	t.Helper()
-	if len(host.deleted) != 1 || host.deleted[0] != ref || len(host.jobs) != 0 || len(host.sent) != 3 {
-		t.Fatalf("deleted %v, jobs %v, answered %v", host.deleted, host.jobs, host.sent)
+// 更新跃迁记录 reads the sender's last link again in a background event with
+// StarRail-plugin's replies; a second update within the hour is refused, and
+// an update whose link no longer reads answers the expiry and does not count.
+func TestGachaLinkUpdateReadsTheLinkAgain(t *testing.T) {
+	history := &warpHistory{}
+	_, host := linkHost(t, history)
+	host.message(warpLink, "")
+	host.sent = nil
+	end, _ := host.message("*更新跃迁记录", "更新跃迁记录")
+	texts := sentTexts(t, host, "private", "u")
+	if end["type"] != "result" || len(host.detached) != 2 || len(texts) != 2 || texts[0] != "正在获取[100000001]的跃迁数据..." || texts[1] != "跃迁数据获取成功，你可以使用：\n*跃迁分析\n*角色分析\n*光锥分析\n*常驻分析\n查看具体的跃迁数据" {
+		t.Fatalf("the update ended with %v, answered %q", end, texts)
 	}
-	for _, sent := range host.sent {
-		if sent.SourceProtocol != "onebot11" || sent.SourceAdapter != "a" || sent.TargetType != "private" || sent.TargetID != "u" {
-			t.Fatalf("answered in %+v", sent)
-		}
+	end, _ = host.message("*更新抽卡记录", "更新抽卡记录")
+	if !strings.HasPrefix(terminalText(end), "[100000001]近期已经更新过数据了，上次更新时间：") || len(host.detached) != 2 {
+		t.Fatalf("the update within the hour ended with %v", end)
 	}
-	if !strings.HasPrefix(sentText(host.sent[1].Message), "[角色]记录获取成功，更新21条") || !strings.Contains(sentText(host.sent[2].Message), "100000001") {
-		t.Fatalf("answered %v", host.sent)
+	a2, host2 := linkHost(t, history)
+	host2.message(warpLink, "")
+	user := Subject{SourceProtocol: "onebot11", SourceAdapter: "a", BotID: "bot", ActorID: "u"}
+	owned, _ := a2.Links.owner(user)
+	owned.link.key = "expired1"
+	a2.Links.own(user, owned.link, owned.uid)
+	host2.sent = nil
+	host2.message("*更新跃迁记录", "更新跃迁记录")
+	if texts := sentTexts(t, host2, "private", "u"); len(texts) != 2 || texts[1] != "抽卡链接已过期，请重新获取并绑定\n输入【*抽卡帮助】以查看抽卡链接获取方法" {
+		t.Fatalf("the expired update answered %q", texts)
+	}
+	if !a2.Links.markUpdated(owned.uid).IsZero() {
+		t.Fatal("the failed update still counts")
 	}
 }
 
-// A link whose history takes longer than its event, run through the SDK as
-// the host runs it: the triggers of its job carry the job's payload but not
-// its task ID, fetch the rest within their events and answer in the private
-// chat the link came from.
-func TestGachaLinkFinishesOnTheHostsTriggers(t *testing.T) {
-	clock, host, ref := slowLinkOnHost(t, nil)
-	triggerUntilDone(t, clock, host, ref, time.Unix(1_800_000_000, 0), 5)
-	checkLinkAnswer(t, host, ref)
-}
-
-// A trigger whose page is still open when the trigger runs out of time (the
-// page answers only once the host has timed the event out) ends its event
-// in time and leaves the job to the next trigger, which reads that page
-// again and finishes.
-func TestGachaLinkRecoversFromATriggerThatRanOutOfTime(t *testing.T) {
-	stuck := false
-	clock, host, ref := slowLinkOnHost(t, func(clock *fakeClock) bool {
-		if stuck || clock.Now().Before(time.Unix(1_800_000_000, 0).Add(time.Minute)) {
-			return false
-		}
-		stuck = true
-		clock.set(clock.Now().Add(time.Minute))
-		return true
-	})
-	start := time.Unix(1_800_000_000, 0)
-	clock.set(start.Add(time.Minute))
-	if end, _ := host.trigger(ref); end["type"] != "result" || len(host.deleted) != 0 || len(host.sent) != 1 {
-		t.Fatalf("the trigger that ran out ended with %v, deleted %v, answered %v", end, host.deleted, host.sent)
+// A link or update the host would not move to the background, as the plugin
+// holds its limit of background events, says so in the foreground without
+// reading, and the refused update does not count against the hour.
+func TestGachaLinkRefusedByTheHostRepliesClearly(t *testing.T) {
+	history := &warpHistory{}
+	a, host := linkHost(t, history)
+	host.busy = true
+	end, _ := host.groupMessage(warpLink, "")
+	if end["action"] != "message.send" || terminalText(end) != "后台处理的任务已达上限，请稍后再试。" || len(history.deadlines) != 0 || len(host.sent) != 0 {
+		t.Fatalf("the refused link ended with %v after %d reads, sent %v", end, len(history.deadlines), host.sent)
 	}
-	triggerUntilDone(t, clock, host, ref, start.Add(2*time.Minute), 5)
-	checkLinkAnswer(t, host, ref)
-}
-
-// A link still unread after its fifteen minutes answers with the failure and
-// removes its job.
-func TestGachaLinkPastItsLifetimeAnswersItsFailure(t *testing.T) {
-	clock, host, ref := slowLinkOnHost(t, nil)
-	clock.set(time.Unix(1_800_000_000, 0).Add(16 * time.Minute))
-	if end, _ := host.trigger(ref); end["type"] != "result" {
-		t.Fatalf("the trigger ended with %v", end)
+	host.busy = false
+	host.message(warpLink, "")
+	host.busy = true
+	if end, _ := host.message("*更新跃迁记录", "更新跃迁记录"); terminalText(end) != "后台处理的任务已达上限，请稍后再试。" {
+		t.Fatalf("the refused update ended with %v", end)
 	}
-	if len(host.deleted) != 1 || host.deleted[0] != ref || len(host.sent) != 2 || sentText(host.sent[1].Message) != "后台读取超时，未能完成。" {
-		t.Fatalf("deleted %v, answered %v", host.deleted, host.sent)
+	if !a.Links.markUpdated("100000001").IsZero() {
+		t.Fatal("the refused update counts against the hour")
 	}
 }

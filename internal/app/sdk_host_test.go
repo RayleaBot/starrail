@@ -9,6 +9,7 @@ import (
 	"io"
 	"maps"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -271,4 +272,72 @@ func sentText(message rayleabot.MessageOut) string {
 		text += asText(segment.Data["text"])
 	}
 	return text
+}
+
+// fakeClock is a clock tests move by hand; sleeping moves it on, and the
+// contexts Until gives end when it passes their deadline. Events the SDK
+// runs read it from goroutines of their own, so it is locked.
+type fakeClock struct {
+	mu     sync.Mutex
+	at     time.Time
+	timers []fakeTimer
+}
+
+// fakeTimer ends a context Until gave at its deadline.
+type fakeTimer struct {
+	at     time.Time
+	cancel context.CancelCauseFunc
+}
+
+func (c *fakeClock) Now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.at
+}
+
+func (c *fakeClock) Sleep(ctx context.Context, d time.Duration) error {
+	if d > 0 {
+		c.move(func(at time.Time) time.Time { return at.Add(d) })
+	}
+	return ctx.Err()
+}
+
+func (c *fakeClock) Until(ctx context.Context, deadline time.Time) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancelCause(ctx)
+	c.mu.Lock()
+	due := !c.at.Before(deadline)
+	if !due {
+		c.timers = append(c.timers, fakeTimer{at: deadline, cancel: cancel})
+	}
+	c.mu.Unlock()
+	if due {
+		cancel(context.DeadlineExceeded)
+	}
+	return ctx, func() { cancel(context.Canceled) }
+}
+
+// set moves the clock to at.
+func (c *fakeClock) set(at time.Time) {
+	c.move(func(time.Time) time.Time { return at })
+}
+
+// move sets the time to next of the current one and ends the contexts whose
+// deadline it reached.
+func (c *fakeClock) move(next func(time.Time) time.Time) {
+	c.mu.Lock()
+	c.at = next(c.at)
+	var due []context.CancelCauseFunc
+	kept := c.timers[:0]
+	for _, timer := range c.timers {
+		if timer.at.After(c.at) {
+			kept = append(kept, timer)
+		} else {
+			due = append(due, timer.cancel)
+		}
+	}
+	c.timers = kept
+	c.mu.Unlock()
+	for _, cancel := range due {
+		cancel(context.DeadlineExceeded)
+	}
 }
