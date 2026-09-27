@@ -28,9 +28,7 @@ const mediaMaxBytes = 4 * 1024 * 1024
 var mediaRefPattern = regexp.MustCompile(`^[A-Z2-7]{26}$`)
 
 // mediaPhoto is the library's one category, a character's photos, which 照片
-// and the character card read as miao reads its upload directory. Images an
-// earlier version filed under other categories stay on disk but are no
-// longer read.
+// and the character card read as miao reads its upload directory.
 const mediaPhoto = "photo"
 
 type MediaEntry struct {
@@ -74,7 +72,7 @@ func (s *MediaStore) read(ref string) (mediaFile, error) {
 	if err := localdata.Read(s.file(ref), &v); err != nil {
 		return v, err
 	}
-	if v.Entry.Ref != ref || len(v.Data) != v.Entry.Bytes || v.Entry.Category != mediaPhoto {
+	if v.Entry.Ref != ref || len(v.Data) != v.Entry.Bytes {
 		return v, gameError("media_missing", "素材不存在或文件不完整。")
 	}
 	return v, nil
@@ -120,9 +118,7 @@ func (s *MediaStore) entries() ([]MediaEntry, error) {
 		if err != nil {
 			return nil, err
 		}
-		if entry.Category == mediaPhoto {
-			out = append(out, entry)
-		}
+		out = append(out, entry)
 	}
 	slices.SortFunc(out, func(a, b MediaEntry) int {
 		if a.CreatedMS > b.CreatedMS {
