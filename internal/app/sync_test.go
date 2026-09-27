@@ -18,13 +18,15 @@ type syncRead struct {
 
 // syncAccounts answers the account plugin for user "u"'s account, which
 // holds an overseas role whose official records are 190 character event
-// warps: ten pages of that pool and one empty page of each other. onRead
-// sees each record request after it is counted.
+// warps: ten pages of that pool and one empty page of each other. It grants
+// the delegation "d1", which only a trigger's requests carry, and counts
+// those as delegated. onRead sees each record request after it is counted.
 type syncAccounts struct {
-	t      *testing.T
-	clock  *fakeClock
-	reads  []syncRead
-	onRead func(n int)
+	t         *testing.T
+	clock     *fakeClock
+	reads     []syncRead
+	delegated int
+	onRead    func(n int)
 }
 
 func (s *syncAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bool) (map[string]any, string) {
@@ -35,10 +37,21 @@ func (s *syncAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 	case "list":
 		owner := map[string]any{"source_protocol": "onebot11", "source_adapter": "a", "bot_id": "bot", "actor_id": "u"}
 		return map[string]any{"items": []any{map[string]any{"ref": "account", "owner": owner, "account_label": "账号", "roles": []any{role}, "status": "valid"}}, "default_roles": map[string]any{}, "uid_bindings": map[string]any{}}, ""
+	case "delegation.create":
+		if request.Params["operation"] != "starrail.gacha" || request.Params["days"] != float64(30) {
+			s.t.Errorf("delegation requested with %v", request.Params)
+		}
+		return map[string]any{"delegation": map[string]any{"ref": "d1", "expires_at_ms": time.Now().Add(30 * 24 * time.Hour).UnixMilli()}}, ""
+	case "delegation.revoke":
+		return map[string]any{}, ""
 	case "execute":
-		// The management action's own origin reads the records.
-		if scheduled || request.Params["delegation_ref"] != nil || request.Params["operation"] != "starrail.gacha" {
+		// A management action reads with its own origin, a trigger under the
+		// delegation.
+		if scheduled != (request.Params["delegation_ref"] == "d1") || !scheduled && request.Params["delegation_ref"] != nil || request.Params["operation"] != "starrail.gacha" {
 			s.t.Errorf("records requested with %v", request.Params)
+		}
+		if scheduled {
+			s.delegated++
 		}
 		input := asObject(request.Params["input"])
 		pool, end := asText(input["gacha_type"]), asText(input["end_id"])
@@ -114,7 +127,7 @@ func TestBackgroundSyncReadsEveryPageInItsEvent(t *testing.T) {
 		t.Fatalf("told %v", host.sent)
 	}
 	listed, _ := host.manage("gacha.task.list", map[string]any{})
-	items := asList(asObject(listed["data"])["items"])
+	items := asList(asObject(listed["data"])["syncs"])
 	if len(items) != 1 || asObject(items[0])["state"] != "completed" || asObject(items[0])["last_code"] != "sync_completed" || asObject(asObject(asObject(items[0])["progress"])["result"])["added"] != float64(190) {
 		t.Fatalf("listed %v", items)
 	}
@@ -160,6 +173,107 @@ func TestBackgroundSyncRefusedByTheHostTellsThePage(t *testing.T) {
 	if end, _ := startSync(host, map[string]any{}); end["type"] != "result" || len(accounts.reads) != 15 {
 		t.Fatalf("the sync after the refusal ended with %v after %d pages", end, len(accounts.reads))
 	}
+}
+
+// A daily sync created on the management page grants its delegation and
+// schedules a job checked each minute. Its first trigger after the hour moves
+// to the background and reads every pool under the delegation, a second or
+// more between pages, then tells the account's chat user; later triggers that
+// day do nothing, until the page runs it again.
+func TestDailySyncReadsEveryPageOnItsTrigger(t *testing.T) {
+	a, host, accounts := syncHost(t)
+	end, _ := host.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "hour": 0, "days": 30, "notify": true, "confirm": true})
+	if end["type"] != "result" {
+		t.Fatalf("gacha.task.create ended with %v", end)
+	}
+	ref := host.job("game.sync.")
+	if created := host.created[len(host.created)-1]; created["cron"] != "* * * * *" || created["payload"] != nil {
+		t.Fatalf("created %v", created)
+	}
+	end, actions := host.trigger(ref)
+	if end["type"] != "result" || !detachedBeforeReading(actions) || accounts.delegated != 15 {
+		t.Fatalf("the trigger ended with %v after %d delegated reads", end, accounts.delegated)
+	}
+	for i := 1; i < len(accounts.reads); i++ {
+		if gap := accounts.reads[i].at.Sub(accounts.reads[i-1].at); gap < syncTaskGap {
+			t.Fatalf("read %d came %v after the previous", i, gap)
+		}
+	}
+	if archive, err := a.Gacha.Read("600000001", "prod_official_usa"); err != nil || len(archive.Records) != 190 {
+		t.Fatalf("kept %d records, %v", len(archive.Records), err)
+	}
+	if len(host.sent) != 1 || host.sent[0].TargetID != "u" || !strings.HasPrefix(sentText(host.sent[0].Message), "抽卡后台同步完成\n开拓者 · 600000001\n新增 190 条") {
+		t.Fatalf("told %v", host.sent)
+	}
+	task := dailyTask(t, a)
+	if _, _, next := syncTaskTime(time.Now(), 0); task.State != "waiting" || task.LastCode != "sync_completed" || task.NextCheckMS != next || task.Progress.Result == nil || task.Progress.Pages != 15 {
+		t.Fatalf("task %+v", task)
+	}
+	// The day's round is done.
+	if end, actions := host.trigger(ref); end["type"] != "result" || len(actions) != 0 || accounts.delegated != 15 {
+		t.Fatalf("the same day's trigger ended with %v after %v", end, actions)
+	}
+	if end, _ := host.manage("gacha.task.run", map[string]any{"ref": ref, "confirm": true}); asObject(end["data"])["queued"] != true {
+		t.Fatalf("gacha.task.run ended with %v", end)
+	}
+	// The round reads only new records: a page of each pool.
+	host.trigger(ref)
+	if task := dailyTask(t, a); accounts.delegated != 21 || task.State != "waiting" || task.Progress.Result.Added != 0 {
+		t.Fatalf("the run again read %d pages, task %+v", accounts.delegated-15, task)
+	}
+}
+
+// A due daily sync the host would not move to the background, as the plugin
+// holds its limit of background events, reads nothing and is tried again by
+// the next trigger.
+func TestDailySyncRefusedByTheHostWaitsForTheNextTrigger(t *testing.T) {
+	a, host, accounts := syncHost(t)
+	host.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "hour": 0, "days": 30, "confirm": true})
+	ref := host.job("game.sync.")
+	host.busy = true
+	if end, _ := host.trigger(ref); end["type"] != "result" || len(accounts.reads) != 0 {
+		t.Fatalf("the refused trigger ended with %v after %d reads", end, len(accounts.reads))
+	}
+	host.busy = false
+	host.trigger(ref)
+	if task := dailyTask(t, a); len(accounts.reads) != 15 || task.LastCode != "sync_completed" {
+		t.Fatalf("the next trigger read %d pages, task %+v", len(accounts.reads), task)
+	}
+}
+
+// Removing the archive a daily sync reads pauses the sync; a round then
+// reading it stops at its next page and does not bring the archive back.
+func TestDailySyncStopsWhenItsArchiveIsRemoved(t *testing.T) {
+	a, host, accounts := syncHost(t)
+	host.manage("gacha.task.create", map[string]any{"account_ref": "account", "role_ref": "role", "hour": 0, "days": 30, "confirm": true})
+	ref := host.job("game.sync.")
+	accounts.onRead = func(n int) {
+		if n == 3 {
+			if _, err := a.manageGacha("gacha.remove", map[string]any{"uid": "600000001", "region": "prod_official_usa"}); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+	host.trigger(ref)
+	if task := dailyTask(t, a); len(accounts.reads) != 3 || task.State != "paused" || task.LastCode != "archive_removed" {
+		t.Fatalf("read %d pages, task %+v", len(accounts.reads), task)
+	}
+	if _, err := a.Gacha.Read("600000001", "prod_official_usa"); err == nil {
+		t.Fatal("the removed archive came back")
+	}
+	if end, actions := host.trigger(ref); end["type"] != "result" || len(actions) != 0 {
+		t.Fatalf("the paused sync's trigger ended with %v after %v", end, actions)
+	}
+}
+
+// dailyTask is the only daily sync.
+func dailyTask(t *testing.T, a *App) SyncTask {
+	t.Helper()
+	items, err := a.SyncTasks.List()
+	if err != nil || len(items) != 1 {
+		t.Fatalf("daily syncs %v, %v", items, err)
+	}
+	return items[0]
 }
 
 // detachedBeforeReading reports whether an event moved to the background

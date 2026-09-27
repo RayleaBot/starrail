@@ -196,8 +196,9 @@ type App struct {
 	Links    gachaLinks
 	LinkHTTP *http.Client
 	// BackgroundSyncs are the official syncs the management page left to
-	// run in the background.
+	// run in the background; SyncTasks are the daily syncs.
 	BackgroundSyncs backgroundSyncs
+	SyncTasks       *SyncTaskStore
 	Showcase        ShowcaseClient
 	Profiles        *PanelStore
 	Reminders       *ReminderStore
@@ -275,7 +276,7 @@ func New(assets Assets, directory string) (*App, error) {
 	if directory == "" {
 		return nil, fmt.Errorf("plugin data directory is required")
 	}
-	a := &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, uidListImage: assets.UIDList, payLogImage: assets.PayLog, onlineImage: assets.Online, rankStatsImage: assets.RankStats, poolImage: assets.Pools, characterCardImage: assets.CharacterCard, atlasIndexImage: assets.AtlasIndex, panelAPIScripts: assets.PanelAPI, apiCardImage: assets.APICard, apiPanelImage: assets.APIPanel, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, APIPanels: &PanelAPIStore{Directory: filepath.Join(directory, "panel-api")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}
+	a := &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, uidListImage: assets.UIDList, payLogImage: assets.PayLog, onlineImage: assets.Online, rankStatsImage: assets.RankStats, poolImage: assets.Pools, characterCardImage: assets.CharacterCard, atlasIndexImage: assets.AtlasIndex, panelAPIScripts: assets.PanelAPI, apiCardImage: assets.APICard, apiPanelImage: assets.APIPanel, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, APIPanels: &PanelAPIStore{Directory: filepath.Join(directory, "panel-api")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}
 	// Relics are restored with the game's fixed data and calculation engine.
 	a.Profiles.Relics = func(panel CharacterPanel) *MiaoRelics { return restoreRelics(context.Background(), a.Game, panel) }
 	return a, nil
@@ -950,8 +951,11 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 		if strings.HasPrefix(action, "gacha.sync.") {
 			return a.manageSync(ctx, event, action, input)
 		}
-		if strings.HasPrefix(action, "gacha.task.") {
+		if action == "gacha.task.start" || action == "gacha.task.cancel" {
 			return a.backgroundSyncAction(ctx, event, action, input)
+		}
+		if strings.HasPrefix(action, "gacha.task.") {
+			return a.syncTaskAction(ctx, event, action, input)
 		}
 		if strings.HasPrefix(action, "gacha.") {
 			return a.manageGacha(action, input)
@@ -1003,7 +1007,10 @@ func (a *App) manageGacha(action string, input map[string]any) (map[string]any, 
 		return versionDraws(a.Game, archive), nil
 	case "gacha.remove":
 		a.cancelArchiveSyncs(uid, region)
-		err := a.Gacha.Remove(uid, region)
+		err := a.SyncTasks.PauseArchive(uid, region)
+		if err == nil {
+			err = a.Gacha.Remove(uid, region)
+		}
 		return map[string]any{"removed": err == nil}, err
 	case "gacha.import.start":
 		var archive gacha.Archive

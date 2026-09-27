@@ -8,9 +8,9 @@ import (
 )
 
 // runTrigger answers a trigger of a job the plugin created, dispatched by the
-// job's task ID: a group's pushes, else a stored reminder or timed task. A
-// trigger whose task is not stored (removed, or of a kind the plugin no
-// longer schedules) deletes its own job.
+// job's task ID: a group's pushes, a daily sync, else a stored reminder or
+// timed task. A trigger whose task is not stored (removed, or of a kind the
+// plugin no longer schedules) deletes its own job.
 func (a *App) runTrigger(ctx context.Context, event *rayleabot.EventContext) error {
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
@@ -22,6 +22,8 @@ func (a *App) runTrigger(ctx context.Context, event *rayleabot.EventContext) err
 		return event.Result(map[string]any{"checked": false})
 	case strings.HasPrefix(task, "game.content."):
 		return a.runContentSubscription(ctx, event, task)
+	case strings.HasPrefix(task, "game.sync."):
+		return a.runSyncTask(ctx, event, task)
 	}
 	return a.runReminder(ctx, event, task)
 }
@@ -42,6 +44,12 @@ func (a *App) reminderJob(task Reminder) rayleabot.SchedulerCreateRequest {
 		cron, label = "* * * * *", timedTaskLabels[task.Kind]
 	}
 	return rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: cron, LogLabel: a.Game.Name + label}
+}
+
+// syncJob is the scheduler job of a daily sync, which checks each minute
+// whether its round is due.
+func (a *App) syncJob(task SyncTask) rayleabot.SchedulerCreateRequest {
+	return rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: "* * * * *", LogLabel: a.Game.Name + "抽卡每日同步"}
 }
 
 // contentJob is the scheduler job of a group's 米游社 pushes.

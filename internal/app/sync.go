@@ -189,8 +189,6 @@ func (a *App) cancelArchiveSyncs(uid, region string) {
 
 func (a *App) backgroundSyncAction(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
 	switch action {
-	case "gacha.task.list":
-		return map[string]any{"items": a.BackgroundSyncs.list()}, nil
 	case "gacha.task.cancel":
 		ref := asText(input["ref"])
 		if !a.BackgroundSyncs.cancel(func(item BackgroundSync) bool { return item.Ref == ref }, "sync_canceled") {

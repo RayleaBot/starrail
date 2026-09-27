@@ -103,6 +103,7 @@ func (j *jobsHost) createJobs(t *testing.T) []createdJob {
 		{"signin.task.create", role(map[string]any{"hour": 0}), "game.sign.", "starrail.sign"},
 		{"monthly.task.create", role(map[string]any{"hour": 0}), "game.monthly.", "starrail.monthly"},
 		{"community.task.create", role(map[string]any{"once": true, "read": true}), "game.community.", "starrail.community_run"},
+		{"gacha.task.create", role(map[string]any{"hour": 0}), "game.sync.", "starrail.gacha"},
 	} {
 		if end, _ := j.host.manage(job.action, job.input); end["type"] != "result" {
 			t.Fatalf("%s ended with %v", job.action, end)
@@ -183,6 +184,10 @@ func TestRemovedTasksDeleteTheirJobs(t *testing.T) {
 			return end
 		},
 		func(ref string) map[string]any {
+			end, _ := j.host.manage("gacha.task.remove", map[string]any{"ref": ref})
+			return end
+		},
+		func(ref string) map[string]any {
 			end, _ := j.host.manage("content.subscription.remove", map[string]any{"ref": ref, "confirm": true})
 			return end
 		},
@@ -213,8 +218,8 @@ func TestRemovedTasksDeleteTheirJobs(t *testing.T) {
 }
 
 // A trigger of a task the plugin does not know, as the jobs of chat tasks
-// and background syncs earlier versions scheduled, deletes its own job without
-// running anything; a trigger without a task ID has no job to delete.
+// earlier versions scheduled or of a removed daily sync, deletes its own job
+// without running anything; a trigger without a task ID has no job to delete.
 func TestTriggersOfUnknownTasksDeleteTheirJobs(t *testing.T) {
 	j := newJobsHost(t)
 	for _, ref := range []string{"game.link.4MZ3", "game.sync.starrail.0f1e", "game.unknown"} {
