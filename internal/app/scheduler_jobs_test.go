@@ -36,6 +36,8 @@ func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 		return map[string]any{"items": []any{map[string]any{"ref": "account", "owner": owner, "account_label": "账号", "roles": []any{role}, "status": "valid"}}, "default_roles": map[string]any{}, "uid_bindings": map[string]any{}}, ""
 	case "delegation.create":
 		return map[string]any{"delegation": map[string]any{"ref": "d1", "expires_at_ms": time.Now().Add(30 * 24 * time.Hour).UnixMilli()}}, ""
+	case "delegation.revoke":
+		return map[string]any{}, ""
 	case "execute":
 		operation := asText(request.Params["operation"])
 		if !scheduled || request.Params["delegation_ref"] != "d1" {
@@ -158,17 +160,69 @@ func TestEachJobsTriggerRunsItsTask(t *testing.T) {
 	for _, job := range jobs {
 		j.runJob(t, job)
 	}
-	ref := jobs[len(jobs)-1].ref
 	if items, _ := j.a.Subscriptions.List(); len(items) != 1 || items[0].LastCode != "checked" {
 		t.Fatalf("subscriptions %+v", items)
 	}
-	// A push the management page removed has its job removed by the next
-	// trigger.
-	if end, _ := j.host.manage("content.subscription.remove", map[string]any{"ref": ref, "confirm": true}); end["type"] != "result" {
-		t.Fatalf("the removal ended with %v", end)
+}
+
+// Removing a task, as the management page or its user in chat does, deletes
+// its job in that event. A trigger whose task is gone, as one removed before
+// removals deleted jobs, deletes its own job without running anything.
+func TestRemovedTasksDeleteTheirJobs(t *testing.T) {
+	j := newJobsHost(t)
+	jobs := j.createJobs(t)
+	removals := []func(ref string) map[string]any{
+		func(ref string) map[string]any {
+			end, _ := j.host.manage("reminder.remove", map[string]any{"ref": ref})
+			return end
+		},
+		func(ref string) map[string]any {
+			end, _ := j.host.manage("challenge.reminder.remove", map[string]any{"ref": ref})
+			return end
+		},
+		func(string) map[string]any {
+			end, _ := j.host.message("*自动签到 关闭", "自动签到", "关闭")
+			return end
+		},
+		func(ref string) map[string]any {
+			end, _ := j.host.manage("monthly.task.remove", map[string]any{"ref": ref})
+			return end
+		},
+		func(ref string) map[string]any {
+			end, _ := j.host.manage("community.task.remove", map[string]any{"ref": ref})
+			return end
+		},
+		func(ref string) map[string]any {
+			end, _ := j.host.manage("gacha.task.remove", map[string]any{"ref": ref})
+			return end
+		},
+		func(ref string) map[string]any {
+			end, _ := j.host.manage("content.subscription.remove", map[string]any{"ref": ref, "confirm": true})
+			return end
+		},
 	}
-	if j.host.trigger(ref); len(j.host.deleted) != 1 || j.host.deleted[0] != ref || j.news != 1 {
-		t.Fatalf("deleted %v after %d reads", j.host.deleted, j.news)
+	payloads := map[string]map[string]any{}
+	for i, job := range jobs {
+		payloads[job.ref] = j.host.jobs[job.ref]
+		if end := removals[i](job.ref); end["type"] == "error" {
+			t.Fatalf("removing %s ended with %v", job.ref, end)
+		}
+		if _, kept := j.host.jobs[job.ref]; kept || len(j.host.deleted) != i+1 || j.host.deleted[i] != job.ref {
+			t.Fatalf("removing %s deleted %v", job.ref, j.host.deleted)
+		}
+	}
+	for _, job := range jobs {
+		j.host.jobs[job.ref] = payloads[job.ref]
+		deleted := len(j.host.deleted)
+		if end, _ := j.host.trigger(job.ref); end["type"] != "result" {
+			t.Fatalf("the trigger of removed %s ended with %v", job.ref, end)
+		}
+		if _, kept := j.host.jobs[job.ref]; kept || len(j.host.deleted) != deleted+1 || j.host.deleted[deleted] != job.ref {
+			t.Fatalf("the trigger of removed %s deleted %v", job.ref, j.host.deleted[deleted:])
+		}
+	}
+	if len(j.accounts.executed) != 0 || j.news != 0 || len(j.host.sent) != 0 {
+		t.Fatalf("removed tasks ran: %v, %d reads, sent %v", j.accounts.executed, j.news, j.host.sent)
 	}
 }
 
