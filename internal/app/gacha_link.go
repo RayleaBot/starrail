@@ -305,7 +305,7 @@ func (a *App) fetchByLink(ctx context.Context, event *rayleabot.EventContext, jo
 	case result == nil:
 		ref := gachaLinkTask + rand.Text()
 		a.LinkJobs.put(ref, job)
-		if _, err := event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", LogLabel: a.Game.Name + "抽卡链接记录", Payload: map[string]any{"kind": "gacha_link"}}); err != nil {
+		if _, err := event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", LogLabel: a.Game.Name + "抽卡链接记录", Payload: taskPayload("gacha_link", ref)}); err != nil {
 			a.LinkJobs.take(ref)
 			return event.SendText("记录较多，本次未能全部获取，请稍后重试。")
 		}
@@ -359,7 +359,7 @@ func (a *App) runGachaLink(ctx context.Context, event *rayleabot.EventContext) e
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
-	ref := asText(event.Event.Payload["task_id"])
+	ref := triggerTask(event)
 	job := a.LinkJobs.take(ref)
 	if job == nil || time.Now().After(job.expires) {
 		_, _ = event.Actions().SchedulerDelete(ctx, ref)
