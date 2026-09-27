@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -34,8 +35,14 @@ type SyncChoice struct {
 	AccountRef, RoleRef string
 	Link                bool
 }
+
+// syncJob is one sync. mu is held while a step reads a page, so whatever
+// holds Syncs.mu never waits for it: the expiry Start checks is atomic, and
+// Forget and Reset let go of Syncs.mu before they touch a job.
 type syncJob struct {
-	mu      sync.Mutex
+	mu sync.Mutex
+	// expires is when the sync lapses, in Unix nanoseconds.
+	expires atomic.Int64
 	view    SyncInfo
 	choice  SyncChoice
 	archive Archive
@@ -46,8 +53,14 @@ type syncJob struct {
 	pool    int
 	page    int
 	endID   string
-	expires time.Time
 }
+
+// expired reports whether the sync lapsed by now.
+func (j *syncJob) expired(now time.Time) bool { return now.UnixNano() > j.expires.Load() }
+
+// extend keeps the sync for another fifteen minutes from now.
+func (j *syncJob) extend(now time.Time) { j.expires.Store(now.Add(15 * time.Minute).UnixNano()) }
+
 type Syncs struct {
 	mu   sync.Mutex
 	jobs map[string]*syncJob
@@ -55,15 +68,22 @@ type Syncs struct {
 
 func (s *Syncs) Reset() {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, j := range s.jobs {
-		j.mu.Lock()
-		j.view.State = "canceled"
-		j.archive.Records = nil
-		j.known = nil
-		j.mu.Unlock()
-	}
+	jobs := s.jobs
 	s.jobs = nil
+	s.mu.Unlock()
+	for _, j := range jobs {
+		j.drop()
+	}
+}
+
+// drop cancels a sync no longer listed and frees its buffer, once a step
+// reading a page has finished.
+func (j *syncJob) drop() {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	j.view.State = "canceled"
+	j.archive.Records = nil
+	j.known = nil
 }
 
 var syncPools = []string{"1", "2", "11", "12", "21", "22"}
@@ -89,11 +109,9 @@ func (s *Syncs) Start(store *Store, choice SyncChoice, uid, region string, full 
 	if s.jobs == nil {
 		s.jobs = map[string]*syncJob{}
 	}
+	now := time.Now()
 	for ref, job := range s.jobs {
-		job.mu.Lock()
-		expired := time.Now().After(job.expires)
-		job.mu.Unlock()
-		if expired {
+		if job.expired(now) {
 			delete(s.jobs, ref)
 		}
 	}
@@ -102,7 +120,9 @@ func (s *Syncs) Start(store *Store, choice SyncChoice, uid, region string, full 
 	}
 	ref := rand.Text()
 	view := SyncInfo{Ref: ref, State: "running", Pool: syncPools[0]}
-	s.jobs[ref] = &syncJob{view: view, choice: choice, archive: incoming, version: version, full: full, known: known, pools: syncPools, page: 1, endID: "0", expires: time.Now().Add(15 * time.Minute)}
+	job := &syncJob{view: view, choice: choice, archive: incoming, version: version, full: full, known: known, pools: syncPools, page: 1, endID: "0"}
+	job.extend(now)
+	s.jobs[ref] = job
 	return view, nil
 }
 func (s *Syncs) job(ref string) (*syncJob, error) {
@@ -121,7 +141,7 @@ func (s *Syncs) Choice(ref string) (SyncChoice, error) {
 	}
 	job.mu.Lock()
 	defer job.mu.Unlock()
-	if time.Now().After(job.expires) {
+	if job.expired(time.Now()) {
 		return SyncChoice{}, ErrSync
 	}
 	return job.choice, nil
@@ -134,7 +154,7 @@ func (s *Syncs) Info(ref string) (SyncInfo, error) {
 	}
 	job.mu.Lock()
 	defer job.mu.Unlock()
-	if time.Now().After(job.expires) || job.view.State == "canceled" {
+	if job.expired(time.Now()) || job.view.State == "canceled" {
 		return SyncInfo{}, ErrSync
 	}
 	return job.view, nil
@@ -144,14 +164,11 @@ func (s *Syncs) Info(ref string) (SyncInfo, error) {
 // buffer and slot; the page's step-by-step syncs keep their replay API.
 func (s *Syncs) Forget(ref string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	if job := s.jobs[ref]; job != nil {
-		job.mu.Lock()
-		job.view.State = "canceled"
-		job.archive.Records = nil
-		job.known = nil
-		job.mu.Unlock()
-		delete(s.jobs, ref)
+	job := s.jobs[ref]
+	delete(s.jobs, ref)
+	s.mu.Unlock()
+	if job != nil {
+		job.drop()
 	}
 }
 func (s *Syncs) Cancel(ref string) error {
@@ -175,7 +192,7 @@ func (s *Syncs) Step(ctx context.Context, store *Store, ref string, sequence int
 	}
 	job.mu.Lock()
 	defer job.mu.Unlock()
-	if time.Now().After(job.expires) || job.view.State == "canceled" {
+	if job.expired(time.Now()) || job.view.State == "canceled" {
 		return SyncInfo{}, ErrSync
 	}
 	if sequence == job.view.Sequence-1 {
@@ -266,6 +283,6 @@ func (s *Syncs) Step(ctx context.Context, store *Store, ref string, sequence int
 	job.view.Sequence++
 	job.view.Pages++
 	job.view.Fetched += len(page.Records)
-	job.expires = time.Now().Add(15 * time.Minute)
+	job.extend(time.Now())
 	return job.view, nil
 }

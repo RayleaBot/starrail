@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 )
 
 func syncRecord() Record {
@@ -112,5 +113,41 @@ func TestSyncFailureCancelAndDeletionPreserveArchives(t *testing.T) {
 				t.Fatal("canceled/deleted archive resurrected")
 			}
 		})
+	}
+}
+
+// A sync reading a page holds only its own lock: another sync starts, and a
+// finished one is forgotten, without waiting for the page.
+func TestStartDoesNotWaitForAReadingSync(t *testing.T) {
+	store, jobs, info := testSync(t)
+	reading, release, read := make(chan struct{}), make(chan struct{}), make(chan error, 1)
+	go func() {
+		_, err := jobs.Step(t.Context(), store, info.Ref, 0, func(ctx context.Context, pool, end string, page int) (RemotePage, error) {
+			close(reading)
+			<-release
+			return pageOnce(ctx, pool, end, page)
+		})
+		read <- err
+	}()
+	<-reading
+	started := make(chan error, 1)
+	go func() {
+		other, err := jobs.Start(store, SyncChoice{AccountRef: "account", RoleRef: "other"}, "100000002", "prod_gf_cn", false)
+		if err == nil {
+			jobs.Forget(other.Ref)
+		}
+		started <- err
+	}()
+	select {
+	case err := <-started:
+		if err != nil {
+			t.Error(err)
+		}
+	case <-time.After(time.Second):
+		t.Error("Start waited for the sync reading a page")
+	}
+	close(release)
+	if err := <-read; err != nil {
+		t.Fatal(err)
 	}
 }
