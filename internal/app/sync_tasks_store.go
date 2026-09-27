@@ -87,12 +87,9 @@ func syncTaskFailure(task *SyncTask, err error, now int64) {
 type SyncTaskFetch func(context.Context, SyncTask, string, string, int) (gacha.RemotePage, error)
 type SyncTaskSend func(context.Context, SyncTask, string) error
 
-const (
-	// syncTaskPages is how many pages a trigger advances a sync at most, and
-	// syncTaskGap the least time between two of them.
-	syncTaskPages = 3
-	syncTaskGap   = time.Second
-)
+// syncTaskGap is the least time between two pages, to stay under the
+// official rate limits.
+const syncTaskGap = time.Second
 
 // SyncPace is how a trigger paces its pages: the time and waiting by the
 // plugin's clock, and stop, from when it starts no page.
@@ -102,11 +99,11 @@ type SyncPace struct {
 	Stop  time.Time
 }
 
-// Tick runs one trigger of a task: it advances the sync by at most
-// syncTaskPages pages, syncTaskGap apart, none starting at or after the
-// pace's stop, and writes the task once at the end. A page open when ctx
-// ends is read again by the next trigger. Only the current scheduler event
-// may supply fetch; it is never retained.
+// Tick runs one trigger of a task: it advances the sync page after page,
+// syncTaskGap apart, none starting at or after the pace's stop, and writes
+// the task once at the end. A page open when ctx ends is read again by the
+// next trigger. Only the current scheduler event may supply fetch; it is
+// never retained.
 func (s *SyncTaskStore) Tick(ctx context.Context, ref string, pace SyncPace, jobs *gacha.Syncs, archive *gacha.Store, fetch SyncTaskFetch, send SyncTaskSend) error {
 	claimed, ok, err := s.claim(ref)
 	if err != nil || !ok {
@@ -166,7 +163,7 @@ func (s *SyncTaskStore) run(ctx context.Context, task *SyncTask, pace SyncPace, 
 	task.Progress = info
 	// The next trigger continues from the page this one stops before.
 	for page := 0; task.Progress.State == "running"; page++ {
-		if page > 0 && (page == syncTaskPages || !pace.Now().Add(syncTaskGap).Before(pace.Stop) || pace.Sleep(ctx, syncTaskGap) != nil) {
+		if page > 0 && (!pace.Now().Add(syncTaskGap).Before(pace.Stop) || pace.Sleep(ctx, syncTaskGap) != nil) {
 			break
 		}
 		info, err = jobs.Step(ctx, archive, task.Progress.Ref, task.Progress.Sequence, func(ctx context.Context, pool, end string, page int) (gacha.RemotePage, error) {
