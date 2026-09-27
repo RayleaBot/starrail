@@ -389,13 +389,9 @@ func (a *App) subscriptionCommand(ctx context.Context, event *rayleabot.EventCon
 	return event.SendText(newsGameName + kind.name + "推送已关闭")
 }
 
-// runContentSubscription checks a group on its scheduled task; a task whose
-// group turned every push off is removed.
-func (a *App) runContentSubscription(ctx context.Context, event *rayleabot.EventContext) error {
-	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
-		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
-	}
-	ref := triggerTask(event)
+// runContentSubscription checks a group on its scheduled task ref; a task
+// whose group turned every push off is removed.
+func (a *App) runContentSubscription(ctx context.Context, event *rayleabot.EventContext, ref string) error {
 	items, err := a.Subscriptions.List()
 	if err != nil {
 		return event.Fail(PublicError(err).Code, PublicError(err).Message)

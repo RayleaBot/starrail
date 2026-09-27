@@ -256,11 +256,9 @@ func (s *ReminderStore) run(task *Reminder, now int64, query func(Reminder) (Que
 	}
 	return s.save(*task)
 }
-func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext) error {
-	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
-		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
-	}
-	ref := triggerTask(event)
+
+// runReminder runs a trigger of the reminder or timed task ref.
+func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext, ref string) error {
 	err := a.Reminders.Tick(ref, time.Now().UnixMilli(), func(task Reminder) (QueryResult, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}
 		var result QueryResult

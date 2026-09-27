@@ -226,7 +226,7 @@ func (h *sdkHost) manage(action string, input map[string]any) (map[string]any, [
 
 // trigger runs a job the plugin created as the host's scheduler does: the
 // event has no target, and its payload holds the task ID beside the job's
-// payload (and its action).
+// payload (and its action), if it has one.
 func (h *sdkHost) trigger(taskID string) (map[string]any, []hostAction) {
 	h.t.Helper()
 	job, exists := h.jobs[taskID]
@@ -236,7 +236,10 @@ func (h *sdkHost) trigger(taskID string) (map[string]any, []hostAction) {
 	h.next++
 	id := fmt.Sprintf("scheduler-%d", h.next)
 	h.triggers[id] = true
-	payload := map[string]any{"task_id": taskID, "payload": maps.Clone(job)}
+	payload := map[string]any{"task_id": taskID}
+	if len(job) > 0 {
+		payload["payload"] = maps.Clone(job)
+	}
 	if action, ok := job["action"].(string); ok && action != "" {
 		payload["action"] = action
 	}
@@ -274,19 +277,11 @@ func sentText(message rayleabot.MessageOut) string {
 	return text
 }
 
-// fakeClock is a clock tests move by hand; sleeping moves it on, and the
-// contexts Until gives end when it passes their deadline. Events the SDK
-// runs read it from goroutines of their own, so it is locked.
+// fakeClock is a clock tests read and that sleeping moves on at once. Events
+// the SDK runs read it from goroutines of their own, so it is locked.
 type fakeClock struct {
-	mu     sync.Mutex
-	at     time.Time
-	timers []fakeTimer
-}
-
-// fakeTimer ends a context Until gave at its deadline.
-type fakeTimer struct {
-	at     time.Time
-	cancel context.CancelCauseFunc
+	mu sync.Mutex
+	at time.Time
 }
 
 func (c *fakeClock) Now() time.Time {
@@ -296,48 +291,8 @@ func (c *fakeClock) Now() time.Time {
 }
 
 func (c *fakeClock) Sleep(ctx context.Context, d time.Duration) error {
-	if d > 0 {
-		c.move(func(at time.Time) time.Time { return at.Add(d) })
-	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.at = c.at.Add(max(d, 0))
 	return ctx.Err()
-}
-
-func (c *fakeClock) Until(ctx context.Context, deadline time.Time) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancelCause(ctx)
-	c.mu.Lock()
-	due := !c.at.Before(deadline)
-	if !due {
-		c.timers = append(c.timers, fakeTimer{at: deadline, cancel: cancel})
-	}
-	c.mu.Unlock()
-	if due {
-		cancel(context.DeadlineExceeded)
-	}
-	return ctx, func() { cancel(context.Canceled) }
-}
-
-// set moves the clock to at.
-func (c *fakeClock) set(at time.Time) {
-	c.move(func(time.Time) time.Time { return at })
-}
-
-// move sets the time to next of the current one and ends the contexts whose
-// deadline it reached.
-func (c *fakeClock) move(next func(time.Time) time.Time) {
-	c.mu.Lock()
-	c.at = next(c.at)
-	var due []context.CancelCauseFunc
-	kept := c.timers[:0]
-	for _, timer := range c.timers {
-		if timer.at.After(c.at) {
-			kept = append(kept, timer)
-		} else {
-			due = append(due, timer.cancel)
-		}
-	}
-	c.timers = kept
-	c.mu.Unlock()
-	for _, cancel := range due {
-		cancel(context.DeadlineExceeded)
-	}
 }

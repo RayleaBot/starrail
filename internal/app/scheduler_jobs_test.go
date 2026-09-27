@@ -57,27 +57,20 @@ func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 }
 
 // jobsHost is the plugin on the SDK host with taskAccounts' account and 米游社
-// news without posts, whose reads it counts after onNews sees them. The
-// plugin's clock starts at the current time.
+// news without posts, whose reads it counts.
 type jobsHost struct {
 	a        *App
-	clock    *fakeClock
 	host     *sdkHost
 	accounts *taskAccounts
 	news     int
-	onNews   func(*http.Request)
 }
 
 func newJobsHost(t *testing.T) *jobsHost {
 	t.Helper()
-	j := &jobsHost{a: pluginApp(t), clock: &fakeClock{at: time.Now()}, accounts: &taskAccounts{t: t}}
-	j.a.clock = j.clock
+	j := &jobsHost{a: pluginApp(t), accounts: &taskAccounts{t: t}}
 	j.a.Content = PublicContentClient{HTTP: doerFunc(func(r *http.Request) (*http.Response, error) {
 		if !strings.HasSuffix(r.URL.Path, "/getNewsList") {
 			t.Errorf("content request %s", r.URL)
-		}
-		if j.onNews != nil {
-			j.onNews(r)
 		}
 		j.news++
 		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`{"retcode":0,"data":{"list":[]}}`))}, nil
@@ -120,11 +113,6 @@ func (j *jobsHost) createJobs(t *testing.T) []createdJob {
 		t.Fatalf("开启公告推送 ended with %v", end)
 	}
 	jobs = append(jobs, createdJob{j.host.job("game.content."), ""})
-	for _, job := range jobs {
-		if j.host.jobs[job.ref]["task_id"] != job.ref {
-			t.Fatalf("%s has payload %v", job.ref, j.host.jobs[job.ref])
-		}
-	}
 	return jobs
 }
 
@@ -154,8 +142,8 @@ func (j *jobsHost) runJob(t *testing.T, job createdJob) {
 }
 
 // Each kind of job, created as the management page or a group administrator
-// creates it, runs its own task on the host's triggers, which carry the job's
-// payload but not its task ID.
+// creates it, runs its own task on the host's triggers, which name it by its
+// task ID.
 func TestEachJobsTriggerRunsItsTask(t *testing.T) {
 	j := newJobsHost(t)
 	jobs := j.createJobs(t)
@@ -224,68 +212,26 @@ func TestRemovedTasksDeleteTheirJobs(t *testing.T) {
 	}
 }
 
-// Jobs an earlier version created have no task ID in their payloads. The
-// first of their triggers creates every stored task's job again with the
-// same schedule, after which each job runs its task; a job without a stored
-// task, as a gacha link's, does nothing and is not created again.
-func TestJobsWithoutTaskIDsAreCreatedAgain(t *testing.T) {
+// A trigger of a task the plugin does not know, as the jobs of chat tasks
+// and background syncs earlier versions scheduled, deletes its own job without
+// running anything; a trigger without a task ID has no job to delete.
+func TestTriggersOfUnknownTasksDeleteTheirJobs(t *testing.T) {
 	j := newJobsHost(t)
-	jobs := j.createJobs(t)
-	first := map[string]map[string]any{}
-	for _, created := range j.host.created {
-		first[asText(created["task_id"])] = created
-	}
-	for _, job := range jobs {
-		j.host.jobs[job.ref] = map[string]any{"kind": j.host.jobs[job.ref]["kind"]}
-	}
-	j.host.jobs["game.link.OLD"] = map[string]any{"kind": "gacha_link"}
-	before := len(j.host.created)
-	for range 2 {
-		if end, _ := j.host.trigger("game.link.OLD"); end["type"] != "result" {
-			t.Fatalf("the old job's trigger ended with %v", end)
-		}
-	}
-	again := j.host.created[before:]
-	if len(again) != len(jobs) {
-		t.Fatalf("created %d jobs again for %d tasks", len(again), len(jobs))
-	}
-	for _, created := range again {
-		ref := asText(created["task_id"])
-		old := first[ref]
-		if old == nil || created["cron"] != old["cron"] || created["log_label"] != old["log_label"] || asObject(created["payload"])["task_id"] != ref || asObject(created["payload"])["kind"] != asObject(old["payload"])["kind"] {
-			t.Fatalf("%s was created again as %v, first as %v", ref, created, old)
-		}
-	}
-	if _, kept := j.host.jobs["game.link.OLD"]; !kept || len(j.host.deleted) != 0 || len(j.host.sent) != 0 || len(j.accounts.executed) != 0 || j.news != 0 {
-		t.Fatalf("the old job did work: deleted %v, sent %v", j.host.deleted, j.host.sent)
-	}
-	for _, job := range jobs {
-		j.runJob(t, job)
-	}
-}
-
-// Every trigger's work ends within the host's event time: the news request
-// of a push still open when the event's time is up is canceled, and a
-// stamina reminder whose check answers only then sends nothing.
-func TestTriggersEndWithinTheEventTime(t *testing.T) {
-	j := newJobsHost(t)
-	jobs := j.createJobs(t)
-	late := func() { j.clock.set(j.clock.Now().Add(time.Minute)) }
-	canceled := false
-	j.onNews = func(r *http.Request) {
-		late()
-		canceled = r.Context().Err() != nil
-	}
-	j.accounts.data = map[string]func(map[string]any) (map[string]any, string){"starrail.note": func(map[string]any) (map[string]any, string) {
-		late()
-		return map[string]any{"current_stamina": 240, "max_stamina": 240}, ""
-	}}
-	for _, ref := range []string{jobs[len(jobs)-1].ref, jobs[0].ref} {
-		if end, _ := j.host.trigger(ref); end["type"] == "action" {
+	for _, ref := range []string{"game.link.4MZ3", "game.sync.starrail.0f1e", "game.unknown"} {
+		j.host.jobs[ref] = map[string]any{"kind": "gacha_link", "task_id": ref}
+		deleted := len(j.host.deleted)
+		if end, _ := j.host.trigger(ref); end["type"] != "result" {
 			t.Fatalf("the trigger of %s ended with %v", ref, end)
 		}
+		if _, kept := j.host.jobs[ref]; kept || len(j.host.deleted) != deleted+1 || j.host.deleted[deleted] != ref {
+			t.Fatalf("the trigger of %s deleted %v", ref, j.host.deleted[deleted:])
+		}
 	}
-	if !canceled || j.news != 1 || len(j.accounts.executed) != 1 || j.accounts.executed[0] != "starrail.note" || len(j.host.sent) != 0 {
-		t.Fatalf("canceled %v after %d reads; requested %v, sent %v", canceled, j.news, j.accounts.executed, j.host.sent)
+	j.host.jobs[""] = nil
+	if end, _ := j.host.trigger(""); end["type"] != "result" || len(j.host.deleted) != 3 {
+		t.Fatalf("the trigger without a task ended with %v, deleted %v", end, j.host.deleted)
+	}
+	if len(j.accounts.executed) != 0 || j.news != 0 || len(j.host.sent) != 0 {
+		t.Fatalf("unknown tasks ran: %v, %d reads, sent %v", j.accounts.executed, j.news, j.host.sent)
 	}
 }

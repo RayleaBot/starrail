@@ -242,7 +242,6 @@ type App struct {
 	emoticons          newsEmoticons
 	aliases            customAliases
 	usageOnce          sync.Once
-	legacyJobs         legacyJobs
 	// clock is nil for the wall clock.
 	clock clock
 }
@@ -319,19 +318,6 @@ func (a *App) routedQuery(operation Operation, query string) (string, Operation)
 	return query, operation
 }
 
-// taskPayload is the payload of a scheduler job of kind for task id. The host
-// sends a trigger with its job's payload but without the job's task ID, so
-// the payload carries it.
-func taskPayload(kind, id string) map[string]any {
-	return map[string]any{"kind": kind, "task_id": id}
-}
-
-// triggerTask is the task ID of a scheduler trigger, which its job's payload
-// carries.
-func triggerTask(event *rayleabot.EventContext) string {
-	return asText(asObject(event.Event.Payload["payload"])["task_id"])
-}
-
 func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 	// Replies name commands with the first prefix the host gives this plugin;
 	// the list is fixed for the process session.
@@ -341,18 +327,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		}
 	})
 	if event.Event.EventType == "scheduler.trigger" {
-		// Every trigger's work, the actions it asks for included, ends
-		// triggerLimit after it starts, within the host's event time.
-		ctx, cancel := a.eventWork(ctx, a.now())
-		defer cancel()
-		task := triggerTask(event)
-		switch {
-		case task == "":
-			return a.runLegacyTrigger(ctx, event)
-		case strings.HasPrefix(task, "game.content."):
-			return a.runContentSubscription(ctx, event)
-		}
-		return a.runReminder(ctx, event)
+		return a.runTrigger(ctx, event)
 	}
 	if event.Event.EventType == "management.action" {
 		if event.Event.SourceProtocol != "management" || event.Event.SourceAdapter != "management.ui" {
