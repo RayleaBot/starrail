@@ -46,25 +46,42 @@ func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 	return nil, "plugin.method_not_found"
 }
 
-// Each kind of job, created as the management page or a group administrator
-// creates it, runs its own task on the host's triggers, which carry the job's
-// payload but not its task ID.
-func TestEachJobsTriggerRunsItsTask(t *testing.T) {
-	a := pluginApp(t)
-	news := 0
-	a.Content = PublicContentClient{HTTP: doerFunc(func(r *http.Request) (*http.Response, error) {
+// jobsHost is the plugin on the SDK host with taskAccounts' account and 米游社
+// news without posts, whose reads it counts.
+type jobsHost struct {
+	a        *App
+	host     *sdkHost
+	accounts *taskAccounts
+	news     int
+}
+
+func newJobsHost(t *testing.T) *jobsHost {
+	t.Helper()
+	j := &jobsHost{a: pluginApp(t), accounts: &taskAccounts{t: t}}
+	j.a.Content = PublicContentClient{HTTP: doerFunc(func(r *http.Request) (*http.Response, error) {
 		if !strings.HasSuffix(r.URL.Path, "/getNewsList") {
 			t.Errorf("content request %s", r.URL)
 		}
-		news++
+		j.news++
 		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`{"retcode":0,"data":{"list":[]}}`))}, nil
 	})}
-	accounts := &taskAccounts{t: t}
-	host := newSDKHost(t, a, accounts.answer)
+	j.host = newSDKHost(t, j.a, j.accounts.answer)
+	return j
+}
+
+// createdJob is a job created as a user creates it, with the account request
+// its task makes; a push's reads the news instead.
+type createdJob struct{ ref, operation string }
+
+// createJobs creates each kind of job as the management page or a group
+// administrator does.
+func (j *jobsHost) createJobs(t *testing.T) []createdJob {
+	t.Helper()
 	role := func(input map[string]any) map[string]any {
 		input["account_ref"], input["role_ref"], input["days"], input["confirm"] = "account", "role", 30, true
 		return input
 	}
+	jobs := []createdJob{}
 	for _, job := range []struct {
 		action    string
 		input     map[string]any
@@ -78,45 +95,107 @@ func TestEachJobsTriggerRunsItsTask(t *testing.T) {
 		{"community.task.create", role(map[string]any{"once": true, "read": true}), "game.community.", "starrail.community_run"},
 		{"gacha.task.create", role(map[string]any{"kind": "once"}), "game.sync.", "starrail.gacha"},
 	} {
-		if end, _ := host.manage(job.action, job.input); end["type"] != "result" {
+		if end, _ := j.host.manage(job.action, job.input); end["type"] != "result" {
 			t.Fatalf("%s ended with %v", job.action, end)
 		}
-		ref := host.job(job.prefix)
-		if host.jobs[ref]["task_id"] != ref {
-			t.Fatalf("%s created a job with payload %v", job.action, host.jobs[ref])
-		}
-		// Challenge reminders and monthly collection wait for their time of
-		// day; the trigger comes when it is due.
-		_ = a.Reminders.edit(ref, func(items *[]Reminder, i int) error {
-			if i >= 0 {
-				(*items)[i].NextCheckMS = 0
-			}
-			return nil
-		})
-		executed := len(accounts.executed)
-		if end, _ := host.trigger(ref); end["type"] != "result" {
-			t.Fatalf("the trigger of %s ended with %v", ref, end)
-		}
-		if len(accounts.executed) != executed+1 || accounts.executed[executed] != job.operation {
-			t.Fatalf("the trigger of %s requested %v", ref, accounts.executed[executed:])
-		}
+		jobs = append(jobs, createdJob{j.host.job(job.prefix), job.operation})
 	}
-	if end, _ := host.groupMessage("*开启公告推送", "开启公告推送"); !strings.Contains(terminalText(end), "公告推送已开启") {
+	if end, _ := j.host.groupMessage("*开启公告推送", "开启公告推送"); !strings.Contains(terminalText(end), "公告推送已开启") {
 		t.Fatalf("开启公告推送 ended with %v", end)
 	}
-	ref := host.job("game.content.")
-	if end, _ := host.trigger(ref); end["type"] != "result" || news != 1 {
-		t.Fatalf("the trigger of %s ended with %v after %d reads", ref, end, news)
+	jobs = append(jobs, createdJob{j.host.job("game.content."), ""})
+	for _, job := range jobs {
+		if j.host.jobs[job.ref]["task_id"] != job.ref {
+			t.Fatalf("%s has payload %v", job.ref, j.host.jobs[job.ref])
+		}
 	}
-	if items, _ := a.Subscriptions.List(); len(items) != 1 || items[0].LastCode != "checked" {
+	return jobs
+}
+
+// runJob triggers a job once its task is due and checks that the task ran.
+func (j *jobsHost) runJob(t *testing.T, job createdJob) {
+	t.Helper()
+	// Challenge reminders and monthly collection wait for their time of day.
+	_ = j.a.Reminders.edit(job.ref, func(items *[]Reminder, i int) error {
+		if i >= 0 {
+			(*items)[i].NextCheckMS = 0
+		}
+		return nil
+	})
+	executed, news := len(j.accounts.executed), j.news
+	if end, _ := j.host.trigger(job.ref); end["type"] != "result" {
+		t.Fatalf("the trigger of %s ended with %v", job.ref, end)
+	}
+	if job.operation == "" {
+		if j.news != news+1 {
+			t.Fatalf("the trigger of %s read the news %d times", job.ref, j.news-news)
+		}
+		return
+	}
+	if len(j.accounts.executed) != executed+1 || j.accounts.executed[executed] != job.operation {
+		t.Fatalf("the trigger of %s requested %v", job.ref, j.accounts.executed[executed:])
+	}
+}
+
+// Each kind of job, created as the management page or a group administrator
+// creates it, runs its own task on the host's triggers, which carry the job's
+// payload but not its task ID.
+func TestEachJobsTriggerRunsItsTask(t *testing.T) {
+	j := newJobsHost(t)
+	jobs := j.createJobs(t)
+	for _, job := range jobs {
+		j.runJob(t, job)
+	}
+	ref := jobs[len(jobs)-1].ref
+	if items, _ := j.a.Subscriptions.List(); len(items) != 1 || items[0].LastCode != "checked" {
 		t.Fatalf("subscriptions %+v", items)
 	}
 	// A push the management page removed has its job removed by the next
 	// trigger.
-	if end, _ := host.manage("content.subscription.remove", map[string]any{"ref": ref, "confirm": true}); end["type"] != "result" {
+	if end, _ := j.host.manage("content.subscription.remove", map[string]any{"ref": ref, "confirm": true}); end["type"] != "result" {
 		t.Fatalf("the removal ended with %v", end)
 	}
-	if host.trigger(ref); len(host.deleted) != 1 || host.deleted[0] != ref || news != 1 {
-		t.Fatalf("deleted %v after %d reads", host.deleted, news)
+	if j.host.trigger(ref); len(j.host.deleted) != 1 || j.host.deleted[0] != ref || j.news != 1 {
+		t.Fatalf("deleted %v after %d reads", j.host.deleted, j.news)
+	}
+}
+
+// Jobs an earlier version created have no task ID in their payloads. The
+// first of their triggers creates every stored task's job again with the
+// same schedule, after which each job runs its task; a job without a stored
+// task, as a gacha link's, does nothing and is not created again.
+func TestJobsWithoutTaskIDsAreCreatedAgain(t *testing.T) {
+	j := newJobsHost(t)
+	jobs := j.createJobs(t)
+	first := map[string]map[string]any{}
+	for _, created := range j.host.created {
+		first[asText(created["task_id"])] = created
+	}
+	for _, job := range jobs {
+		j.host.jobs[job.ref] = map[string]any{"kind": j.host.jobs[job.ref]["kind"]}
+	}
+	j.host.jobs["game.link.OLD"] = map[string]any{"kind": "gacha_link"}
+	before := len(j.host.created)
+	for range 2 {
+		if end, _ := j.host.trigger("game.link.OLD"); end["type"] != "result" {
+			t.Fatalf("the old job's trigger ended with %v", end)
+		}
+	}
+	again := j.host.created[before:]
+	if len(again) != len(jobs) {
+		t.Fatalf("created %d jobs again for %d tasks", len(again), len(jobs))
+	}
+	for _, created := range again {
+		ref := asText(created["task_id"])
+		old := first[ref]
+		if old == nil || created["cron"] != old["cron"] || created["log_label"] != old["log_label"] || asObject(created["payload"])["task_id"] != ref || asObject(created["payload"])["kind"] != asObject(old["payload"])["kind"] {
+			t.Fatalf("%s was created again as %v, first as %v", ref, created, old)
+		}
+	}
+	if _, kept := j.host.jobs["game.link.OLD"]; !kept || len(j.host.deleted) != 0 || len(j.host.sent) != 0 || len(j.accounts.executed) != 0 || j.news != 0 {
+		t.Fatalf("the old job did work: deleted %v, sent %v", j.host.deleted, j.host.sent)
+	}
+	for _, job := range jobs {
+		j.runJob(t, job)
 	}
 }
