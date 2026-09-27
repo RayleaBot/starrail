@@ -342,6 +342,10 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		}
 	})
 	if event.Event.EventType == "scheduler.trigger" {
+		// Every trigger's work, the actions it asks for included, ends
+		// chatTaskLimit after it starts, within the host's event time.
+		ctx, cancel := a.eventWork(ctx, a.now())
+		defer cancel()
 		task := triggerTask(event)
 		switch {
 		case task == "":

@@ -240,19 +240,19 @@ func (a *App) answerChatTask(ctx context.Context, host taskHost, task *chatTask,
 	}
 }
 
-// runChatTask answers the scheduler's trigger of a chat task.
+// runChatTask answers the scheduler's trigger of a chat task, its work
+// bounded as every trigger's.
 func (a *App) runChatTask(ctx context.Context, event *rayleabot.EventContext) error {
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
-	ctx, cancel := a.eventWork(ctx, a.now())
-	defer cancel()
 	a.continueChatTask(ctx, event.Actions(), triggerTask(event))
 	return event.Result(map[string]any{"handled": true})
 }
 
-// eventWork bounds the chat task work of an event that started at start: it
-// ends, the actions it asked for included, chatTaskLimit after start.
+// eventWork bounds the work of an event that started at start, a trigger or
+// a chat task's chat event: it ends, the actions it asked for included,
+// chatTaskLimit after start.
 func (a *App) eventWork(ctx context.Context, start time.Time) (context.Context, context.CancelFunc) {
 	if a.clock != nil {
 		return a.clock.Until(ctx, start.Add(chatTaskLimit))

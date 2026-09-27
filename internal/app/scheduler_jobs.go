@@ -75,8 +75,6 @@ func (a *App) runLegacyTrigger(ctx context.Context, event *rayleabot.EventContex
 	if !a.legacyJobs.begin() {
 		return event.Result(map[string]any{"handled": true})
 	}
-	ctx, cancel := a.eventWork(ctx, a.now())
-	defer cancel()
 	err := a.recreateJobs(ctx, event.Actions())
 	a.legacyJobs.finish(err == nil)
 	if err != nil {

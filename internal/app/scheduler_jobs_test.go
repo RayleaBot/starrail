@@ -13,13 +13,12 @@ import (
 // taskAccounts answers the account plugin's service for one account of user
 // "u" holding one overseas role: the role checks, delegation.create, which
 // grants "d1", and the requests of the jobs, which it records by operation
-// and refuses, but for gacha, when set, which answers the gacha record
-// requests with their data. Only a trigger may make a job's request, and
-// with the delegation.
+// and refuses unless data answers the operation with its data. Only a
+// trigger may make a job's request, and with the delegation.
 type taskAccounts struct {
 	t        *testing.T
 	executed []string
-	gacha    func(input map[string]any) (map[string]any, string)
+	data     map[string]func(input map[string]any) (map[string]any, string)
 }
 
 func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bool) (map[string]any, string) {
@@ -44,8 +43,8 @@ func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 			s.t.Errorf("%s was requested outside its job", operation)
 		}
 		s.executed = append(s.executed, operation)
-		if operation == "starrail.gacha" && s.gacha != nil {
-			data, failure := s.gacha(asObject(request.Params["input"]))
+		if answer := s.data[operation]; answer != nil {
+			data, failure := answer(asObject(request.Params["input"]))
 			if failure != "" {
 				return nil, failure
 			}
@@ -58,14 +57,15 @@ func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 }
 
 // jobsHost is the plugin on the SDK host with taskAccounts' account and 米游社
-// news without posts, whose reads it counts. The plugin's clock starts at
-// the current time.
+// news without posts, whose reads it counts after onNews sees them. The
+// plugin's clock starts at the current time.
 type jobsHost struct {
 	a        *App
 	clock    *fakeClock
 	host     *sdkHost
 	accounts *taskAccounts
 	news     int
+	onNews   func(*http.Request)
 }
 
 func newJobsHost(t *testing.T) *jobsHost {
@@ -75,6 +75,9 @@ func newJobsHost(t *testing.T) *jobsHost {
 	j.a.Content = PublicContentClient{HTTP: doerFunc(func(r *http.Request) (*http.Response, error) {
 		if !strings.HasSuffix(r.URL.Path, "/getNewsList") {
 			t.Errorf("content request %s", r.URL)
+		}
+		if j.onNews != nil {
+			j.onNews(r)
 		}
 		j.news++
 		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`{"retcode":0,"data":{"list":[]}}`))}, nil
@@ -263,5 +266,31 @@ func TestJobsWithoutTaskIDsAreCreatedAgain(t *testing.T) {
 	}
 	for _, job := range jobs {
 		j.runJob(t, job)
+	}
+}
+
+// Every trigger's work ends within the host's event time: the news request
+// of a push still open when the event's time is up is canceled, and a
+// stamina reminder whose check answers only then sends nothing.
+func TestTriggersEndWithinTheEventTime(t *testing.T) {
+	j := newJobsHost(t)
+	jobs := j.createJobs(t)
+	late := func() { j.clock.set(j.clock.Now().Add(time.Minute)) }
+	canceled := false
+	j.onNews = func(r *http.Request) {
+		late()
+		canceled = r.Context().Err() != nil
+	}
+	j.accounts.data = map[string]func(map[string]any) (map[string]any, string){"starrail.note": func(map[string]any) (map[string]any, string) {
+		late()
+		return map[string]any{"current_stamina": 240, "max_stamina": 240}, ""
+	}}
+	for _, ref := range []string{jobs[len(jobs)-1].ref, jobs[0].ref} {
+		if end, _ := j.host.trigger(ref); end["type"] == "action" {
+			t.Fatalf("the trigger of %s ended with %v", ref, end)
+		}
+	}
+	if !canceled || j.news != 1 || len(j.accounts.executed) != 1 || j.accounts.executed[0] != "starrail.note" || len(j.host.sent) != 0 {
+		t.Fatalf("canceled %v after %d reads; requested %v, sent %v", canceled, j.news, j.accounts.executed, j.host.sent)
 	}
 }

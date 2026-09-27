@@ -177,16 +177,13 @@ func (a *App) syncTaskAction(ctx context.Context, event *rayleabot.EventContext,
 	return map[string]any{"task": task}, nil
 }
 
-// runSyncTask advances a background sync on its trigger, within the event
-// budget chat tasks use: it starts no page after chatTaskBudget, and its
-// work, the page's request included, ends by chatTaskLimit.
+// runSyncTask advances a background sync on its trigger, whose work ends by
+// chatTaskLimit as every trigger's; it starts no page after chatTaskBudget.
 func (a *App) runSyncTask(ctx context.Context, event *rayleabot.EventContext) error {
 	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
 		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
 	}
 	start := a.now()
-	ctx, cancel := a.eventWork(ctx, start)
-	defer cancel()
 	ref := triggerTask(event)
 	err := a.SyncTasks.Tick(ctx, ref, SyncPace{Now: a.now, Sleep: a.sleep, Stop: start.Add(chatTaskBudget)}, &a.Syncs, a.Gacha, func(ctx context.Context, task SyncTask, pool, end string, page int) (gacha.RemotePage, error) {
 		client := AccountsClient{Caller: event.Actions(), Provider: task.Provider, Game: a.Game.ID}

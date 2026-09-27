@@ -218,7 +218,8 @@ func TestBackgroundSyncTriggersStayWithinTheirEvents(t *testing.T) {
 	// empty page each.
 	slow := map[int]time.Duration{}
 	timeout := -1
-	j.accounts.gacha = func(input map[string]any) (map[string]any, string) {
+	j.accounts.data = map[string]func(map[string]any) (map[string]any, string){}
+	j.accounts.data["starrail.gacha"] = func(input map[string]any) (map[string]any, string) {
 		pool, end := asText(input["gacha_type"]), asText(input["end_id"])
 		page, _ := strconv.Atoi(asText(input["page"]))
 		reads = append(reads, syncRead{j.clock.Now(), pool, end, page})
