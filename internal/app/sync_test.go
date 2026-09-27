@@ -163,7 +163,7 @@ func TestBackgroundSyncRefusedByTheHostTellsThePage(t *testing.T) {
 	a, host, accounts := syncHost(t)
 	host.busy = true
 	end, _ := startSync(host, map[string]any{})
-	if end["type"] != "error" || end["code"] != "plugin.game_background_full" || end["message"] != "后台处理的任务已达上限，请稍后再试。" {
+	if end["type"] != "error" || end["code"] != "plugin.game_background_busy" || end["message"] != "后台处理的任务已达上限，请稍后再试。" {
 		t.Fatalf("the refused sync ended with %v", end)
 	}
 	if len(accounts.reads) != 0 || len(a.BackgroundSyncs.list()) != 0 {

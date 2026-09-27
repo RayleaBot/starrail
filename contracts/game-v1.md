@@ -20,7 +20,7 @@
 
 ### 后台抽卡同步与每日同步
 
-`gacha.task.start` 开始单次后台同步，接收 `account_ref`、`role_ref`、`full`、`notify`（默认 false）和 `confirm=true`。国服角色保持 `plugin.game_sync_unavailable`，不借后台入口绕过已知上游限制。插件校验角色授权并开始同步后，把这个管理动作转入宿主的后台事件：管理页立即收到 `{task}`，同步在同一事件内继续，以该管理动作的来源调用账号服务，不创建调度任务或账号委托。同一角色同时只有一个单次后台同步，重复开始返回 `plugin.game_sync_task_running`；插件的后台事件已达宿主上限时返回 `plugin.game_background_full`，不开始同步。
+`gacha.task.start` 开始单次后台同步，接收 `account_ref`、`role_ref`、`full`、`notify`（默认 false）和 `confirm=true`。国服角色保持 `plugin.game_sync_unavailable`，不借后台入口绕过已知上游限制。插件校验角色授权并开始同步后，把这个管理动作转入宿主的后台事件：管理页立即收到 `{task}`，同步在同一事件内继续，以该管理动作的来源调用账号服务，不创建调度任务或账号委托。同一角色同时只有一个单次后台同步，重复开始返回 `plugin.game_sync_task_running`；插件的后台事件已达宿主上限时返回 `plugin.game_background_busy`，不开始同步。
 
 `gacha.task.create` 开启每日同步，接收 `account_ref`、`role_ref`、`days`（1–90）、`hour`（北京时间 0–23）、`full`、`notify`（默认 false）和 `confirm=true`，区服限制同上。插件创建该角色 `starrail.gacha` 的有期只读委托和每分钟检查一次的宿主任务；每个提供者/角色只有一个每日同步，不能重复创建。每天北京时间设定时刻之后的第一次触发把调度事件转入后台，在同一事件内以委托读完这一轮；宿主因后台事件已满拒绝转入时，由下一次触发重试。暂时失败五分钟后重试，同一轮连续三次失败后等待下一日；委托撤销、认证失效、设备验证、记录冲突及异常分页暂停任务，需明确重新运行。任务状态为 `creating/waiting/running/paused/expired`，失败使用稳定 `last_code` 展示。每个任务单独保存为一个文件，读取期间每页写回一次进度；这期间任务被停止、移除、重新运行或因删除档案而暂停时，这一轮在下一页之前停止且不再写回。插件重启中止进行中的一轮，下一次触发从当前档案重新开始。
 
