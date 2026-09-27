@@ -24,8 +24,8 @@ import (
 // a group the sender is asked to recall the link. No account is needed. As
 // StarRail-plugin binds a link to its sender for 更新跃迁记录, the last link a
 // sender pasted is kept in memory for a day, the authkey's lifetime; it is
-// never written to disk. A history too long for one event is finished by a
-// scheduled task, which is dropped if the plugin restarts.
+// never written to disk. A history too long for one event is finished as a
+// chat task, which is dropped if the plugin restarts.
 
 const (
 	gachaLinkCN = "https://public-operation-hkrpg.mihoyo.com/common/gacha_record/api/"
@@ -41,18 +41,20 @@ type gachaLink struct {
 	key, region, biz string
 }
 
-// gachaLinkJob is a link whose records are still being fetched. update marks
-// a 更新跃迁记录, answered with StarRail-plugin's replies instead of Yunzai's.
+// gachaLinkJob is a link whose records are being fetched. update marks a
+// 更新跃迁记录, answered with StarRail-plugin's replies instead of Yunzai's;
+// images is the image replies setting of the chat it answers in.
 type gachaLinkJob struct {
 	link     gachaLink
 	uid      string
 	sync     string
 	sequence int
 	before   map[string]int
-	owner    Subject
-	target   rayleabot.Target
 	update   bool
-	expires  time.Time
+	images   bool
+	// result is the finished fetch, kept while its answer waits for an
+	// event with time to draw it.
+	result *gacha.ImportResult
 }
 
 // ownedLink is the last link a sender pasted, for 更新跃迁记录.
@@ -62,33 +64,15 @@ type ownedLink struct {
 	expires time.Time
 }
 
-type gachaLinkJobs struct {
-	mu   sync.Mutex
-	jobs map[string]*gachaLinkJob
-	// owned is each sender's last link; updated is when each UID was last
-	// updated from a link, for StarRail-plugin's one-hour interval.
+// gachaLinks holds each sender's last link and when each UID was last
+// updated from a link, for StarRail-plugin's one-hour interval.
+type gachaLinks struct {
+	mu      sync.Mutex
 	owned   map[Subject]ownedLink
 	updated map[string]time.Time
 }
 
-func (j *gachaLinkJobs) put(ref string, job *gachaLinkJob) {
-	j.mu.Lock()
-	defer j.mu.Unlock()
-	if j.jobs == nil {
-		j.jobs = map[string]*gachaLinkJob{}
-	}
-	j.jobs[ref] = job
-}
-
-func (j *gachaLinkJobs) take(ref string) *gachaLinkJob {
-	j.mu.Lock()
-	defer j.mu.Unlock()
-	job := j.jobs[ref]
-	delete(j.jobs, ref)
-	return job
-}
-
-func (j *gachaLinkJobs) own(owner Subject, link gachaLink, uid string) {
+func (j *gachaLinks) own(owner Subject, link gachaLink, uid string) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	if j.owned == nil {
@@ -102,7 +86,7 @@ func (j *gachaLinkJobs) own(owner Subject, link gachaLink, uid string) {
 	j.owned[owner] = ownedLink{link: link, uid: uid, expires: time.Now().Add(24 * time.Hour)}
 }
 
-func (j *gachaLinkJobs) owner(owner Subject) (ownedLink, bool) {
+func (j *gachaLinks) owner(owner Subject) (ownedLink, bool) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	owned, ok := j.owned[owner]
@@ -111,7 +95,7 @@ func (j *gachaLinkJobs) owner(owner Subject) (ownedLink, bool) {
 
 // markUpdated records an update of uid and returns the previous one, zero
 // when it was more than an hour ago.
-func (j *gachaLinkJobs) markUpdated(uid string) time.Time {
+func (j *gachaLinks) markUpdated(uid string) time.Time {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	if j.updated == nil {
@@ -263,64 +247,84 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 	if err != nil {
 		return true, event.SendText(friendlyError(err))
 	}
-	uid, err := a.checkGachaLink(ctx, &link, len([]rune(text)))
+	start := a.now()
+	work, cancel := a.eventWork(ctx, start)
+	defer cancel()
+	uid, err := a.checkGachaLink(work, &link, len([]rune(text)))
 	if err != nil {
 		return true, event.SendText(friendlyError(err))
 	}
-	owner := syncOwner(event)
-	a.LinkJobs.own(owner, link, uid)
-	notice(ctx, event, "链接发送成功，数据获取中……")
-	a.useLinkUID(ctx, event, uid)
-	a.fetchByLink(ctx, event, &gachaLinkJob{link: link, uid: uid, owner: owner, target: event.Event.Target})
+	a.Links.own(syncOwner(event), link, uid)
+	notice(work, event, "链接发送成功，数据获取中……")
+	a.useLinkUID(work, event, uid)
+	reply := a.fetchByLink(work, event, start, &gachaLinkJob{link: link, uid: uid})
 	if group {
-		notice(ctx, event, "已收到链接，请撤回")
+		reply = append(reply, []rayleabot.Segment{rayleabot.Text("已收到链接，请撤回")})
 	}
-	return true, event.Result(map[string]any{"handled": true})
+	return true, answerChat(ctx, event, reply)
 }
 
 // updateByLink is StarRail-plugin's 更新跃迁记录 with the sender's last link:
 // at most once an hour for a UID.
 func (a *App) updateByLink(ctx context.Context, event *rayleabot.EventContext, owned ownedLink) error {
-	if last := a.LinkJobs.markUpdated(owned.uid); !last.IsZero() {
+	if last := a.Links.markUpdated(owned.uid); !last.IsZero() {
 		return event.SendText("[" + owned.uid + "]近期已经更新过数据了，上次更新时间：" + last.In(time.FixedZone("UTC+8", 8*3600)).Format("2006-01-02 15:04:05") + "，两次更新间隔请大于1小时")
 	}
-	notice(ctx, event, "正在获取["+owned.uid+"]的跃迁数据...")
-	a.fetchByLink(ctx, event, &gachaLinkJob{link: owned.link, uid: owned.uid, owner: syncOwner(event), target: event.Event.Target, update: true})
-	return event.Result(map[string]any{"handled": true})
+	start := a.now()
+	work, cancel := a.eventWork(ctx, start)
+	defer cancel()
+	notice(work, event, "正在获取["+owned.uid+"]的跃迁数据...")
+	return answerChat(ctx, event, a.fetchByLink(work, event, start, &gachaLinkJob{link: owned.link, uid: owned.uid, update: true}))
 }
 
-// fetchByLink merges a link's records within this event, or hands the rest
-// to a scheduled task. It answers in the chat of the event without ending
-// the event, which may send more after it.
-func (a *App) fetchByLink(ctx context.Context, event *rayleabot.EventContext, job *gachaLinkJob) {
+// fetchByLink merges a link's records within its chat event until the chat
+// task budget, counted from start, runs out, and hands the rest to a chat
+// task that answers in this chat. It returns the event's reply.
+func (a *App) fetchByLink(ctx context.Context, event *rayleabot.EventContext, start time.Time, job *gachaLinkJob) chatReply {
 	job.before = gachaPoolCounts(a.archiveOrEmpty(job.uid, job.link.region))
-	job.expires = time.Now().Add(15 * time.Minute)
+	job.images = settings(event).ImageReplies
 	info, err := a.Syncs.Start(a.Gacha, gacha.SyncChoice{Link: true}, job.uid, job.link.region, false)
 	if err != nil {
-		notice(ctx, event, a.gachaLinkFailure(job, err))
-		return
+		return textReply(a.gachaLinkFailure(job, err))
 	}
 	job.sync = info.Ref
-	result, err := a.stepGachaLink(ctx, job, time.Now().Add(40*time.Second))
+	task := a.beginChatTask(event, gachaLinkTask+rand.Text(), a.Game.Name+"抽卡链接记录", "gacha_link", 15*time.Minute, job)
+	reply, done, err := a.stepChatTask(ctx, event.Actions(), task, start.Add(chatTaskBudget))
 	switch {
 	case err != nil:
-		notice(ctx, event, a.gachaLinkFailure(job, err))
-		return
-	case result == nil:
-		ref := gachaLinkTask + rand.Text()
-		a.LinkJobs.put(ref, job)
-		if _, err := event.Actions().SchedulerCreate(ctx, rayleabot.SchedulerCreateRequest{TaskID: ref, Cron: "* * * * *", LogLabel: a.Game.Name + "抽卡链接记录", Payload: taskPayload("gacha_link", ref)}); err != nil {
-			a.LinkJobs.take(ref)
-			notice(ctx, event, "记录较多，本次未能全部获取，请稍后重试。")
-			return
-		}
-		notice(ctx, event, "记录较多，将在后台继续获取，完成后在此回复。")
-		return
+		_ = a.Syncs.Cancel(job.sync)
+		return textReply("记录较多，本次未能全部获取，请稍后重试。")
+	case !done:
+		return textReply("记录较多，将在后台继续获取，完成后在此回复。")
 	}
-	_ = a.sendGachaLinkResult(ctx, event, job, *result, func(segments ...rayleabot.Segment) error {
-		_, err := post(ctx, event, segments...)
-		return err
-	})
+	return reply
+}
+
+// step fetches the link's pages until stop and answers, once all are
+// merged, with the records gained or the failure. Drawing the answer has
+// the rest of an event: when the pages end at stop, or the event's time is
+// up, the next trigger draws it.
+func (job *gachaLinkJob) step(ctx context.Context, a *App, host taskHost, stop time.Time) (chatReply, bool) {
+	if job.result == nil {
+		result, err := a.stepGachaLink(ctx, job, stop)
+		switch {
+		case err != nil:
+			return job.fail(a, err), true
+		case result == nil:
+			return nil, false
+		}
+		job.result = result
+	}
+	if !a.now().Before(stop) || ctx.Err() != nil {
+		return nil, false
+	}
+	return a.gachaLinkReply(ctx, host, job), true
+}
+
+// fail cancels the link's sync and replies with the failure.
+func (job *gachaLinkJob) fail(a *App, err error) chatReply {
+	_ = a.Syncs.Cancel(job.sync)
+	return textReply(a.gachaLinkFailure(job, err))
 }
 
 // gachaLinkFailure words a failed fetch: StarRail-plugin's expiry reply for
@@ -333,7 +337,8 @@ func (a *App) gachaLinkFailure(job *gachaLinkJob, err error) string {
 }
 
 // stepGachaLink fetches pages until the sync completes or stop passes; the
-// result is nil while pages remain.
+// result is nil while pages remain. A page open when ctx ends is fetched
+// again by the next trigger.
 func (a *App) stepGachaLink(ctx context.Context, job *gachaLinkJob, stop time.Time) (*gacha.ImportResult, error) {
 	for {
 		info, err := a.Syncs.Step(ctx, a.Gacha, job.sync, job.sequence, func(ctx context.Context, pool, endID string, page int) (gacha.RemotePage, error) {
@@ -343,69 +348,34 @@ func (a *App) stepGachaLink(ctx context.Context, job *gachaLinkJob, stop time.Ti
 			}
 			return gacha.ParsePage(job.uid, job.link.region, pool, endID, data)
 		})
-		if err != nil {
-			_ = a.Syncs.Cancel(job.sync)
+		switch {
+		case err != nil && ctx.Err() != nil:
+			return nil, nil
+		case err != nil:
 			return nil, err
 		}
 		job.sequence = info.Sequence
 		if info.State == "completed" {
 			return info.Result, nil
 		}
-		if time.Now().After(stop) {
+		if !a.now().Before(stop) || a.sleep(ctx, 300*time.Millisecond) != nil {
 			return nil, nil
 		}
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(300 * time.Millisecond):
-		}
 	}
 }
 
-// runGachaLink continues a long history on its scheduled task and answers in
-// the chat the link was sent to.
-func (a *App) runGachaLink(ctx context.Context, event *rayleabot.EventContext) error {
-	if event.Event.SourceProtocol != "scheduler" || event.Event.SourceAdapter != "scheduler.internal" {
-		return event.Fail("plugin.game_source_invalid", "任务来源无效。")
-	}
-	ref := triggerTask(event)
-	job := a.LinkJobs.take(ref)
-	if job == nil || time.Now().After(job.expires) {
-		_, _ = event.Actions().SchedulerDelete(ctx, ref)
-		return event.Result(map[string]any{"handled": true})
-	}
-	send := func(segments ...rayleabot.Segment) error {
-		_, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: job.owner.SourceProtocol, SourceAdapter: job.owner.SourceAdapter, TargetType: job.target.Type, TargetID: job.target.ID, Message: rayleabot.MessageOut{Segments: segments}})
-		return err
-	}
-	result, err := a.stepGachaLink(ctx, job, time.Now().Add(40*time.Second))
-	if err == nil && result == nil {
-		a.LinkJobs.put(ref, job)
-		return event.Result(map[string]any{"handled": true})
-	}
-	_, _ = event.Actions().SchedulerDelete(ctx, ref)
-	if err != nil {
-		_ = send(rayleabot.Text(a.gachaLinkFailure(job, err)))
-	} else {
-		_ = a.sendGachaLinkResult(ctx, event, job, *result, send)
-	}
-	return event.Result(map[string]any{"handled": true})
-}
-
-// sendGachaLinkResult answers a finished fetch: after a pasted link, Yunzai's
+// gachaLinkReply answers a finished fetch: after a pasted link, Yunzai's
 // report of each pool and its gacha-log page of the character event warp;
 // after 更新跃迁记录, StarRail-plugin's list of analysis commands.
-func (a *App) sendGachaLinkResult(ctx context.Context, event *rayleabot.EventContext, job *gachaLinkJob, result gacha.ImportResult, send func(...rayleabot.Segment) error) error {
+func (a *App) gachaLinkReply(ctx context.Context, host imageRenderer, job *gachaLinkJob) chatReply {
 	prefix := a.Game.Prefix
 	if job.update {
-		return send(rayleabot.Text("跃迁数据获取成功，你可以使用：\n" + prefix + "跃迁分析\n" + prefix + "角色分析\n" + prefix + "光锥分析\n" + prefix + "常驻分析\n查看具体的跃迁数据"))
+		return textReply("跃迁数据获取成功，你可以使用：\n" + prefix + "跃迁分析\n" + prefix + "角色分析\n" + prefix + "光锥分析\n" + prefix + "常驻分析\n查看具体的跃迁数据")
 	}
+	result := job.result
 	archive, err := a.Gacha.Read(result.UID, result.Region)
 	if err != nil {
-		return send(rayleabot.Text(friendlyError(err)))
-	}
-	if err := send(rayleabot.Text(gachaLinkSummary(prefix, job.before, gachaPoolCounts(archive)))); err != nil {
-		return err
+		return textReply(friendlyError(err))
 	}
 	view := GachaView(a.Game, archive)
 	if a.gacha != nil {
@@ -413,10 +383,11 @@ func (a *App) sendGachaLinkResult(ctx context.Context, event *rayleabot.EventCon
 			view.Image = &drawn
 		}
 	}
-	if image := a.renderView(ctx, event, view); image != "" {
-		return send(rayleabot.Image(image))
+	page := []rayleabot.Segment{rayleabot.Text(view.Text())}
+	if image := drawView(ctx, host, job.images, view); image != "" {
+		page = []rayleabot.Segment{rayleabot.Image(image)}
 	}
-	return send(rayleabot.Text(view.Text()))
+	return chatReply{{rayleabot.Text(gachaLinkSummary(prefix, job.before, gachaPoolCounts(archive)))}, page}
 }
 
 // gachaLinkSummary is Yunzai's reply after a link: the records each pool

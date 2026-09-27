@@ -191,10 +191,13 @@ type App struct {
 	Syncs          gacha.Syncs
 	// fileImports are the senders 导入记录 is waiting on for a file.
 	fileImports fileImports
-	// LinkJobs are gacha links whose records are still being fetched;
+	// Links are the links senders pasted and the UIDs they updated;
 	// LinkHTTP reads the official wish history (nil uses a default client).
-	LinkJobs     gachaLinkJobs
-	LinkHTTP     *http.Client
+	Links    gachaLinks
+	LinkHTTP *http.Client
+	// ChatTasks is chat work that continues past its event, as gacha links
+	// whose records are still being fetched.
+	ChatTasks    chatTasks
 	SyncTasks    *SyncTaskStore
 	Showcase     ShowcaseClient
 	Profiles     *PanelStore
@@ -240,6 +243,8 @@ type App struct {
 	emoticons          newsEmoticons
 	aliases            customAliases
 	usageOnce          sync.Once
+	// clock is nil for the wall clock.
+	clock clock
 }
 
 func New(assets Assets, directory string) (*App, error) {
@@ -343,7 +348,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		case strings.HasPrefix(task, "game.sync."):
 			return a.runSyncTask(ctx, event)
 		case strings.HasPrefix(task, gachaLinkTask):
-			return a.runGachaLink(ctx, event)
+			return a.runChatTask(ctx, event)
 		}
 		return a.runReminder(ctx, event)
 	}
@@ -461,7 +466,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.gachaLinkCommand(event)
 	case "gacha-background":
 		// StarRail-plugin's 更新跃迁记录 reads the link the sender bound.
-		if owned, ok := a.LinkJobs.owner(syncOwner(event)); ok && (len(args) == 0 || args[len(args)-1] == owned.uid) {
+		if owned, ok := a.Links.owner(syncOwner(event)); ok && (len(args) == 0 || args[len(args)-1] == owned.uid) {
 			return a.updateByLink(ctx, event, owned)
 		}
 		return event.SendText("未绑定抽卡链接，请点击链接查看说明\nhttps://mp.weixin.qq.com/s/FFHTor5DiG3W_rfQVs3KJQ\n发送[" + prefix + "抽卡链接]绑定")
@@ -1109,7 +1114,18 @@ func (a *App) sendView(ctx context.Context, event *rayleabot.EventContext, view 
 // card, and returns the image path; it is empty when image replies are off
 // or rendering failed.
 func (a *App) renderView(ctx context.Context, event *rayleabot.EventContext, view View) string {
-	if !settings(event).ImageReplies {
+	return drawView(ctx, event.Actions(), settings(event).ImageReplies, view)
+}
+
+// imageRenderer renders images: an event's actions.
+type imageRenderer interface {
+	RenderImage(context.Context, rayleabot.RenderImageRequest) (rayleabot.ActionResult, error)
+}
+
+// drawView is renderView for work that has its host's actions and the image
+// replies setting rather than its event.
+func drawView(ctx context.Context, host imageRenderer, images bool, view View) string {
+	if !images {
 		return ""
 	}
 	text := view.Text()
@@ -1121,7 +1137,7 @@ func (a *App) renderView(ctx context.Context, event *rayleabot.EventContext, vie
 	_ = decodeObject(view, &data)
 	requests = append(requests, rayleabot.RenderImageRequest{Template: "summary", Output: "png", FallbackText: text, Data: data})
 	for _, request := range requests {
-		if result, err := event.Actions().RenderImage(ctx, request); err == nil {
+		if result, err := host.RenderImage(ctx, request); err == nil {
 			if path := asText(result["image_path"]); path != "" {
 				return path
 			}
