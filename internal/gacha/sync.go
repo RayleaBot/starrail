@@ -140,7 +140,8 @@ func (s *Syncs) Info(ref string) (SyncInfo, error) {
 	return job.view, nil
 }
 
-// Forget releases a task-owned buffer; interactive syncs keep their replay API.
+// Forget drops a sync its caller reads to the end in one go, freeing its
+// buffer and slot; the page's step-by-step syncs keep their replay API.
 func (s *Syncs) Forget(ref string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
