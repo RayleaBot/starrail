@@ -9,11 +9,13 @@ import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
 import { useShell } from './shell/context'
 import { formatTime, useOperation } from './shell/status'
+import { useReader } from './reader'
 
 // 月报收集: the official default month saved daily for the selected role.
 const emit = defineEmits<{ changed: [] }>()
 const shell = useShell()
-const { busy, error, notice, run } = useOperation('月报收集操作未完成，请重试。')
+const operation = useOperation('月报收集操作未完成，请重试。')
+const { busy, error, notice, run } = operation
 const items = ref<MonthlyTask[]>([]), hour = ref(23), minute = ref(50), days = ref(30), notify = ref(false), confirmed = ref(false), removal = ref('')
 watch([shell.selection, hour, minute, days, notify], () => { confirmed.value = false })
 async function load() { items.value = (await shell.invoke<{ items: MonthlyTask[] }>('monthly.task.list')).items }
@@ -26,12 +28,13 @@ async function create() {
 }
 async function remove(ref: string) { await run(async () => { await shell.invoke('monthly.task.remove', { ref }); removal.value = ''; await load(); emit('changed') }, '月报收集已停止。') }
 function clock(item: MonthlyTask): string { return `${String(item.hour).padStart(2, '0')}:${String(item.minute ?? 0).padStart(2, '0')}` }
-void run(load)
+const lister = useReader(operation, load)
+lister.request()
 </script>
 
 <template>
   <section class="section" aria-labelledby="monthly-title">
-    <div class="section-heading"><div class="titles"><h2 id="monthly-title">月报收集</h2><p>默认关闭。按北京时间每天保存官方默认月份，累计档案在“查询”页的月报入口查看，历史可用月份也可在那里手动补存。</p></div><button type="button" :disabled="busy" @click="run(load)">刷新</button></div>
+    <div class="section-heading"><div class="titles"><h2 id="monthly-title">月报收集</h2><p>默认关闭。按北京时间每天保存官方默认月份，累计档案在“查询”页的月报入口查看，历史可用月份也可在那里手动补存。</p></div><button type="button" :disabled="busy" @click="lister.request()">{{ lister.loading.value ? '正在读取…' : '刷新' }}</button></div>
     <form class="field-grid" @submit.prevent="create">
       <fieldset :disabled="busy">
         <label class="field"><span>每天几时</span><input v-model="hour" type="number" min="0" max="23" required></label>
@@ -44,7 +47,8 @@ void run(load)
         <div class="actions"><button class="primary" type="submit" :disabled="!shell.selectedRole.value || !confirmed">{{ busy ? '正在开启…' : '开启每日月报收集' }}</button></div>
       </fieldset>
     </form>
-    <StatusLine kind="error" :text="error" />
+    <StatusLine v-if="lister.loading.value && !items.length" kind="info" text="正在读取…" />
+    <StatusLine kind="error" :text="error"><template v-if="lister.failed.value" #actions><button class="compact" type="button" :disabled="busy" @click="lister.request()">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <ul v-if="items.length" class="rows">
       <li v-for="item in items" :key="item.ref">
@@ -57,6 +61,6 @@ void run(load)
         <div v-if="removal === item.ref" class="confirm"><p>停止这条月报收集？已保存的月报保留，开启时创建的委托会一并停止。</p><div class="actions"><button class="compact" type="button" :disabled="busy" @click="removal = ''">保留</button><button class="compact destructive" type="button" :disabled="busy" @click="remove(item.ref)">确认停止</button></div></div>
       </li>
     </ul>
-    <EmptyState v-else-if="!busy" icon="calendar" title="没有月报收集任务" text="设置每天的保存时间与授权天数后为当前角色开启。" />
+    <EmptyState v-else-if="!lister.loading.value" icon="calendar" title="没有月报收集任务" text="设置每天的保存时间与授权天数后为当前角色开启。" />
   </section>
 </template>

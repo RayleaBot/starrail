@@ -10,6 +10,9 @@ export interface Section { id: string; label: string; icon: string; count?: numb
 // page works on a bound role, a rail of sections and one active section.
 // The active section is remembered for the browser session per page.
 const props = defineProps<{ title: string; description?: string; sections: Section[]; roles?: boolean; roleLabel?: string }>()
+// section reports the active section, first on setup, so a workspace that
+// keeps a section's state outside the slot can read only while it is shown.
+const emit = defineEmits<{ section: [id: string] }>()
 const shell = useShell()
 const storageKey = `raylea.starrail.section:${shell.page}`
 function remembered(): string {
@@ -17,6 +20,7 @@ function remembered(): string {
 }
 const active = ref(props.sections.some(section => section.id === remembered()) ? remembered() : props.sections[0]?.id ?? '')
 watch(active, value => { try { sessionStorage.setItem(storageKey, value) } catch { /* per-session convenience only */ } })
+watch(active, value => emit('section', value), { immediate: true })
 const current = computed(() => props.sections.find(section => section.id === active.value))
 const single = computed(() => props.sections.length <= 1)
 function select(id: string) {
@@ -41,7 +45,7 @@ function move(offset: number) {
     <nav v-if="!single" :aria-label="`${props.title}的分区`">
       <ul class="rail" @keydown.down.prevent="move(1)" @keydown.up.prevent="move(-1)" @keydown.right.prevent="move(1)" @keydown.left.prevent="move(-1)">
         <li v-for="section in props.sections" :key="section.id">
-          <button :id="`rail-${section.id}`" type="button" :aria-current="section.id === active ? 'true' : undefined" @click="select(section.id)">
+          <button :id="`rail-${section.id}`" type="button" :aria-current="section.id === active ? 'true' : undefined" :tabindex="section.id === active ? undefined : -1" @click="select(section.id)">
             <Icon :name="section.icon" />
             <span>{{ section.label }}</span>
             <small v-if="section.count !== undefined">{{ section.count }}</small>

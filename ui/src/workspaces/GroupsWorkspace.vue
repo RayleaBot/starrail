@@ -67,7 +67,8 @@ async function removeSubscription() {
 
       <section v-else-if="active === 'push'" ref="pushSection" class="section" aria-labelledby="push-title">
         <div class="section-heading"><div class="titles"><h2 id="push-title">公告推送</h2><p>群管理员在群里发送“{{ prefix }}开启公告推送”“{{ prefix }}开启资讯推送”或“{{ prefix }}开启到期活动推送”开启，把“开启”换成“关闭”即停止。每五分钟推送两小时内的一条新帖，每天十点后推送一天内结束的活动；超级管理员发送“{{ prefix }}推送公告”可立即检查。</p></div><button type="button" :disabled="push.busy.value" @click="loadSubscriptions">刷新</button></div>
-        <StatusLine kind="error" :text="push.error.value" />
+        <StatusLine v-if="push.busy.value && !subscriptions.length" kind="info" text="正在读取推送列表…" />
+        <StatusLine kind="error" :text="push.error.value"><template v-if="!subscriptions.length" #actions><button class="compact" type="button" :disabled="push.busy.value" @click="loadSubscriptions">重试</button></template></StatusLine>
         <StatusLine kind="success" :text="push.notice.value" />
         <ul v-if="subscriptions.length" class="rows">
           <li v-for="item in subscriptions" :key="item.ref">

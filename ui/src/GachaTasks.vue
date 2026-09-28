@@ -87,7 +87,8 @@ onUnmounted(() => { disposed = true; revision++; clearInterval(timer) })
           </div>
         </fieldset>
     </form>
-    <StatusLine kind="error" :text="error || loadError" />
+    <StatusLine v-if="loading && !loaded" kind="info" text="正在读取后台任务…" />
+    <StatusLine kind="error" :text="error || loadError"><template v-if="loadError" #actions><button class="compact" type="button" :disabled="busy || loading" @click="load">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <ul v-if="tasks.length || syncs.length" class="rows">
       <li v-for="task in tasks" :key="task.ref">

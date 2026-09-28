@@ -52,7 +52,8 @@ onUnmounted(() => { disposed = true; clearTimeout(timer) })
 <template>
   <section class="section" aria-labelledby="artwork-title">
     <div class="section-heading"><div class="titles"><h2 id="artwork-title">素材源</h2><p>图片面板、图鉴与照片使用这些上游图片素材。插件包已随附模板用到的图片；“更新”会从上游公开仓库下载新版本到插件数据目录，下载的文件优先使用，删除后恢复使用随附文件。图鉴库需下载后才可用，缺少素材时图片改用简化样式。超级管理员也可以在聊天中发送“{{ prefix }}素材更新”。</p></div><button type="button" :disabled="busy" @click="refresh">刷新状态</button></div>
-    <StatusLine kind="error" :text="error" />
+    <StatusLine v-if="!loaded && !error" kind="info" text="正在读取素材状态…" />
+    <StatusLine kind="error" :text="error"><template v-if="!loaded" #actions><button class="compact" type="button" :disabled="busy" @click="refresh">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <ul v-if="sources.length" class="rows">
       <li v-for="source in sources" :key="source.id">

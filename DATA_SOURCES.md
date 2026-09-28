@@ -8,6 +8,8 @@
 
 本插件沿用 RayleaBot SDK 的 AGPL-3.0 许可，安装包管理页提供对应源码下载。上游数据的原许可声明另行保留。
 
+管理页的拉丁字母与数字使用 [Barlow Semi Condensed](https://github.com/jpt/barlow)（SIL Open Font License 1.1，见 `LICENSES/Barlow-OFL-1.1.txt`），只随包分发 500 与 600 两个字重的拉丁子集，位于 `ui/src/assets/fonts/`；中文使用系统字体。管理页的配色与几何参照《崩坏：星穹铁道》官方界面语言，不分发游戏的字体、图片或商标，见 `ui/DESIGN.md`。
+
 ## StarRail-plugin 面板服务
 
 “面板”“面板更新”等按 [StarRail-plugin 固定提交](https://github.com/TsukinaKasumi/StarRail-plugin/tree/090e411cf9be28b1644721fab54eab0ad283668f)的 `apps/panel.js` 查询其自带的第三方面板服务，服务列表取自同一提交的 `defSet/panelApi.yaml`；查询时向所选服务发送 UID 与签名，返回的面板属于该服务。签名由 `internal/panelapi/sign.b64` 计算，它是该提交 `resources/fuck/fuck` 的原样副本（由 `scripts/bundle-panel-api.mjs` 复制，未改写），与上游 `utils/auth.js` 的 getSign 一样解码 base64 后作为函数求值，只提供其模块引入的 md5。`templates/api-card/` 按同一提交的 `panel/new_card` 与 `common/common.css` 改写，同上游 1.6 倍缩放，角色头像取自“星铁插件图片”素材来源的 `resources/panel/resources/avatar/`。

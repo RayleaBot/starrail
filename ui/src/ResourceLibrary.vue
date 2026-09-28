@@ -1,46 +1,54 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
 import { useShell } from './shell/context'
 import { useOperation } from './shell/status'
+import { useReader } from './reader'
 
 // 材料与卡池: the bundled reference snapshot of materials and banners, each
-// list paged on its own offset.
+// list paged on its own offset and read as soon as its filters change.
 interface Material { id: string; name: string; family: string; kind: string; rarity: number; sources: string[]; description: string }
 interface Pool { estimated_start?: boolean; version: string; half: string; from: string; to: string; kind: string; characters5: string[]; characters4: string[]; weapons5: string[]; weapons4: string[] }
 interface Appearance { name: string; kind: string; rarity: number; count: number; last_end: string; days_since_end: number | null }
 const shell = useShell()
-const { busy, error, run } = useOperation('资料读取未完成，请重试。')
+const operation = useOperation('资料读取未完成，请重试。')
+const { busy, error } = operation
 const sourceVersion = ref('')
 const query = ref(''), materials = ref<Material[]>([]), materialTotal = ref(0), materialOffset = ref(0), materialNext = ref<number | null>(null)
 const version = ref(''), date = ref(''), bannerName = ref(''), bannerKind = ref('all'), pools = ref<Pool[]>([]), poolTotal = ref(0), poolOffset = ref(0), poolNext = ref<number | null>(null), appearances = ref<Appearance[]>([])
 const kinds: Record<string, string> = { normal: '通用材料', talent: '天赋材料', weapon: '武器材料', weekly: '周本材料', gem: '突破宝石', boss: '首领材料', specialty: '地区特产' }
-watch(query, () => { materials.value = []; materialTotal.value = 0; materialOffset.value = 0; materialNext.value = null })
-watch([version, date, bannerName, bannerKind], () => { pools.value = []; poolTotal.value = 0; poolOffset.value = 0; poolNext.value = null; appearances.value = [] })
-async function loadMaterials(next = 0) {
+let materialTarget = 0, poolTarget = 0
+const materialReader = useReader(operation, async stale => {
+  const next = materialTarget
   const result = await shell.invoke<{ materials: Material[]; total: number; version: string; next_offset?: number | null }>('materials.query', { query: query.value, offset: next })
+  if (stale()) return
   materialOffset.value = next; materialNext.value = result.next_offset ?? null; materials.value = result.materials; materialTotal.value = result.total; sourceVersion.value = result.version
-}
-async function loadPools(next = 0) {
+})
+const poolReader = useReader(operation, async stale => {
+  const next = poolTarget
   const result = await shell.invoke<{ pools: Pool[]; total: number; version: string; next_offset?: number | null; appearances?: Appearance[] }>('banners.query', { version: version.value, date: date.value, query: bannerName.value, kind: bannerKind.value, offset: next })
+  if (stale()) return
   poolOffset.value = next; poolNext.value = result.next_offset ?? null; appearances.value = result.appearances ?? []; pools.value = result.pools; poolTotal.value = result.total; sourceVersion.value = result.version
-}
-void run(async () => { await loadMaterials(); await loadPools() })
+})
+function loadMaterials(next = 0, delay = 0) { materialTarget = next; materialReader.request(delay) }
+function loadPools(next = 0, delay = 0) { poolTarget = next; poolReader.request(delay) }
+loadMaterials(); loadPools()
 </script>
 
 <template>
   <section class="section" aria-labelledby="resources-title">
     <div class="section-heading"><div class="titles"><h2 id="resources-title">材料与卡池</h2><p>资料来自固定参考快照 {{ sourceVersion || '—' }}，可离线查询，不需要 CK。卡池与日期未作在线校准，不代表当前官方活动；日期沿用国服 UTC+8。</p></div></div>
-    <StatusLine kind="error" :text="error" />
+    <StatusLine kind="error" :text="error"><template v-if="materialReader.failed.value || poolReader.failed.value" #actions><button class="compact" type="button" :disabled="busy" @click="materialReader.failed.value ? materialReader.request() : poolReader.request()">重试</button></template></StatusLine>
     <div class="subsection">
       <h3>材料查询</h3>
-      <form class="field-row" @submit.prevent="run(() => loadMaterials())">
-        <fieldset :disabled="busy">
-          <label class="field"><span>材料名称或系列</span><input v-model="query" maxlength="128" type="search" placeholder="留空列出全部材料"></label>
-          <button class="primary" type="submit">{{ busy ? '正在查询…' : '查询材料' }}</button>
+      <form class="field-row" @submit.prevent="loadMaterials()">
+        <fieldset>
+          <label class="field"><span>材料名称或系列</span><input v-model="query" maxlength="128" type="search" placeholder="留空列出全部材料，输入后自动查询" @input="loadMaterials(0, 500)"></label>
+          <button type="submit">{{ materialReader.loading.value ? '正在查询…' : '重新查询' }}</button>
         </fieldset>
       </form>
+      <StatusLine v-if="materialReader.loading.value" kind="info" text="正在查询材料…" />
       <p class="hint">匹配 {{ materialTotal }} 项，当前页 {{ materials.length }} 项；可用关键词缩小范围。</p>
       <ul v-if="materials.length" class="rows">
         <li v-for="item in materials" :key="`${item.kind}:${item.id}:${item.name}`">
@@ -51,20 +59,21 @@ void run(async () => { await loadMaterials(); await loadPools() })
           </div>
         </li>
       </ul>
-      <EmptyState v-else-if="!busy" icon="cube" title="没有匹配的材料" text="换一个关键词，或清空后查看全部材料。" />
-      <div class="actions"><button type="button" :disabled="busy || materialOffset === 0" @click="run(() => loadMaterials(Math.max(0, materialOffset - 100)))">上一页材料</button><button type="button" :disabled="busy || materialNext === null" @click="run(() => loadMaterials(materialNext!))">下一页材料</button></div>
+      <EmptyState v-else-if="!materialReader.loading.value" icon="cube" title="没有匹配的材料" text="换一个关键词，或清空后查看全部材料。" />
+      <div class="actions"><button type="button" :disabled="busy || materialOffset === 0" @click="loadMaterials(Math.max(0, materialOffset - 100))">上一页材料</button><button type="button" :disabled="busy || materialNext === null" @click="loadMaterials(materialNext!)">下一页材料</button></div>
     </div>
     <div class="subsection">
       <h3>版本卡池</h3>
-      <form class="field-row" @submit.prevent="run(() => loadPools())">
-        <fieldset :disabled="busy">
-          <label class="field"><span>游戏版本</span><input v-model="version" maxlength="32" placeholder="如 1.0；留空不限"></label>
-          <label class="field"><span>角色或装备名称</span><input v-model="bannerName" maxlength="128" type="search"></label>
-          <label class="field"><span>卡池类别</span><select v-model="bannerKind"><option value="all">全部</option><option value="character">角色</option><option value="weapon">装备</option></select></label>
-          <label class="field"><span>卡池日期</span><input v-model="date" type="date"></label>
-          <button class="primary" type="submit">{{ busy ? '正在查询…' : '查询卡池' }}</button>
+      <form class="field-row" @submit.prevent="loadPools()">
+        <fieldset>
+          <label class="field"><span>游戏版本</span><input v-model="version" maxlength="32" placeholder="如 1.0；留空不限" @input="loadPools(0, 500)"></label>
+          <label class="field"><span>角色或装备名称</span><input v-model="bannerName" maxlength="128" type="search" @input="loadPools(0, 500)"></label>
+          <label class="field"><span>卡池类别</span><select v-model="bannerKind" @change="loadPools(0, 250)"><option value="all">全部</option><option value="character">角色</option><option value="weapon">装备</option></select></label>
+          <label class="field"><span>卡池日期</span><input v-model="date" type="date" @change="loadPools(0, 250)"></label>
+          <button type="submit">{{ poolReader.loading.value ? '正在查询…' : '重新查询' }}</button>
         </fieldset>
       </form>
+      <StatusLine v-if="poolReader.loading.value" kind="info" text="正在查询卡池…" />
       <p class="hint">匹配 {{ poolTotal }} 期，当前页 {{ pools.length }} 期；日期留空时不限日期。</p>
       <details v-if="appearances.length">
         <summary>出现与复刻记录统计</summary>
@@ -87,8 +96,8 @@ void run(async () => { await loadMaterials(); await loadPools() })
           </div>
         </li>
       </ul>
-      <EmptyState v-else-if="!busy" icon="cube" title="没有匹配的卡池" text="放宽版本、名称或日期条件后再查询。" />
-      <div class="actions"><button type="button" :disabled="busy || poolOffset === 0" @click="run(() => loadPools(Math.max(0, poolOffset - 50)))">上一页卡池</button><button type="button" :disabled="busy || poolNext === null" @click="run(() => loadPools(poolNext!))">下一页卡池</button></div>
+      <EmptyState v-else-if="!poolReader.loading.value" icon="cube" title="没有匹配的卡池" text="放宽版本、名称或日期条件后再查询。" />
+      <div class="actions"><button type="button" :disabled="busy || poolOffset === 0" @click="loadPools(Math.max(0, poolOffset - 50))">上一页卡池</button><button type="button" :disabled="busy || poolNext === null" @click="loadPools(poolNext!)">下一页卡池</button></div>
     </div>
   </section>
 </template>

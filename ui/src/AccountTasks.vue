@@ -9,12 +9,14 @@ import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
 import { useShell } from './shell/context'
 import { formatTime, useOperation } from './shell/status'
+import { useReader } from './reader'
 
 // 米游社任务 (scheduled): one-off or daily community steps for the selected role's account.
 const kind = 'community'
 const emit = defineEmits<{ changed: [] }>()
 const shell = useShell()
-const { busy, error, notice, run } = useOperation('账号任务操作未完成，请重试。')
+const operation = useOperation('账号任务操作未完成，请重试。')
+const { busy, error, notice, run } = operation
 const items = ref<CommunityTask[]>([]), once = ref(true), hour = ref(8), minute = ref(0), days = ref(30), notify = ref(false), read = ref(false), like = ref(false), share = ref(false), unlike = ref(false), confirmed = ref(false), removal = ref('')
 const account = computed(() => shell.selectedRole.value?.account)
 watch([shell.selection, once, hour, minute, days, notify, read, like, share, unlike], () => { confirmed.value = false })
@@ -35,12 +37,13 @@ async function remove(task: CommunityTask) {
   })
 }
 function schedule(task: CommunityTask): string { return task.once ? '执行一次' : `每日 ${String(task.hour).padStart(2, '0')}:${String(task.minute || 0).padStart(2, '0')}（北京时间）` }
-void run(load)
+const lister = useReader(operation, load)
+lister.request()
 </script>
 
 <template>
   <section class="section" aria-labelledby="community-task-title">
-    <div class="section-heading"><div class="titles"><h2 id="community-task-title">米游社任务</h2><p>默认关闭。以当前角色所属的米游社账号执行：先检查进度，再按选择进行签到、浏览、点赞和分享；每分钟处理一步，写入结果不确定时停止本轮。米游币进度由账号共用，可在常用游戏开启。</p></div><button type="button" :disabled="busy" @click="run(load)">刷新</button></div>
+    <div class="section-heading"><div class="titles"><h2 id="community-task-title">米游社任务</h2><p>默认关闭。以当前角色所属的米游社账号执行：先检查进度，再按选择进行签到、浏览、点赞和分享；每分钟处理一步，写入结果不确定时停止本轮。米游币进度由账号共用，可在常用游戏开启。</p></div><button type="button" :disabled="busy" @click="lister.request()">{{ lister.loading.value ? '正在读取…' : '刷新' }}</button></div>
     <p v-if="account" class="hint">任务账号：{{ account.account_label }} · 用户 {{ account.owner.actor_id }}</p>
     <form class="field-grid" @submit.prevent="create">
       <fieldset :disabled="busy">
@@ -62,7 +65,8 @@ void run(load)
         <div class="actions"><button class="primary" type="submit" :disabled="!confirmed || !account">{{ busy ? '正在开启…' : '开启账号任务' }}</button></div>
       </fieldset>
     </form>
-    <StatusLine kind="error" :text="error" />
+    <StatusLine v-if="lister.loading.value && !items.length" kind="info" text="正在读取…" />
+    <StatusLine kind="error" :text="error"><template v-if="lister.failed.value" #actions><button class="compact" type="button" :disabled="busy" @click="lister.request()">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <ul v-if="items.length" class="rows">
       <li v-for="task in items" :key="task.ref">
@@ -75,6 +79,6 @@ void run(load)
         <div v-if="removal === task.ref" class="confirm"><p>停止并移除这条账号任务？开启时创建的委托会一并停止。</p><div class="actions"><button class="compact" type="button" :disabled="busy" @click="removal = ''">保留</button><button class="compact destructive" type="button" :disabled="busy" @click="remove(task)">确认移除</button></div></div>
       </li>
     </ul>
-    <EmptyState v-else-if="!busy" icon="chat" title="尚未创建账号任务" text="选择执行方式与要执行的项目，确认后为当前账号开启。" />
+    <EmptyState v-else-if="!lister.loading.value" icon="chat" title="尚未创建账号任务" text="选择执行方式与要执行的项目，确认后为当前账号开启。" />
   </section>
 </template>

@@ -8,12 +8,12 @@ import { formatTime, useOperation } from './shell/status'
 interface Item { month: string; year_estimated: boolean; saved_ms: number; amounts: Record<string, number> }
 const props = defineProps<{ accountRef: string; roleRef: string; invoke: <T>(action: string, payload?: Record<string, unknown>) => Promise<T> }>()
 const { busy, error, notice, run } = useOperation('月报操作未完成，请重试。')
-const items = ref<Item[]>([]), totals = ref<Record<string, number>>({}), coverage = ref<Record<string, number>>({}), revision = ref(0), month = ref(''), removeMonth = ref(''), view = ref<View | null>(null), stopping = ref(false)
+const items = ref<Item[]>([]), totals = ref<Record<string, number>>({}), coverage = ref<Record<string, number>>({}), revision = ref(0), month = ref(''), removeMonth = ref(''), view = ref<View | null>(null), stopping = ref(false), loaded = ref(false)
 let disposed = false
 function selection() { return { account_ref: props.accountRef, role_ref: props.roleRef } }
 async function load() {
   const r = await props.invoke<{ items: Item[]; totals: Record<string, number>; coverage: Record<string, number>; revision: number }>('monthly.list', selection())
-  if (!disposed) { items.value = r.items; totals.value = r.totals; coverage.value = r.coverage; revision.value = r.revision }
+  if (!disposed) { items.value = r.items; totals.value = r.totals; coverage.value = r.coverage; revision.value = r.revision; loaded.value = true }
 }
 async function fetchMonths(all = false) {
   stopping.value = false
@@ -50,7 +50,8 @@ onUnmounted(() => { disposed = true; stopping.value = true })
       <label class="field"><span>保存月份</span><input v-model="month" :disabled="busy" placeholder="YYYYMM，留空为默认月份"></label>
       <div class="actions"><button :disabled="busy">读取并保存此月</button><button type="button" :disabled="busy" @click="fetchMonths(true)">保存官方可用月份</button><button v-if="busy" type="button" @click="stopping = true">停止后续月份</button><button type="button" :disabled="busy" @click="run(load)">刷新</button></div>
     </form>
-    <StatusLine kind="error" :text="error" />
+    <StatusLine v-if="!loaded && busy" kind="info" text="正在读取已保存月报…" />
+    <StatusLine kind="error" :text="error"><template v-if="!loaded" #actions><button class="compact" type="button" :disabled="busy" @click="run(load)">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <dl v-if="Object.keys(totals).length" class="metrics"><div v-for="(value, key) in totals" :key="key"><dt>{{ key }} · 覆盖 {{ coverage[key] }} 个月</dt><dd>{{ value.toLocaleString() }}</dd></div></dl>
     <ul v-if="items.length" class="rows">
@@ -60,7 +61,7 @@ onUnmounted(() => { disposed = true; stopping.value = true })
         <div v-if="removeMonth === item.month" class="confirm"><p>移除 {{ removeMonth }} 的本地月报？官方不再提供的月份将无法重新获取。</p><div class="actions"><button class="compact" :disabled="busy" @click="removeMonth = ''">保留</button><button class="compact destructive" :disabled="busy" @click="remove">确认移除</button></div></div>
       </li>
     </ul>
-    <p v-else-if="!busy" class="hint">尚未保存月报。</p>
+    <p v-else-if="loaded && !busy" class="hint">尚未保存月报。</p>
     <BusinessView v-if="view" :value="view" />
   </section>
 </template>

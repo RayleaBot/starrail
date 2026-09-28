@@ -7,26 +7,35 @@ import { useShell } from './shell/context'
 import { formatTime, useOperation } from './shell/status'
 import { sanitizeExchangeFile, downloadExchange } from './cloud-exchange'
 import { cloudTask } from './cloud'
+import { useReader } from './reader'
 
 // 交换档案: the miao PlayerData copies kept for the selected role's UID, built
 // from the official panel or a file, and exchanged with ark for ten minutes.
+// The saved copies are listed as soon as the role is chosen.
 interface Summary { uid: string; revision: number; saved_ms: number; items: { id: string; name: string; level?: number; cons?: number }[] }
 const authenticated = defineModel<boolean>('authenticated', { required: true })
 const shell = useShell()
-const { busy, error, notice, run } = useOperation('面板交换操作未完成。')
+const operation = useOperation('面板交换操作未完成。')
+const { busy, error, notice, run } = operation
 const captureCharacter = ref(''), rankCharacter = ref(''), rankQuery = ref('all')
 const summary = ref<Summary | null>(null), view = ref<View | null>(null), consent = ref(false), clearing = ref(false), file = ref<File | null>(null), stopping = ref(false), activeTransfer = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const transfer = cloudTask(shell.invoke)
 let disposed = false
 function fileChange(event: Event) { file.value = (event.target as HTMLInputElement).files?.[0] ?? null; notice.value = '' }
-watch(shell.selection, () => { summary.value = null; view.value = null; clearing.value = false; file.value = null; if (fileInput.value) fileInput.value.value = ''; transfer.clear(); consent.value = false })
-watch(authenticated, () => { transfer.clear(); consent.value = false })
+function accept(result: Summary) { summary.value = result; if (!result.items.some(v => v.id === rankCharacter.value)) rankCharacter.value = result.items[0]?.id ?? '' }
 async function load() {
   const result = await shell.invoke<Summary>('cloud.archive.list', shell.chosen())
-  if (!disposed) { summary.value = result; if (!result.items.some(v => v.id === rankCharacter.value)) rankCharacter.value = result.items[0]?.id ?? '' }
+  if (!disposed) accept(result)
 }
-async function readArchive() { await run(load) }
+const reader = useReader(operation, async stale => {
+  if (!shell.selectedRole.value) return
+  const result = await shell.invoke<Summary>('cloud.archive.list', shell.chosen())
+  if (!stale() && !disposed) accept(result)
+})
+watch(shell.selection, () => { summary.value = null; view.value = null; clearing.value = false; file.value = null; if (fileInput.value) fileInput.value.value = ''; transfer.clear(); consent.value = false; reader.request() })
+watch(authenticated, () => { transfer.clear(); consent.value = false })
+if (shell.selectedRole.value) reader.request()
 async function open(id: string) { await run(async () => { const result = await shell.invoke<{ panels: { id: string; name: string; view: View }[] }>('cloud.archive.get', { ...shell.chosen(), character_id: id }); view.value = result.panels[0]?.view ?? null }) }
 async function capture() { await run(async () => { const result = await shell.invoke<{ note: string }>('cloud.archive.capture', { ...shell.chosen(), character_id: captureCharacter.value.trim() }); notice.value = result.note; await load() }) }
 async function importFile() {
@@ -78,8 +87,8 @@ onUnmounted(() => { disposed = true; stopping.value = true; transfer.dispose(); 
 
 <template>
   <section class="section" aria-labelledby="exchange-title">
-    <div class="section-heading"><div class="titles"><h2 id="exchange-title">交换档案</h2><p>保存 miao PlayerData 格式的第三方或导入面板。只为上方角色的 UID 建立档案，来源与官方面板分开；云上传会发送 UID 和全部交换角色，接收窗口由 ark 提供，有效十分钟。</p></div><button type="button" :disabled="busy || !shell.selectedRole.value" @click="readArchive">{{ busy ? '正在读取…' : '读取本地交换档案' }}</button></div>
-    <StatusLine kind="error" :text="error || transfer.error.value" />
+    <div class="section-heading"><div class="titles"><h2 id="exchange-title">交换档案</h2><p>保存 miao PlayerData 格式的第三方或导入面板。只为上方角色的 UID 建立档案，选择角色后自动列出已保存的交换角色；来源与官方面板分开；云上传会发送 UID 和全部交换角色，接收窗口由 ark 提供，有效十分钟。</p></div><button type="button" :disabled="busy || !shell.selectedRole.value" @click="reader.request()">{{ reader.loading.value ? '正在读取…' : '刷新' }}</button></div>
+    <StatusLine kind="error" :text="error || transfer.error.value"><template v-if="reader.failed.value" #actions><button class="compact" type="button" :disabled="busy" @click="reader.request()">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <EmptyState v-if="!shell.selectedRole.value" icon="user" title="请先选择已授权的角色" text="交换档案按角色的 UID 保存，先在上方选择角色。" />
     <template v-else>
@@ -113,7 +122,8 @@ onUnmounted(() => { disposed = true; stopping.value = true; transfer.dispose(); 
           </li>
         </ul>
         <EmptyState v-else-if="summary" icon="inbox" title="还没有交换角色" text="从官方面板建立副本或导入面板文件后，角色会列在这里。" />
-        <p v-else class="hint">尚未读取；点击“读取本地交换档案”查看已保存的角色。</p>
+        <StatusLine v-else-if="reader.loading.value" kind="info" text="正在读取交换档案…" />
+        <p v-else class="hint">交换档案尚未读取，可点击“刷新”重试。</p>
         <BusinessView v-if="view" :value="view" />
       </div>
       <div class="subsection">

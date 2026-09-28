@@ -5,8 +5,9 @@ import BuildConditionsEditor from './BuildConditionsEditor.vue'
 import StatusLine from './shell/StatusLine.vue'
 import type { BuildInvoke } from './build'
 
-// 配装计算: the character's reference damage, and what a weapon or another
-// character's whole equipment would change.
+// 配装计算: the character's reference damage, read and computed as soon as
+// the character is shown, and what a weapon or another character's whole
+// equipment would change.
 const props = defineProps<{ characterId: string; characterName: string; accountRef: string; roleRef: string; invoke: BuildInvoke }>()
 const prepared = ref<BuildPrepared>(), result = ref<CharacterBuild>(), busy = ref(false), error = ref('')
 const enemyLevel = ref(103), changeWeapon = ref(false), weaponID = ref(''), weaponLevel = ref(90), promote = ref(6), refinement = ref(1), critical = ref(false)
@@ -56,6 +57,7 @@ async function calculate() {
   } catch (cause) { if (!disposed) error.value = cause instanceof Error ? cause.message : '换装计算未完成，请稍后重试。' }
   finally { if (!disposed) busy.value = false }
 }
+void load()
 const rows = computed(() => result.value ? alignBuildRows(result.value) : [])
 const format = (v: number, digits = 1) => new Intl.NumberFormat('zh-CN', { maximumFractionDigits: digits }).format(v)
 function display(row?: BuildSkill) { if (!row) return '—'; if (row.kind === 'text') return row.text || '—'; const value = critical.value ? row.critical : row.expected; return value == null ? '—' : format(value) }
@@ -66,9 +68,10 @@ function gain(row: ReturnType<typeof alignBuildRows>[number]) { const key = crit
   <section class="subsection" aria-labelledby="build-heading">
     <div class="section-heading">
       <div class="titles"><h3 id="build-heading">{{ characterName }} · 配装计算</h3><p>按参考情境计算技能伤害，可试换光锥或另一角色的整套装备；试算不改变游戏装备。</p></div>
-      <button type="button" :disabled="busy" @click="load">{{ busy ? '正在读取并计算…' : prepared ? '重新读取并计算' : '读取并自动计算' }}</button>
+      <button type="button" :disabled="busy" @click="load">{{ busy ? '正在读取并计算…' : '重新读取并计算' }}</button>
     </div>
-    <StatusLine kind="error" :text="error" />
+    <StatusLine v-if="busy && !prepared" kind="info" text="正在读取面板并计算参考伤害…" />
+    <StatusLine kind="error" :text="error"><template v-if="!prepared" #actions><button class="compact" type="button" :disabled="busy" @click="load">重试</button></template></StatusLine>
     <form v-if="prepared" class="section" @submit.prevent="calculate">
       <fieldset :disabled="busy">
         <div class="field-grid">
@@ -114,8 +117,8 @@ function gain(row: ReturnType<typeof alignBuildRows>[number]) { const key = crit
 </template>
 
 <style scoped>
-.scenario { position: static; background: transparent; color: var(--raylea-color-text); font-weight: 500; min-width: 160px; white-space: normal; }
+.scenario { position: static; background: transparent; color: var(--ivory); font-weight: 500; min-width: 160px; white-space: normal; }
 .scenario summary { font-weight: 500; min-height: 0; }
-.build-buffs { font-size: 12px; font-weight: 400; color: var(--raylea-color-muted); max-width: 56ch; display: grid; gap: 6px; padding-top: 6px; }
+.build-buffs { font-size: 12px; font-weight: 400; color: var(--ivory-muted); max-width: 56ch; display: grid; gap: 6px; padding-top: 6px; }
 .build-buffs ul { padding-left: 18px; display: grid; gap: 4px; }
 </style>

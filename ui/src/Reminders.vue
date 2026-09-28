@@ -9,11 +9,13 @@ import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
 import { useShell } from './shell/context'
 import { formatTime, useOperation } from './shell/status'
+import { useReader } from './reader'
 
 // 体力提醒: a stamina threshold checked every ten minutes for the selected role.
 const emit = defineEmits<{ changed: [] }>()
 const shell = useShell()
-const { busy, error, notice, run } = useOperation('提醒操作未完成，请重试。')
+const operation = useOperation('提醒操作未完成，请重试。')
+const { busy, error, notice, run } = operation
 const items = ref<ReminderTask[]>([]), threshold = ref(80), days = ref(30), confirmed = ref(false), removal = ref('')
 watch(shell.selection, () => { confirmed.value = false })
 async function load() { items.value = (await shell.invoke<{ items: ReminderTask[] }>('reminder.list')).items }
@@ -32,12 +34,13 @@ async function remove(ref: string) {
   })
 }
 function status(item: ReminderTask): string { return item.enabled ? (item.armed ? '等待达到阈值' : '等待体力低于阈值') : '已暂停' }
-void run(load)
+const lister = useReader(operation, load)
+lister.request()
 </script>
 
 <template>
   <section class="section" aria-labelledby="reminder-title">
-    <div class="section-heading"><div class="titles"><h2 id="reminder-title">体力提醒</h2><p>每十分钟读取一次当前角色的体力，达到阈值后私聊账号所属用户。持续高于阈值只通知一次，低于阈值后重新待发。默认关闭，开启时创建有期限的只读委托。</p></div><button type="button" :disabled="busy" @click="run(load)">刷新</button></div>
+    <div class="section-heading"><div class="titles"><h2 id="reminder-title">体力提醒</h2><p>每十分钟读取一次当前角色的体力，达到阈值后私聊账号所属用户。持续高于阈值只通知一次，低于阈值后重新待发。默认关闭，开启时创建有期限的只读委托。</p></div><button type="button" :disabled="busy" @click="lister.request()">{{ lister.loading.value ? '正在读取…' : '刷新' }}</button></div>
     <form class="field-grid" @submit.prevent="create">
       <fieldset :disabled="busy">
         <label class="field"><span>体力阈值（%）</span><input v-model="threshold" type="number" min="1" max="100" step="1" required></label>
@@ -46,7 +49,8 @@ void run(load)
         <div class="actions"><button class="primary" type="submit" :disabled="!shell.selectedRole.value || !confirmed">{{ busy ? '正在开启…' : '开启提醒' }}</button></div>
       </fieldset>
     </form>
-    <StatusLine kind="error" :text="error" />
+    <StatusLine v-if="lister.loading.value && !items.length" kind="info" text="正在读取…" />
+    <StatusLine kind="error" :text="error"><template v-if="lister.failed.value" #actions><button class="compact" type="button" :disabled="busy" @click="lister.request()">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <ul v-if="items.length" class="rows">
       <li v-for="item in items" :key="item.ref">
@@ -59,7 +63,7 @@ void run(load)
         <div v-if="removal === item.ref" class="confirm"><p>关闭并移除这条体力提醒？开启时创建的账号委托会一并撤销。</p><div class="actions"><button class="compact" type="button" :disabled="busy" @click="removal = ''">保留</button><button class="compact destructive" type="button" :disabled="busy" @click="remove(item.ref)">确认移除</button></div></div>
       </li>
     </ul>
-    <EmptyState v-else-if="!busy" icon="bell" title="尚未开启体力提醒" text="填写阈值与授权天数后为当前角色开启，首次检查会在十分钟内执行。" />
+    <EmptyState v-else-if="!lister.loading.value" icon="bell" title="尚未开启体力提醒" text="填写阈值与授权天数后为当前角色开启，首次检查会在十分钟内执行。" />
     <p class="hint">发送结果不确定时不自动补发，以免重复通知。设备验证失败会暂停查询至少一天；撤销授权、凭据失效或到期后暂停，处理后可移除并重新开启。</p>
   </section>
 </template>

@@ -11,6 +11,7 @@ import GachaTasks from '../GachaTasks.vue'
 import GachaSimulation from '../GachaSimulation.vue'
 import { exportUIGF, parseImport, type Archive, type GachaRecord } from '../uigf'
 import { driveSync, type SyncInfo } from '../sync'
+import { useReader } from '../reader'
 
 interface SavedArchive { uid: string; region: string; timezone: number; lang: string; records: number; revision: number }
 interface Transfer { ref: string; uid: string; region: string; timezone: number; lang: string; total: number }
@@ -18,7 +19,9 @@ interface Transfer { ref: string; uid: string; region: string; timezone: number;
 const shell = useShell()
 let disposed = false
 
-// 档案: the archives this plugin keeps, each with its summary, details and export.
+// 档案: the archives this plugin keeps, each with its summary, details and
+// export. The archive of the selected role opens by itself; any other one
+// opens from its row.
 const archive = useOperation('档案操作未完成，请重试。')
 const archives = ref<SavedArchive[]>([]), view = ref<View | null>(null)
 const historyArchive = ref<SavedArchive | null>(null), historyKey = ref(0)
@@ -30,10 +33,26 @@ const sections = computed<Section[]>(() => [
   { id: 'simulation', label: '模拟抽卡', icon: 'dice' },
 ])
 async function loadArchives() { archives.value = (await shell.invoke<{ items: SavedArchive[] }>('gacha.list')).items }
-async function showSummary(item: SavedArchive) {
-  await archive.run(async () => { view.value = (await shell.invoke<{ view: View }>('gacha.summary', { uid: item.uid, region: item.region })).view })
-  historyArchive.value = item; historyKey.value++
+let summaryTarget: SavedArchive | null = null
+const summary = useReader(archive, async stale => {
+  const item = summaryTarget
+  if (!item) return
+  const result = (await shell.invoke<{ view: View }>('gacha.summary', { uid: item.uid, region: item.region })).view
+  if (stale()) return
+  view.value = result; historyArchive.value = item; historyKey.value++
+})
+function showSummary(item: SavedArchive) { summaryTarget = item; summary.request() }
+function same(a: SavedArchive | null, b: SavedArchive | undefined): boolean { return !!a && !!b && a.uid === b.uid && a.region === b.region }
+function matching(): SavedArchive | undefined {
+  const role = shell.selectedRole.value?.role
+  return role ? archives.value.find(item => item.uid === role.uid && item.region === role.region) : undefined
 }
+// autoShow opens the selected role's archive; with no role yet, the first one.
+function autoShow(fallback: boolean) {
+  const item = matching() ?? (fallback ? archives.value[0] : undefined)
+  if (item && !same(summaryTarget, item)) showSummary(item)
+}
+watch(shell.selection, () => autoShow(false))
 async function exportArchive(item: SavedArchive) {
   await archive.run(async () => {
     const { transfer } = await shell.invoke<{ transfer: Transfer }>('gacha.export.start', { uid: item.uid, region: item.region })
@@ -60,7 +79,7 @@ async function removeArchive() {
     removeDialog.value?.close(); removeCandidate.value = null
   }, '抽卡档案已移除。')
 }
-void archive.run(loadArchives)
+void archive.run(loadArchives).then(loaded => { if (loaded) autoShow(true) })
 
 // 官方同步: the live sync of the selected role, driven page by page while the
 // workspace stays open; only HoYoLab-authorised overseas roles can sync.
@@ -137,13 +156,15 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
   <Workspace title="抽卡" description="跃迁档案的同步、导入、统计与导出；官方同步和后台任务使用上方选择的角色。" :sections="sections" roles>
     <template #default="{ active, select }">
       <section v-if="active === 'archives'" class="section" aria-labelledby="archives-title">
-        <div class="section-heading"><div class="titles"><h2 id="archives-title">档案</h2><p>本插件保存的跃迁记录，按 UID 与区服分档；可查看统计与明细，或导出为 UIGF 文件。</p></div><button type="button" :disabled="archive.busy.value" @click="archive.run(loadArchives)">刷新</button></div>
-        <StatusLine kind="error" :text="archive.error.value" />
+        <div class="section-heading"><div class="titles"><h2 id="archives-title">档案</h2><p>本插件保存的跃迁记录，按 UID 与区服分档；上方角色对应的档案会自动显示统计与明细，其他档案可从行内打开，或导出为 UIGF 文件。</p></div><button type="button" :disabled="archive.busy.value" @click="archive.run(loadArchives)">刷新</button></div>
+        <StatusLine v-if="archive.busy.value && !archives.length" kind="info" text="正在读取档案…" />
+        <StatusLine v-else-if="summary.loading.value" kind="info" text="正在读取统计…" />
+        <StatusLine kind="error" :text="archive.error.value"><template v-if="summary.failed.value" #actions><button class="compact" type="button" :disabled="archive.busy.value" @click="summary.request()">重试</button></template></StatusLine>
         <StatusLine kind="success" :text="archive.notice.value" />
         <ul v-if="archives.length" class="rows">
           <li v-for="item in archives" :key="`${item.uid}:${item.region}`">
-            <div class="row-main"><strong class="mono">{{ item.uid }}</strong><div class="row-meta"><span>{{ regionName(item.region) }}</span><span>{{ item.records }} 条记录</span></div></div>
-            <div class="row-actions"><button class="compact" type="button" :disabled="archive.busy.value" @click="showSummary(item)">查看统计</button><button class="compact" type="button" :disabled="archive.busy.value" @click="exportArchive(item)">导出</button><button class="compact danger" type="button" :disabled="archive.busy.value" @click="askRemove(item)">移除</button></div>
+            <div class="row-main"><strong class="mono">{{ item.uid }}</strong><div class="row-meta"><span>{{ regionName(item.region) }}</span><span>{{ item.records }} 条记录</span><span v-if="same(historyArchive, item)">当前显示</span></div></div>
+            <div class="row-actions"><button class="compact" type="button" :disabled="archive.busy.value" :aria-current="same(historyArchive, item) ? 'true' : undefined" @click="showSummary(item)">查看统计</button><button class="compact" type="button" :disabled="archive.busy.value" @click="exportArchive(item)">导出</button><button class="compact danger" type="button" :disabled="archive.busy.value" @click="askRemove(item)">移除</button></div>
           </li>
         </ul>
         <EmptyState v-else-if="!archive.busy.value" icon="cards" title="还没有抽卡档案" text="同步或导入后可查看统计并随时导出。"><button type="button" @click="select('sync')">官方同步</button><button type="button" @click="select('import')">导入记录</button></EmptyState>

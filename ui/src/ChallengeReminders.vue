@@ -10,13 +10,15 @@ import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
 import { useShell } from './shell/context'
 import { formatTime, useOperation } from './shell/status'
+import { useReader } from './reader'
 
 // 挑战提醒: a per-period target checked at a fixed Beijing time for the selected role.
 interface Kind { id: string; label: string; metrics: { key: string; label: string; lower: boolean }[] }
 interface Check { known: boolean; met: boolean; value: number; state?: string }
 const emit = defineEmits<{ changed: [] }>()
 const shell = useShell()
-const { busy, error, notice, run } = useOperation('挑战提醒操作未完成，请重试。')
+const operation = useOperation('挑战提醒操作未完成，请重试。')
+const { busy, error, notice, run } = operation
 const kinds = ref<Kind[]>([]), items = ref<ChallengeTask[]>([]), kind = ref(''), metric = ref(''), threshold = ref(1), hour = ref(20), minute = ref(0), weekday = ref(0), days = ref(30), confirmed = ref(false), checking = ref<Check | null>(null), removal = ref('')
 const chosenKind = computed(() => kinds.value.find(item => item.id === kind.value)), chosenMetric = computed(() => chosenKind.value?.metrics.find(item => item.key === metric.value))
 const checkText = computed(() => !checking.value ? '' : checking.value.state === 'not_started' ? '本期尚无完成记录' : !checking.value.known ? '官方未提供此指标' : `${chosenMetric.value?.label}：${checking.value.value} · ${checking.value.met ? '已达到目标' : '尚未达到目标'}`)
@@ -29,12 +31,16 @@ async function check() { await run(async () => { checking.value = await shell.in
 async function remove(ref: string) { await run(async () => { await shell.invoke('challenge.reminder.remove', { ref }); removal.value = ''; await load(); emit('changed') }, '挑战提醒已关闭。') }
 function kindLabel(id: string): string { return kinds.value.find(item => item.id === id)?.label ?? id }
 function clock(item: ChallengeTask): string { return `${String(item.hour).padStart(2, '0')}:${String(item.minute).padStart(2, '0')}` }
-void run(async () => { kinds.value = (await shell.invoke<{ kinds: Kind[] }>('challenge.schema')).kinds; kind.value = kinds.value[0]?.id ?? ''; await load() })
+const lister = useReader(operation, async () => {
+  if (!kinds.value.length) { kinds.value = (await shell.invoke<{ kinds: Kind[] }>('challenge.schema')).kinds; kind.value = kinds.value[0]?.id ?? '' }
+  await load()
+})
+lister.request()
 </script>
 
 <template>
   <section class="section" aria-labelledby="challenge-title">
-    <div class="section-heading"><div class="titles"><h2 id="challenge-title">挑战提醒</h2><p>在指定的北京时间检查本期官方成绩，未达目标时私聊账号所属用户。默认关闭；每次授权最多 90 天。每个角色每种玩法可设置一个目标，调整前先关闭旧任务。</p></div><button type="button" :disabled="busy" @click="run(load)">刷新</button></div>
+    <div class="section-heading"><div class="titles"><h2 id="challenge-title">挑战提醒</h2><p>在指定的北京时间检查本期官方成绩，未达目标时私聊账号所属用户。默认关闭；每次授权最多 90 天。每个角色每种玩法可设置一个目标，调整前先关闭旧任务。</p></div><button type="button" :disabled="busy" @click="lister.request()">{{ lister.loading.value ? '正在读取…' : '刷新' }}</button></div>
     <form class="field-grid" @submit.prevent="create">
       <fieldset :disabled="busy">
         <label class="field"><span>提醒玩法</span><select v-model="kind"><option v-for="item in kinds" :key="item.id" :value="item.id">{{ item.label }}</option></select></label>
@@ -48,7 +54,8 @@ void run(async () => { kinds.value = (await shell.invoke<{ kinds: Kind[] }>('cha
         <div class="actions"><button class="primary" type="submit" :disabled="!shell.selectedRole.value || !confirmed">{{ busy ? '正在开启…' : '开启挑战提醒' }}</button><button type="button" :disabled="!shell.selectedRole.value" @click="check">立即检查挑战目标</button></div>
       </fieldset>
     </form>
-    <StatusLine kind="error" :text="error" />
+    <StatusLine v-if="lister.loading.value && !items.length" kind="info" text="正在读取…" />
+    <StatusLine kind="error" :text="error"><template v-if="lister.failed.value" #actions><button class="compact" type="button" :disabled="busy" @click="lister.request()">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <StatusLine kind="info" :text="checkText" />
     <ul v-if="items.length" class="rows">
@@ -62,6 +69,6 @@ void run(async () => { kinds.value = (await shell.invoke<{ kinds: Kind[] }>('cha
         <div v-if="removal === item.ref" class="confirm"><p>关闭这条挑战提醒？开启时创建的委托会一并停止。</p><div class="actions"><button class="compact" type="button" :disabled="busy" @click="removal = ''">保留</button><button class="compact destructive" type="button" :disabled="busy" @click="remove(item.ref)">确认关闭</button></div></div>
       </li>
     </ul>
-    <EmptyState v-else-if="!busy" icon="trophy" title="没有已开启的挑战提醒" text="选择玩法、指标与检查时间后为当前角色开启。" />
+    <EmptyState v-else-if="!lister.loading.value" icon="trophy" title="没有已开启的挑战提醒" text="选择玩法、指标与检查时间后为当前角色开启。" />
   </section>
 </template>

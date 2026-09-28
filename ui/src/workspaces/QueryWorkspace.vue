@@ -5,6 +5,7 @@ import StatusLine from '../shell/StatusLine.vue'
 import EmptyState from '../shell/EmptyState.vue'
 import { regions, useShell } from '../shell/context'
 import { useOperation } from '../shell/status'
+import { useReader } from '../reader'
 import BusinessView, { type View } from '../BusinessView.vue'
 import PanelDetails, { type Panel } from '../PanelDetails.vue'
 import BuildCalculator from '../BuildCalculator.vue'
@@ -21,17 +22,22 @@ const sections: Section[] = [
 ]
 
 // 游戏查询: one operation of the selected role, with the results and the
-// tools that read the same panels (score, skills, build comparison).
+// tools that read the same panels (score, skills, build comparison). The
+// query runs by itself once the role and the operation's choices are set;
+// the button only repeats it or submits a typed character name.
 const query = useOperation('查询未完成，请重试。')
+const activeSection = ref('')
 const operationName = ref(shell.game.value?.operations[0]?.name ?? '')
 const period = ref(1), queryMonth = ref(''), summaryPool = ref('11'), character = ref('')
 const view = ref<View | null>(null)
 const panels = ref<Panel[]>([]), scoreCharacter = ref('')
 const selectedOperation = computed(() => shell.game.value?.operations.find(item => item.name === operationName.value))
+const inputKind = computed(() => selectedOperation.value?.input ?? '')
 const detailPanel = computed(() => panels.value.find(panel => panel.id === scoreCharacter.value))
-watch(selectedOperation, value => { period.value = value?.input === 'rogue_period' ? 3 : 1; queryMonth.value = ''; panels.value = []; view.value = null })
+const monthValid = computed(() => queryMonth.value.trim() === '' || /^\d{6}$/.test(queryMonth.value.trim()))
+watch(selectedOperation, value => { period.value = value?.input === 'rogue_period' ? 3 : 1; queryMonth.value = ''; character.value = ''; panels.value = []; view.value = null })
 watch(shell.selection, () => { panels.value = []; view.value = null })
-watch([period, queryMonth], () => { view.value = null })
+watch([period, queryMonth, summaryPool], () => { view.value = null })
 
 async function resolveCharacter(name: string): Promise<string> {
   if (/^\d+$/.test(name)) return name
@@ -41,19 +47,26 @@ async function resolveCharacter(name: string): Promise<string> {
   if (found.entries.length === 1) return found.entries[0]!.id
   throw new Error('角色名未唯一匹配，请在图鉴中确认角色 ID。')
 }
-async function runQuery() {
-  await query.run(async () => {
-    view.value = null
-    const input: Record<string, unknown> = {}
-    const kind = selectedOperation.value?.input ?? ''
-    if (kind === 'starrail_pool') input.gacha_type = summaryPool.value
-    if (kind === 'period' || kind === 'rogue_period') input.schedule_type = period.value
-    if (kind === 'year_month' && queryMonth.value.trim()) input.month = queryMonth.value.trim()
-    if (kind === 'characters_optional' && character.value.trim()) input.character_ids = [await resolveCharacter(character.value.trim())]
-    const result = await shell.invoke<{ view: View; panels?: Panel[] }>('query', { ...shell.chosen(), operation: operationName.value, input })
-    view.value = result.view; panels.value = result.panels ?? []; scoreCharacter.value = panels.value[0]?.id ?? ''
-  })
-}
+const reader = useReader(query, async stale => {
+  view.value = null
+  const input: Record<string, unknown> = {}
+  const kind = inputKind.value
+  if (kind === 'starrail_pool') input.gacha_type = summaryPool.value
+  if (kind === 'period' || kind === 'rogue_period') input.schedule_type = period.value
+  if (kind === 'year_month' && queryMonth.value.trim()) input.month = queryMonth.value.trim()
+  if (kind === 'characters_optional' && character.value.trim()) input.character_ids = [await resolveCharacter(character.value.trim())]
+  const result = await shell.invoke<{ view: View; panels?: Panel[] }>('query', { ...shell.chosen(), operation: operationName.value, input })
+  if (stale()) return
+  view.value = result.view; panels.value = result.panels ?? []; scoreCharacter.value = panels.value[0]?.id ?? ''
+})
+// The read is automatic while the section is shown and a role is selected:
+// choices from a select run at once, a typed month runs once it is complete
+// and an empty character name shows the overview; a typed name is submitted.
+const ready = computed(() => activeSection.value === 'query' && !!shell.selectedRole.value)
+watch([ready, shell.selection, operationName, period, summaryPool], ([ok]) => { if (ok) reader.request(100) })
+watch(queryMonth, () => { if (ready.value && monthValid.value) reader.request(600) })
+watch(character, value => { if (ready.value && value.trim() === '') reader.request(300) })
+function runQuery() { if (shell.selectedRole.value) reader.request() }
 async function scorePanel() {
   await query.run(async () => {
     const result = await shell.invoke<{ view: View; panels: Panel[] }>('panel.score', { ...shell.chosen(), character_id: scoreCharacter.value })
@@ -71,35 +84,35 @@ async function readProfile() { await showcase.run(async () => { profileView.valu
 </script>
 
 <template>
-  <Workspace title="查询" description="用已授权的角色查询战绩、便笺与月报，或读取公开展柜；结果直接显示在表单下方。" :sections="sections" roles>
+  <Workspace title="查询" description="用已授权的角色查询战绩、便笺与月报，或读取公开展柜；选好内容后结果直接显示在表单下方。" :sections="sections" roles @section="activeSection = $event">
     <template #default="{ active }">
       <section v-if="active === 'query'" class="section" aria-labelledby="query-title">
-        <div class="section-heading"><div class="titles"><h2 id="query-title">游戏查询</h2><p>查询内容对应聊天里的同名命令；带角色的查询会附上装备评分、技能与配装计算。</p></div></div>
+        <div class="section-heading"><div class="titles"><h2 id="query-title">游戏查询</h2><p>查询内容对应聊天里的同名命令，选择后自动查询；带角色的查询会附上装备评分、技能与配装计算。</p></div></div>
         <form class="field-grid" @submit.prevent="runQuery">
-          <fieldset :disabled="query.busy.value">
-            <label class="field"><span>查询内容</span><select v-model="operationName"><option v-for="item in shell.game.value?.operations" :key="item.name" :value="item.name">{{ item.label }}</option></select></label>
-            <label v-if="selectedOperation?.input === 'period' || selectedOperation?.input === 'rogue_period'" class="field"><span>期数</span><select v-model="period"><option :value="1">本期</option><option :value="2">上期</option><option v-if="selectedOperation?.input === 'rogue_period'" :value="3">接口默认范围</option></select></label>
-            <label v-if="selectedOperation?.input === 'year_month'" class="field"><span>月份</span><input v-model="queryMonth" inputmode="numeric" placeholder="YYYYMM，留空为默认月份"></label>
-            <label v-if="selectedOperation?.input === 'starrail_pool'" class="field"><span>卡池</span><select v-model="summaryPool"><option value="11">角色活动跃迁</option><option value="12">光锥活动跃迁</option><option value="21">联动角色跃迁</option><option value="22">联动光锥跃迁</option><option value="1">常驻跃迁</option><option value="2">始发跃迁</option></select></label>
-            <label v-if="selectedOperation?.input === 'characters_optional'" class="field"><span>角色名称或 ID</span><input v-model="character" placeholder="留空显示角色概览"></label>
-            <div class="actions"><button class="primary" type="submit" :disabled="!shell.selectedRole.value">{{ query.busy.value ? '正在查询…' : '查询' }}</button><button type="button" :disabled="!shell.selectedRole.value" @click="setDefault">设为默认角色</button></div>
-          </fieldset>
+          <label class="field"><span>查询内容</span><select v-model="operationName"><option v-for="item in shell.game.value?.operations" :key="item.name" :value="item.name">{{ item.label }}</option></select></label>
+          <label v-if="inputKind === 'period' || inputKind === 'rogue_period'" class="field"><span>期数</span><select v-model="period"><option :value="1">本期</option><option :value="2">上期</option><option v-if="inputKind === 'rogue_period'" :value="3">接口默认范围</option></select></label>
+          <label v-if="inputKind === 'year_month'" class="field"><span>月份</span><input v-model="queryMonth" inputmode="numeric" placeholder="YYYYMM，留空为默认月份" :aria-invalid="monthValid ? undefined : 'true'"><span v-if="!monthValid" class="hint danger-text">月份是六位数字，例如 202609。</span></label>
+          <label v-if="inputKind === 'starrail_pool'" class="field"><span>卡池</span><select v-model="summaryPool"><option value="11">角色活动跃迁</option><option value="12">光锥活动跃迁</option><option value="21">联动角色跃迁</option><option value="22">联动光锥跃迁</option><option value="1">常驻跃迁</option><option value="2">始发跃迁</option></select></label>
+          <label v-if="inputKind === 'characters_optional'" class="field"><span>角色名称或 ID</span><input v-model="character" placeholder="留空显示角色概览，输入后按查询"></label>
+          <div class="actions"><button :class="inputKind === 'characters_optional' && character.trim() ? 'primary' : ''" type="submit" :disabled="!shell.selectedRole.value || query.busy.value">{{ query.busy.value ? '正在查询…' : view ? '重新查询' : '查询' }}</button><button type="button" :disabled="!shell.selectedRole.value || query.busy.value" @click="setDefault">设为默认角色</button><span v-if="query.busy.value" class="hint" role="status">正在查询 {{ selectedOperation?.label }}…</span></div>
         </form>
         <StatusLine kind="error" :text="query.error.value" />
         <StatusLine kind="success" :text="query.notice.value" />
+        <BusinessView v-if="view" :value="view" />
+        <MonthlyHistory v-if="operationName.endsWith('.monthly') && shell.selectedRole.value" :key="shell.selection.value" :account-ref="shell.selectedRole.value.account.ref" :role-ref="shell.selectedRole.value.role.ref" :invoke="shell.invoke" />
         <div v-if="panels.length" class="subsection">
           <h3>装备评分</h3>
           <p class="hint">按角色专属权重比较装备词条，权重随当前属性、星魂与配装自动选择；评分不代表实际伤害。</p>
           <form class="field-row" @submit.prevent="scorePanel">
-            <label class="field"><span>评分角色</span><select v-model="scoreCharacter" :disabled="query.busy.value"><option v-for="panel in panels" :key="panel.id" :value="panel.id">{{ panel.name }}</option></select></label>
+            <label class="field"><span>评分角色</span><select v-model="scoreCharacter" :disabled="query.busy.value" @change="scorePanel"><option v-for="panel in panels" :key="panel.id" :value="panel.id">{{ panel.name }}</option></select></label>
             <button type="submit" :disabled="query.busy.value || !scoreCharacter">计算装备评分</button>
           </form>
         </div>
-        <BusinessView v-if="view" :value="view" />
-        <MonthlyHistory v-if="operationName.endsWith('.monthly') && shell.selectedRole.value" :key="shell.selection.value" :account-ref="shell.selectedRole.value.account.ref" :role-ref="shell.selectedRole.value.role.ref" :invoke="shell.invoke" />
         <PanelDetails v-if="detailPanel" :panel="detailPanel" />
         <BuildCalculator v-if="detailPanel && shell.selectedRole.value" :key="`build:${shell.selection.value}:${detailPanel.id}`" :character-id="detailPanel.id" :character-name="detailPanel.name" :account-ref="shell.selectedRole.value.account.ref" :role-ref="shell.selectedRole.value.role.ref" :invoke="shell.invoke" />
-        <EmptyState v-if="!view && !query.busy.value" icon="search" title="选择查询内容后开始" text="结果会显示在这里；角色相关的查询还会列出装备评分、技能与配装计算。" />
+        <div v-if="!view && query.busy.value" class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+        <EmptyState v-else-if="!shell.selectedRole.value" icon="user" title="选择角色后自动查询" text="在右上角选择一个已绑定的角色，查询内容会立即执行；结果与装备评分、技能和配装计算显示在这里。" />
+        <EmptyState v-else-if="!view && !query.error.value" icon="search" title="等待查询条件" text="补全上方的条件后自动查询；角色相关的查询还会列出装备评分、技能与配装计算。" />
       </section>
 
       <section v-else-if="active === 'showcase'" class="section" aria-labelledby="showcase-title">

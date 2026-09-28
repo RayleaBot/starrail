@@ -6,8 +6,10 @@ import EmptyState from './shell/EmptyState.vue'
 import { overseas, useShell } from './shell/context'
 import { useOperation } from './shell/status'
 import { cloudTask } from './cloud'
+import { taskOperation, useReader } from './reader'
 
-// 兑换码: the official preview codes, and web redemption for an overseas role.
+// 兑换码: the official preview codes, read when the section opens, and web
+// redemption for an overseas role.
 interface CodeRow { code: string; reward: string; expires_at?: string; expiry_estimated: boolean }
 const shell = useShell()
 const task = cloudTask(shell.invoke, 'content')
@@ -15,6 +17,8 @@ const { busy, error, run } = useOperation('兑换未完成，请重试。')
 const code = ref(''), confirmed = ref(false), view = ref<View | null>(null)
 const rows = computed(() => (task.job.value?.result?.items ?? []) as CodeRow[])
 const abroad = computed(() => !!shell.selectedRole.value && overseas(shell.selectedRole.value.role.region))
+const running = computed(() => task.job.value?.state === 'running')
+const reader = useReader(taskOperation(task), () => task.start({ kind: 'codes' }))
 watch(shell.selection, () => { confirmed.value = false; view.value = null })
 function fill(value: string) { code.value = value; confirmed.value = false }
 function edited() { confirmed.value = false; view.value = null }
@@ -26,14 +30,15 @@ async function redeem() {
     confirmed.value = false
   })
 }
+reader.request()
 onUnmounted(task.dispose)
 </script>
 
 <template>
   <section class="section" aria-labelledby="codes-title">
-    <div class="section-heading"><div class="titles"><h2 id="codes-title">兑换码</h2><p>读取本游戏官方前瞻入口公布的兑换码；是否可兑换以官方结果为准。国服请在游戏内兑换，海外角色可在下方直接提交。</p></div><button type="button" :disabled="task.busy.value || task.job.value?.state === 'running'" @click="task.start({ kind: 'codes' })">{{ task.busy.value ? '正在查询…' : '查询公开兑换码' }}</button></div>
-    <StatusLine kind="error" :text="task.error.value || task.job.value?.message || ''" />
-    <StatusLine v-if="task.job.value?.state === 'running'" kind="info" text="正在读取官方入口…"><template #actions><button class="compact" type="button" @click="task.cancel">取消</button><button class="compact" type="button" @click="task.poll">刷新进度</button></template></StatusLine>
+    <div class="section-heading"><div class="titles"><h2 id="codes-title">兑换码</h2><p>打开分区时自动读取本游戏官方前瞻入口公布的兑换码；是否可兑换以官方结果为准。国服请在游戏内兑换，海外角色可在下方直接提交。</p></div><button type="button" :disabled="task.busy.value || running" @click="reader.request()">{{ task.busy.value || running ? '正在读取…' : '刷新' }}</button></div>
+    <StatusLine kind="error" :text="task.error.value || task.job.value?.message || ''"><template #actions><button class="compact" type="button" :disabled="task.busy.value || running" @click="reader.request()">重试</button></template></StatusLine>
+    <StatusLine v-if="task.busy.value || running" kind="info" text="正在读取官方入口…"><template v-if="running" #actions><button class="compact" type="button" @click="task.cancel">取消</button><button class="compact" type="button" @click="task.poll">刷新进度</button></template></StatusLine>
     <template v-if="task.job.value?.state === 'completed'">
       <h3 v-if="task.job.value?.result?.title">{{ task.job.value?.result?.title }}</h3>
       <ul v-if="rows.length" class="rows">

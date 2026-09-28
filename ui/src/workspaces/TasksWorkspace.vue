@@ -5,6 +5,7 @@ import StatusLine from '../shell/StatusLine.vue'
 import EmptyState from '../shell/EmptyState.vue'
 import { useShell } from '../shell/context'
 import { formatTime, useOperation } from '../shell/status'
+import { useReader } from '../reader'
 import Reminders, { reminderLabels, type ReminderTask } from '../Reminders.vue'
 import ChallengeReminders, { challengeLabels, weekdays, type ChallengeTask } from '../ChallengeReminders.vue'
 import MonthlyCollection, { monthlyLabels, type MonthlyTask } from '../MonthlyCollection.vue'
@@ -37,7 +38,8 @@ const loaders: Record<Kind, () => Promise<void>> = {
   community: async () => { communities.value = (await shell.invoke<{ items: CommunityTask[] }>('community.task.list')).items },
 }
 async function loadChallengeKinds() { challengeKinds.value = (await shell.invoke<{ kinds: { id: string; label: string }[] }>('challenge.schema')).kinds }
-async function loadAll() { await list.run(async () => { await Promise.all([...Object.values(loaders).map(load => load()), loadChallengeKinds()]) }) }
+const lister = useReader(list, async () => { await Promise.all([...Object.values(loaders).map(load => load()), loadChallengeKinds()]) })
+function loadAll() { lister.request() }
 function refresh(kind: Kind) { void list.run(loaders[kind]) }
 const finished = new Set(['checked', 'notified', 'target_met', 'collected', 'signed', 'already_signed', 'step_completed', 'completed', 'cloud_completed'])
 function tone(task: { enabled: boolean; last_code: string }): string {
@@ -84,15 +86,16 @@ async function removeSignin(ref: string) {
     signinTask.notice.value = result.delegation_revoked ? '自动签到与委托已停止。' : '本地自动签到已停止；账号服务暂未确认撤销，此任务不会再执行。'
   })
 }
-void loadAll()
+loadAll()
 </script>
 
 <template>
   <Workspace title="定时任务" description="后台按时执行的提醒、收集与签到。每类任务在开启时为当前角色创建有期限的委托，到期或撤销授权后自动暂停。" :sections="sections" roles>
     <template #default="{ active }">
       <section v-if="active === 'all'" class="section" aria-labelledby="all-title">
-        <div class="section-heading"><div class="titles"><h2 id="all-title">全部任务</h2><p>所有已开启的定时任务及其最近状态；新建任务请到对应分区。</p></div><button type="button" :disabled="list.busy.value" @click="loadAll">{{ list.busy.value ? '正在刷新…' : '刷新' }}</button></div>
-        <StatusLine kind="error" :text="list.error.value" />
+        <div class="section-heading"><div class="titles"><h2 id="all-title">全部任务</h2><p>所有已开启的定时任务及其最近状态；新建任务请到对应分区。</p></div><button type="button" :disabled="list.busy.value" @click="loadAll">{{ lister.loading.value ? '正在刷新…' : '刷新' }}</button></div>
+        <StatusLine v-if="lister.loading.value && !rows.length" kind="info" text="正在读取任务列表…" />
+        <StatusLine kind="error" :text="list.error.value"><template v-if="lister.failed.value" #actions><button class="compact" type="button" :disabled="list.busy.value" @click="loadAll">重试</button></template></StatusLine>
         <StatusLine kind="success" :text="list.notice.value" />
         <ul v-if="rows.length" class="rows">
           <li v-for="item in rows" :key="item.key">
@@ -124,6 +127,7 @@ void loadAll()
         </form>
         <StatusLine kind="error" :text="signinTask.error.value" />
         <StatusLine kind="success" :text="signinTask.notice.value" />
+        <StatusLine v-if="lister.loading.value && !signins.length" kind="info" text="正在读取…" />
         <ul v-if="signins.length" class="rows">
           <li v-for="task in signins" :key="task.ref">
             <div class="row-main">

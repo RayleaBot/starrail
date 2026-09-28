@@ -34,10 +34,12 @@ void run(load)
 <template>
   <section class="section" aria-labelledby="simulation-title">
     <div class="section-heading"><div class="titles"><h2 id="simulation-title">模拟抽卡</h2><p>固定参考娱乐模型，不代表官方概率、保底规则或当前卡池。不消耗真实货币，模拟记录不会进入 UIGF。管理页使用独立档案，与聊天模拟分开。</p></div><button type="button" :disabled="busy || !!pending" @click="run(load)">刷新模拟统计</button></div>
-    <StatusLine kind="error" :text="error" />
+    <StatusLine v-if="busy && !status" kind="info" text="正在读取模拟统计…" />
+    <StatusLine kind="error" :text="error"><template v-if="!status" #actions><button class="compact" type="button" :disabled="busy" @click="run(load)">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <template v-if="status">
-      <dl class="metrics"><div><dt>参考模型</dt><dd>{{ status.model }}</dd></div><div><dt>今日剩余</dt><dd>{{ status.daily_remaining }} / {{ status.daily_limit }} 抽</dd></div><div><dt>额度重置</dt><dd>国服时间 04:00</dd></div></dl>
+      <dl class="metrics"><div><dt>今日剩余</dt><dd>{{ status.daily_remaining }} / {{ status.daily_limit }} 抽</dd></div></dl>
+      <p class="hint">参考模型 <span class="mono">{{ status.model }}</span>；额度按国服时间 04:00 重置。</p>
       <form class="field-grid" @submit.prevent="select">
         <fieldset :disabled="busy || !!pending">
           <label class="field"><span>模拟种类</span><select v-model="draft.kind"><option v-for="(name, kind) in names" :key="kind" :value="kind">{{ name }}</option></select></label>
@@ -77,7 +79,7 @@ void run(load)
 <style scoped>
 /* Draw results: one small tile per pull, in reading order. */
 .draw-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; padding: 0; margin: 0; list-style: none; }
-.draw-results li { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--raylea-color-border); border-radius: var(--radius-md); background: var(--raylea-color-surface); min-width: 0; }
+.draw-results li { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--space-800); min-width: 0; }
 .draw-results strong { font-weight: 600; overflow-wrap: anywhere; }
-.draw-results span { font-size: 12px; color: var(--raylea-color-muted); }
+.draw-results span { font-size: 12px; color: var(--ivory-muted); }
 </style>
