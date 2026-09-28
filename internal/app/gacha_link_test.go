@@ -144,7 +144,8 @@ func sentTexts(t *testing.T, h *sdkHost, targetType, targetID string) []string {
 
 // A link with many pages is read in its own event moved to the background:
 // every page under the background deadline, then Yunzai's answers in order
-// in the chat, and in a group the request to recall the link.
+// in the chat, and in a group the request to recall the link, mentioning the
+// sender.
 func TestGachaLinkWithManyPagesReadsInOneBackgroundEvent(t *testing.T) {
 	history := &warpHistory{records: 1000}
 	a, host := linkHost(t, history)
@@ -163,8 +164,11 @@ func TestGachaLinkWithManyPagesReadsInOneBackgroundEvent(t *testing.T) {
 		}
 	}
 	texts := sentTexts(t, host, "group", "g")
-	if len(texts) != 4 || texts[0] != "链接发送成功，数据获取中……" || !strings.HasPrefix(texts[1], "[角色]记录获取成功，更新1000条\n[角色联动]记录获取成功，更新1条") || !strings.Contains(texts[2], "100000001") || texts[3] != "已收到链接，请撤回" {
+	if len(texts) != 4 || texts[0] != "链接发送成功，数据获取中……" || !strings.HasPrefix(texts[1], "[角色]记录获取成功，更新1000条\n[角色联动]记录获取成功，更新1条") || !strings.Contains(texts[2], "100000001") || texts[3] != "\n已收到链接，请撤回" {
 		t.Fatalf("answered %q", texts)
+	}
+	if mention := host.sent[3].Message.Segments[0]; mention.Type != "at" || asText(mention.Data["user_id"]) != "u" {
+		t.Fatalf("asked to recall with %+v", host.sent[3].Message)
 	}
 	if archive, err := a.Gacha.Read("100000001", "prod_gf_cn"); err != nil || len(archive.Records) != 1001 {
 		t.Fatalf("kept %d records, %v", len(archive.Records), err)

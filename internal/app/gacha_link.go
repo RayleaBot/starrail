@@ -227,8 +227,8 @@ func sender(event *rayleabot.EventContext) Subject {
 
 // gachaLinkMessage answers a message holding a warp link as Yunzai's logUrl
 // does: the notice, the records each pool gained, the record page and, in a
-// group, the request to recall the link. handled is false for any other
-// message.
+// group, the request to recall the link, mentioning the sender. handled is
+// false for any other message.
 func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContext) (handled bool, err error) {
 	text := event.Event.Message.PlainText
 	link, ok, err := parseGachaLink(text)
@@ -270,7 +270,7 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 		return true, event.Send(event.Event.Target.Type, event.Event.Target.ID, page...)
 	}
 	_, _ = post(ctx, event, page...)
-	return true, event.SendText("已收到链接，请撤回")
+	return true, event.Send(event.Event.Target.Type, event.Event.Target.ID, atSender(event, "已收到链接，请撤回")...)
 }
 
 // updateByLink is StarRail-plugin's 更新跃迁记录 with the sender's last link:
@@ -355,7 +355,7 @@ func gachaLinkSummary(prefix string, before, after map[string]int) string {
 // pasted.
 func (a *App) gachaLinkCommand(event *rayleabot.EventContext) error {
 	if event.Event.Target.Type == "group" {
-		return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.At(event.Event.Actor.ID), rayleabot.Text("\n请发送抽卡链接"))
+		return event.Send(event.Event.Target.Type, event.Event.Target.ID, atSender(event, "请发送抽卡链接")...)
 	}
 	return event.SendText("请发送抽卡链接")
 }
