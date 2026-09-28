@@ -1,19 +1,62 @@
+<script lang="ts">
+// The list item shape and status labels are shared with the merged task list.
+export interface MonthlyTask { ref: string; role: { uid: string; nickname: string }; owner: { actor_id: string }; hour: number; minute?: number; enabled: boolean; last_code: string; next_check_ms: number; expires_at_ms: number }
+export const monthlyLabels: Record<string, string> = { collected: '月报已保存' }
+</script>
 <script setup lang="ts">
-import {ref,watch} from 'vue'
-interface Task {ref:string;role:{uid:string;nickname:string};owner:{actor_id:string};hour:number;minute?:number;enabled:boolean;last_code:string;next_check_ms:number;expires_at_ms:number}
-const props=defineProps<{choices:{key:string;label:string;role:{ref:string};account:{ref:string}}[];invoke:<T>(action:string,payload?:Record<string,unknown>)=>Promise<T>}>()
-const items=ref<Task[]>([]),selected=ref(''),hour=ref(23),minute=ref(50),days=ref(30),confirmed=ref(false),notify=ref(false),busy=ref(false),error=ref(''),notice=ref('')
-watch([selected,hour,minute,days,notify],()=>{confirmed.value=false})
-async function load(){items.value=(await props.invoke<{items:Task[]}>('monthly.task.list')).items}
-async function run(fn:()=>Promise<void>){if(busy.value)return;busy.value=true;error.value='';notice.value='';try{await fn()}catch(e){error.value=e instanceof Error?e.message:'月报收集操作未完成。'}finally{busy.value=false}}
-async function create(){const c=props.choices.find(v=>v.key===selected.value);if(!c||!confirmed.value)return;await run(async()=>{await props.invoke('monthly.task.create',{account_ref:c.account.ref,role_ref:c.role.ref,hour:Number(hour.value),minute:Number(minute.value),days:Number(days.value),notify:notify.value,confirm:true});confirmed.value=false;await load();notice.value='每日月报收集已开启。'})}
-async function remove(ref:string){await run(async()=>{await props.invoke('monthly.task.remove',{ref});await load();notice.value='月报收集已停止。'})}
+import { ref, watch } from 'vue'
+import StatusLine from './shell/StatusLine.vue'
+import EmptyState from './shell/EmptyState.vue'
+import { useShell } from './shell/context'
+import { formatTime, useOperation } from './shell/status'
+
+// 月报收集: the official default month saved daily for the selected role.
+const emit = defineEmits<{ changed: [] }>()
+const shell = useShell()
+const { busy, error, notice, run } = useOperation('月报收集操作未完成，请重试。')
+const items = ref<MonthlyTask[]>([]), hour = ref(23), minute = ref(50), days = ref(30), notify = ref(false), confirmed = ref(false), removal = ref('')
+watch([shell.selection, hour, minute, days, notify], () => { confirmed.value = false })
+async function load() { items.value = (await shell.invoke<{ items: MonthlyTask[] }>('monthly.task.list')).items }
+async function create() {
+  if (!confirmed.value) return
+  await run(async () => {
+    await shell.invoke('monthly.task.create', { ...shell.chosen(), hour: Number(hour.value), minute: Number(minute.value), days: Number(days.value), notify: notify.value, confirm: true })
+    confirmed.value = false; await load(); emit('changed')
+  }, '每日月报收集已开启。')
+}
+async function remove(ref: string) { await run(async () => { await shell.invoke('monthly.task.remove', { ref }); removal.value = ''; await load(); emit('changed') }, '月报收集已停止。') }
+function clock(item: MonthlyTask): string { return `${String(item.hour).padStart(2, '0')}:${String(item.minute ?? 0).padStart(2, '0')}` }
 void run(load)
 </script>
+
 <template>
- <section class="monthly-collection"><h2>每日月报收集</h2><p class="hint">默认关闭。按北京时间每天保存官方默认月份，累计档案在游戏查询的月报入口查看。历史可用月份可在月报页手动补存。</p><p v-if="error" role="alert" class="feedback danger">{{error}}</p><p v-if="notice" role="status">{{notice}}</p>
- <form @submit.prevent="create"><fieldset :disabled="busy"><legend>收集账号与时间</legend><label>月报收集账号<select v-model="selected" required><option value="" disabled>选择角色</option><option v-for="c in choices" :key="c.key" :value="c.key">{{c.label}}</option></select></label><div class="fields"><label>每天几时<input v-model="hour" type="number" min="0" max="23" required></label><label>几分<input v-model="minute" type="number" min="0" max="59" required></label><label>收集授权天数<input v-model="days" type="number" min="1" max="90" required></label></div><label class="check"><input v-model="notify" type="checkbox">保存成功后私聊通知账号所属用户</label><label class="check"><input v-model="confirmed" type="checkbox">允许按以上设置定时读取并保存月报</label><button class="primary" :disabled="!selected||!confirmed">开启每日月报收集</button></fieldset></form>
- <div class="section-heading"><h3>已保存的月报任务</h3><button :disabled="busy" @click="run(load)">刷新月报任务</button></div><p v-if="!items.length" class="hint">没有月报收集任务。</p><ul><li v-for="t in items" :key="t.ref"><strong>{{t.role.nickname}} · {{t.role.uid}}</strong><p>{{t.enabled?'已开启':'已暂停'}} · 每日 {{String(t.hour).padStart(2,'0')}}:{{String(t.minute??0).padStart(2,'0')}} · 所属用户 {{t.owner.actor_id}}</p><p class="hint">{{t.last_code==='collected'?'月报已保存':t.last_code||'等待首次执行'}} · 下次 {{new Date(t.next_check_ms).toLocaleString()}} · 到期 {{new Date(t.expires_at_ms).toLocaleString()}}</p><button :disabled="busy" @click="remove(t.ref)">停止此月报收集</button></li></ul>
- </section>
+  <section class="section" aria-labelledby="monthly-title">
+    <div class="section-heading"><div class="titles"><h2 id="monthly-title">月报收集</h2><p>默认关闭。按北京时间每天保存官方默认月份，累计档案在“查询”页的月报入口查看，历史可用月份也可在那里手动补存。</p></div><button type="button" :disabled="busy" @click="run(load)">刷新</button></div>
+    <form class="field-grid" @submit.prevent="create">
+      <fieldset :disabled="busy">
+        <label class="field"><span>每天几时</span><input v-model="hour" type="number" min="0" max="23" required></label>
+        <label class="field"><span>几分</span><input v-model="minute" type="number" min="0" max="59" required></label>
+        <label class="field"><span>收集授权天数</span><input v-model="days" type="number" min="1" max="90" required></label>
+        <div class="checks wide">
+          <label class="check"><input v-model="notify" type="checkbox">保存成功后私聊通知账号所属用户</label>
+          <label class="check"><input v-model="confirmed" type="checkbox">允许按以上设置定时读取并保存月报</label>
+        </div>
+        <div class="actions"><button class="primary" type="submit" :disabled="!shell.selectedRole.value || !confirmed">{{ busy ? '正在开启…' : '开启每日月报收集' }}</button></div>
+      </fieldset>
+    </form>
+    <StatusLine kind="error" :text="error" />
+    <StatusLine kind="success" :text="notice" />
+    <ul v-if="items.length" class="rows">
+      <li v-for="item in items" :key="item.ref">
+        <div class="row-main">
+          <strong>{{ item.role.nickname }} · {{ item.role.uid }}</strong>
+          <div class="row-meta"><span class="chip" :class="{ warning: !item.enabled }">{{ item.enabled ? '已开启' : '已暂停' }}</span><span>每日 {{ clock(item) }}</span><span>所属用户 {{ item.owner.actor_id }}</span></div>
+          <div class="row-meta"><span>{{ monthlyLabels[item.last_code] || item.last_code || '等待首次执行' }}</span><span>下次 {{ formatTime(item.next_check_ms) }}</span><span>到期 {{ formatTime(item.expires_at_ms) }}</span></div>
+        </div>
+        <div class="row-actions"><button class="compact danger" type="button" :disabled="busy" @click="removal = item.ref">停止</button></div>
+        <div v-if="removal === item.ref" class="confirm"><p>停止这条月报收集？已保存的月报保留，开启时创建的委托会一并停止。</p><div class="actions"><button class="compact" type="button" :disabled="busy" @click="removal = ''">保留</button><button class="compact destructive" type="button" :disabled="busy" @click="remove(item.ref)">确认停止</button></div></div>
+      </li>
+    </ul>
+    <EmptyState v-else-if="!busy" icon="calendar" title="没有月报收集任务" text="设置每天的保存时间与授权天数后为当前角色开启。" />
+  </section>
 </template>
-<style scoped>.monthly-collection{display:grid;gap:18px;border-top:1px solid var(--raylea-color-border);padding-top:24px}.monthly-collection fieldset{display:grid;gap:16px;min-width:0;padding:18px;border:1px solid var(--raylea-color-border);border-radius:12px}.monthly-collection label:not(.check){display:grid;gap:8px;min-width:0}.monthly-collection select{min-width:0;width:100%}.fields{display:flex;flex-wrap:wrap;gap:14px}.fields label{flex:1 1 130px}.monthly-collection ul{display:grid;gap:16px;list-style:none;padding:0}.monthly-collection li{border-top:1px solid var(--raylea-color-border);padding-top:16px;overflow-wrap:anywhere}.monthly-collection li p{margin:10px 0}</style>

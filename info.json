@@ -2036,71 +2036,35 @@
     "pages": [
       {
         "id": "overview",
-        "label": "游戏查询"
+        "label": "查询"
       },
       {
         "id": "catalog",
-        "label": "资料图鉴"
+        "label": "资料"
       },
       {
         "id": "gacha",
-        "label": "抽卡档案"
+        "label": "抽卡"
       },
       {
-        "id": "reminders",
-        "label": "提醒与收集"
+        "id": "tasks",
+        "label": "定时任务"
       },
       {
-        "id": "history",
-        "label": "面板历史"
-      },
-      {
-        "id": "growth",
-        "label": "养成计算"
-      },
-      {
-        "id": "resources",
-        "label": "材料与卡池"
+        "id": "account",
+        "label": "账号操作"
       },
       {
         "id": "groups",
-        "label": "群设置与排行"
-      },
-      {
-        "id": "simulation",
-        "label": "模拟抽卡"
-      },
-      {
-        "id": "signin",
-        "label": "游戏签到"
+        "label": "群管理"
       },
       {
         "id": "cloud",
-        "label": "云排名与面板"
+        "label": "ark 云端"
       },
       {
-        "id": "community",
-        "label": "米游社任务"
-      },
-      {
-        "id": "assets",
-        "label": "兑换码与资产"
-      },
-      {
-        "id": "content",
-        "label": "公告与活动"
-      },
-      {
-        "id": "guides",
-        "label": "攻略与工具"
-      },
-      {
-        "id": "media",
-        "label": "素材与互动"
-      },
-      {
-        "id": "help",
-        "label": "帮助与版本"
+        "id": "settings",
+        "label": "设置"
       }
     ]
   }

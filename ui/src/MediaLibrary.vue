@@ -1,22 +1,156 @@
 <script setup lang="ts">
-import{onUnmounted,ref}from'vue'
-import{uploadMedia,readMedia,type MediaEntry,type MediaInvoke}from'./media'
-const props=defineProps<{invoke:MediaInvoke;prefix:string}>()
-const items=ref<MediaEntry[]>([]),total=ref(0),totalBytes=ref(0),next=ref<number|null>(null),query=ref(''),catalogID=ref(''),source=ref(''),license=ref('本人有权使用'),rights=ref(false),files=ref<File[]>([]),busy=ref(false),error=ref(''),notice=ref(''),progress=ref(''),preview=ref(''),selected=ref<MediaEntry|null>(null),editing=ref<MediaEntry|null>(null),removeRef=ref(''),catalogQuery=ref(''),entries=ref<{id:string;name:string}[]>([])
-let controller:AbortController|undefined,disposed=false
-async function run(work:()=>Promise<void>){if(busy.value)return;busy.value=true;error.value='';notice.value='';try{await work()}catch(e){error.value=e instanceof Error?e.message:'图库操作未完成。'}finally{busy.value=false;progress.value=''}}
-async function list(offset=0){const r=await props.invoke<{items:MediaEntry[];total:number;total_bytes:number;next_offset:number|null}>('media.list',{query:query.value,offset});items.value=offset?[...items.value,...r.items]:r.items;total.value=r.total;totalBytes.value=r.total_bytes;next.value=r.next_offset}
-function choose(event:Event){files.value=Array.from((event.target as HTMLInputElement).files??[]).filter(f=>/\.(png|jpe?g|gif|webp)$/i.test(f.name));rights.value=false}
-async function upload(){if(!rights.value||!files.value.length)return;await run(async()=>{controller=new AbortController();let done=0;const pending=[...files.value];for(const file of pending){if(disposed||controller.signal.aborted)break;progress.value=`第 ${done+1} / ${pending.length} 张：${file.name}`;await uploadMedia(props.invoke,file,{title:file.name.replace(/\.[^.]+$/,''),category:'photo',catalog_id:catalogID.value,source:source.value,license:license.value},controller.signal,bytes=>{progress.value=`第 ${done+1} / ${pending.length} 张 · ${Math.round(bytes/file.size*100)}%`});done++;files.value=files.value.filter(f=>f!==file)}if(!disposed){notice.value=`已导入 ${done} 张。${files.value.length?'剩余文件可以继续导入。':''}`;await list()}});controller=undefined}
-function clearPreview(){if(preview.value)URL.revokeObjectURL(preview.value);preview.value='';selected.value=null;editing.value=null}
-async function show(entry:MediaEntry){await run(async()=>{clearPreview();controller=new AbortController();const r=await readMedia(props.invoke,entry.ref,controller.signal);if(disposed)return;preview.value=URL.createObjectURL(r.blob);selected.value=r.entry;editing.value={...r.entry}});controller=undefined}
-async function save(){if(!editing.value)return;await run(async()=>{const r=await props.invoke<{entry:MediaEntry}>('media.update',editing.value as unknown as Record<string,unknown>);selected.value=r.entry;editing.value={...r.entry};await list();notice.value='素材信息已保存。'})}
-async function remove(entry:MediaEntry){await run(async()=>{await props.invoke('media.remove',{ref:entry.ref,revision:entry.revision,confirm:true});if(selected.value?.ref===entry.ref)clearPreview();removeRef.value='';await list();notice.value='素材已删除。'})}
-async function findCatalog(){await run(async()=>{entries.value=(await props.invoke<{entries:{id:string;name:string}[]}>('catalog.search',{query:catalogQuery.value,kind:'character'})).entries})}
-void run(()=>list());onUnmounted(()=>{disposed=true;controller?.abort();clearPreview()})
+import { computed, onUnmounted, ref } from 'vue'
+import StatusLine from './shell/StatusLine.vue'
+import EmptyState from './shell/EmptyState.vue'
+import { useShell } from './shell/context'
+import { useOperation } from './shell/status'
+import { uploadMedia, readMedia, type MediaEntry } from './media'
+
+// 图库: the operator's own character photos, uploaded and read in chunks.
+// The preview is a data: URL because the host's CSP allows no blob: images.
+const shell = useShell()
+const { busy, error, notice, run } = useOperation('图库操作未完成，请重试。')
+const items = ref<MediaEntry[]>([]), total = ref(0), totalBytes = ref(0), next = ref<number | null>(null), query = ref('')
+const catalogID = ref(''), source = ref(''), license = ref('本人有权使用'), rights = ref(false), files = ref<File[]>([]), progress = ref('')
+const catalogQuery = ref(''), entries = ref<{ id: string; name: string }[]>([])
+const preview = ref(''), selected = ref<MediaEntry | null>(null), editing = ref<MediaEntry | null>(null), removeRef = ref('')
+const prefix = computed(() => shell.game.value?.prefix ?? '')
+const fileName = computed(() => selected.value ? `${selected.value.title}.${selected.value.mime.split('/')[1]}` : '')
+let controller: AbortController | undefined, disposed = false
+
+async function operate(work: () => Promise<void>, success = '') {
+  if (busy.value) return
+  await run(work, success)
+  progress.value = ''
+}
+async function list(offset = 0) {
+  const result = await shell.invoke<{ items: MediaEntry[]; total: number; total_bytes: number; next_offset: number | null }>('media.list', { query: query.value, offset })
+  items.value = offset ? [...items.value, ...result.items] : result.items
+  total.value = result.total; totalBytes.value = result.total_bytes; next.value = result.next_offset
+}
+function choose(event: Event) {
+  files.value = Array.from((event.target as HTMLInputElement).files ?? []).filter(file => /\.(png|jpe?g|gif|webp)$/i.test(file.name))
+  rights.value = false
+}
+async function upload() {
+  if (!rights.value || !files.value.length) return
+  await operate(async () => {
+    const aborter = new AbortController()
+    controller = aborter
+    let done = 0
+    const pending = [...files.value]
+    for (const file of pending) {
+      if (disposed || aborter.signal.aborted) break
+      progress.value = `第 ${done + 1} / ${pending.length} 张：${file.name}`
+      await uploadMedia(shell.invoke, file, { title: file.name.replace(/\.[^.]+$/, ''), category: 'photo', catalog_id: catalogID.value, source: source.value, license: license.value }, aborter.signal, bytes => { progress.value = `第 ${done + 1} / ${pending.length} 张 · ${Math.round(bytes / file.size * 100)}%` })
+      done++
+      files.value = files.value.filter(item => item !== file)
+    }
+    if (!disposed) { notice.value = `已导入 ${done} 张。${files.value.length ? '剩余文件可以继续导入。' : ''}`; await list() }
+  })
+  controller = undefined
+}
+function toDataURL(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error ?? new Error('原图无法生成预览。'))
+    reader.readAsDataURL(blob)
+  })
+}
+function clearPreview() { preview.value = ''; selected.value = null; editing.value = null }
+async function show(entry: MediaEntry) {
+  await operate(async () => {
+    clearPreview()
+    const aborter = new AbortController()
+    controller = aborter
+    const result = await readMedia(shell.invoke, entry.ref, aborter.signal)
+    if (disposed) return
+    const url = await toDataURL(result.blob)
+    if (disposed) return
+    preview.value = url; selected.value = result.entry; editing.value = { ...result.entry }
+  })
+  controller = undefined
+}
+async function save() {
+  if (!editing.value) return
+  await operate(async () => {
+    const result = await shell.invoke<{ entry: MediaEntry }>('media.update', editing.value as unknown as Record<string, unknown>)
+    selected.value = result.entry; editing.value = { ...result.entry }
+    await list()
+  }, '素材信息已保存。')
+}
+async function remove(entry: MediaEntry) {
+  await operate(async () => {
+    await shell.invoke('media.remove', { ref: entry.ref, revision: entry.revision, confirm: true })
+    if (selected.value?.ref === entry.ref) clearPreview()
+    removeRef.value = ''
+    await list()
+  }, '素材已删除。')
+}
+async function findCatalog() { await operate(async () => { entries.value = (await shell.invoke<{ entries: { id: string; name: string }[] }>('catalog.search', { query: catalogQuery.value, kind: 'character' })).entries }) }
+void operate(() => list())
+onUnmounted(() => { disposed = true; controller?.abort(); clearPreview() })
 </script>
-<template><section class="media-library"><div class="section-heading"><h2>角色照片图库</h2><span>{{total}} 项匹配 · 全库 {{(totalBytes/1024/1024).toFixed(1)}} MiB</span></div><p>只保存你导入的角色照片，关联角色后供“{{prefix}}角色名照片”与角色卡片使用。原图支持 PNG、JPEG、GIF、WebP，每张4 MiB、2400万像素；全库最多2000项、512 MiB。</p><form class="query-form" @submit.prevent="run(()=>list())"><label>搜索素材<input v-model="query" :disabled="busy"></label><button :disabled="busy">查询图库</button></form><p v-if="error" role="alert" class="feedback danger">{{error}}</p><p v-if="notice" role="status" class="feedback">{{notice}}</p><p v-if="progress" role="status">{{progress}} <button type="button" @click="controller?.abort()">停止上传</button></p>
-<details><summary>导入图片或资源目录</summary><div class="query-form"><label>选择图片<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple :disabled="busy" @change="choose"></label><label>选择目录<input type="file" webkitdirectory multiple :disabled="busy" @change="choose"></label><label>来源或作者<input v-model="source" maxlength="512" :disabled="busy" placeholder="原作者或你自己的素材"></label><label>使用许可<input v-model="license" maxlength="256" :disabled="busy" required></label><label>查找关联角色<input v-model="catalogQuery" :disabled="busy"></label><button type="button" :disabled="busy" @click="findCatalog">查找角色</button><label>关联角色<select v-model="catalogID" :disabled="busy"><option value="">不关联</option><option v-for="entry in entries" :key="entry.id" :value="entry.id">{{entry.name}} · {{entry.id}}</option></select></label></div><p>已选 {{files.length}} 张图片，非图片文件自动忽略。批量导入使用相同的关联角色，之后可逐项修改。</p><label class="check"><input v-model="rights" type="checkbox" :disabled="busy">确认我有权在此机器人中使用这些素材</label><button :disabled="busy||!rights||!files.length||!license.trim()" @click="upload">导入所选图片</button></details>
-<p v-if="!items.length" class="empty">没有匹配照片。</p><ul class="media-list"><li v-for="entry in items" :key="entry.ref"><div><strong>{{entry.title}}</strong><span>{{entry.catalog_id||'未关联角色'}} · {{entry.width}}×{{entry.height}} · {{(entry.bytes/1024).toFixed(0)}} KiB</span></div><div class="actions"><button :disabled="busy" @click="show(entry)">查看与编辑</button><button :disabled="busy" @click="removeRef=entry.ref">删除</button></div><div v-if="removeRef===entry.ref" class="actions"><span>确认删除此素材原图？</span><button :disabled="busy" @click="remove(entry)">确认删除</button><button :disabled="busy" @click="removeRef=''">取消</button></div></li></ul><button v-if="next!==null" :disabled="busy" @click="run(()=>list(next!))">更多素材</button>
-<article v-if="selected&&editing"><div class="section-heading"><h3>{{selected.title}}</h3><button :disabled="busy" @click="clearPreview">关闭预览</button></div><img class="media-preview" :src="preview" :alt="selected.title"><p><a :href="preview" :download="selected.title+'.'+selected.mime.split('/')[1]">下载原图</a></p><form class="query-form" @submit.prevent="save"><label>标题<input v-model="editing.title" maxlength="120" :disabled="busy" required></label><label>关联角色 ID<input v-model="editing.catalog_id" :disabled="busy"></label><label>来源<input v-model="editing.source" maxlength="512" :disabled="busy"></label><label>使用许可<input v-model="editing.license" maxlength="256" :disabled="busy" required></label><button :disabled="busy">保存素材信息</button></form></article></section></template>
-<style scoped>.media-library{display:grid;gap:16px}.media-list{padding:0;list-style:none;display:grid;gap:16px}.media-list li{padding-block:12px;border-bottom:1px solid var(--raylea-color-border);display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}.media-list li>div:first-child{display:grid;gap:6px;overflow-wrap:anywhere;min-width:0}.media-preview{max-width:100%;max-height:600px;object-fit:contain}.media-library label:not(.check){display:grid;gap:8px;min-width:0}.media-library input,.media-library select{min-width:0;width:100%}.media-library .check input{width:auto}.media-library details>div{margin-block:16px}</style>
+
+<template>
+  <section class="section" aria-labelledby="media-title">
+    <div class="section-heading"><div class="titles"><h2 id="media-title">图库</h2><p>只保存你导入的角色照片，关联角色后供“{{ prefix }}角色名照片”与角色卡片使用。原图支持 PNG、JPEG、GIF、WebP，每张不超过 4 MiB、2400 万像素；全库最多 2000 项、512 MiB。</p></div></div>
+    <dl class="metrics"><div><dt>匹配</dt><dd>{{ total }} 项</dd></div><div><dt>全库占用</dt><dd>{{ (totalBytes / 1024 / 1024).toFixed(1) }} MiB</dd></div></dl>
+    <form class="field-row" @submit.prevent="operate(() => list())">
+      <fieldset :disabled="busy">
+        <label class="field"><span>搜索素材</span><input v-model="query" placeholder="标题或角色 ID"></label>
+        <button class="primary" type="submit">{{ busy ? '正在查询…' : '查询图库' }}</button>
+      </fieldset>
+    </form>
+    <StatusLine kind="error" :text="error" />
+    <StatusLine kind="success" :text="notice" />
+    <StatusLine v-if="progress" kind="info" :text="progress"><template #actions><button type="button" class="compact" @click="controller?.abort()">停止上传</button></template></StatusLine>
+    <div class="subsection">
+      <h3>导入图片或资源目录</h3>
+      <form class="field-grid" @submit.prevent="upload">
+        <fieldset :disabled="busy">
+          <label class="field"><span>选择图片</span><input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple @change="choose"></label>
+          <label class="field"><span>选择目录</span><input type="file" webkitdirectory multiple @change="choose"></label>
+          <label class="field"><span>来源或作者</span><input v-model="source" maxlength="512" placeholder="原作者或你自己的素材"></label>
+          <label class="field"><span>使用许可</span><input v-model="license" maxlength="256" required></label>
+          <div class="field-row wide">
+            <label class="field"><span>查找关联角色</span><input v-model="catalogQuery" placeholder="角色名或 ID"></label>
+            <button type="button" @click="findCatalog">查找角色</button>
+            <label class="field"><span>关联角色</span><select v-model="catalogID"><option value="">不关联</option><option v-for="entry in entries" :key="entry.id" :value="entry.id">{{ entry.name }} · {{ entry.id }}</option></select></label>
+          </div>
+          <p class="hint wide">已选 {{ files.length }} 张图片，非图片文件自动忽略。批量导入使用相同的关联角色，之后可逐项修改。</p>
+          <label class="check wide"><input v-model="rights" type="checkbox">确认我有权在此机器人中使用这些素材</label>
+          <div class="actions"><button class="primary" type="submit" :disabled="!rights || !files.length || !license.trim()">{{ busy && progress ? '正在导入…' : '导入所选图片' }}</button></div>
+        </fieldset>
+      </form>
+    </div>
+    <ul v-if="items.length" class="rows">
+      <li v-for="entry in items" :key="entry.ref">
+        <div class="row-main"><strong>{{ entry.title }}</strong><div class="row-meta"><span>{{ entry.catalog_id || '未关联角色' }}</span><span>{{ entry.width }}×{{ entry.height }}</span><span>{{ (entry.bytes / 1024).toFixed(0) }} KiB</span></div></div>
+        <div class="row-actions"><button type="button" class="compact" :aria-current="selected?.ref === entry.ref ? 'true' : undefined" :disabled="busy" @click="show(entry)">查看与编辑</button><button type="button" class="compact danger" :disabled="busy" @click="removeRef = entry.ref">删除</button></div>
+        <div v-if="removeRef === entry.ref" class="confirm"><p>确认删除此素材原图？删除后无法恢复。</p><div class="actions"><button type="button" class="compact" :disabled="busy" @click="removeRef = ''">保留</button><button type="button" class="compact destructive" :disabled="busy" @click="remove(entry)">确认删除</button></div></div>
+      </li>
+    </ul>
+    <EmptyState v-else-if="!busy" icon="images" title="没有匹配的照片" text="导入图片后会列在这里；也可以换一个关键词查询。" />
+    <div v-if="next !== null" class="actions"><button type="button" :disabled="busy" @click="operate(() => list(next!))">更多素材</button></div>
+    <article v-if="selected && editing" class="panel">
+      <div class="section-heading"><h3>{{ selected.title }}</h3><button type="button" class="compact" :disabled="busy" @click="clearPreview">关闭预览</button></div>
+      <img class="preview" :src="preview" :alt="selected.title">
+      <p><a :href="preview" :download="fileName">下载原图</a></p>
+      <form class="field-grid" @submit.prevent="save">
+        <fieldset :disabled="busy">
+          <label class="field"><span>标题</span><input v-model="editing.title" maxlength="120" required></label>
+          <label class="field"><span>关联角色 ID</span><input v-model="editing.catalog_id"></label>
+          <label class="field"><span>来源</span><input v-model="editing.source" maxlength="512"></label>
+          <label class="field"><span>使用许可</span><input v-model="editing.license" maxlength="256" required></label>
+          <div class="actions"><button class="primary" type="submit">{{ busy ? '正在保存…' : '保存素材信息' }}</button></div>
+        </fieldset>
+      </form>
+    </article>
+  </section>
+</template>
+
+<style scoped>
+.preview { max-width: 100%; max-height: 600px; object-fit: contain; justify-self: start; }
+</style>

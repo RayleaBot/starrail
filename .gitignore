@@ -6,3 +6,5 @@ go.work
 go.work.sum
 /data/
 /assets/
+
+ui/.impeccable/

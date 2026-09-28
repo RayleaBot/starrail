@@ -1,16 +1,78 @@
 <script setup lang="ts">
-import {computed,onUnmounted,ref,watch} from 'vue'
-import {cloudTask} from './cloud'
-interface Source{id:string;name:string;collections:string[]}
-interface Post{id:string;title:string;url:string;parts?:string[];images?:string[]}
-const props=defineProps<{invoke:<T>(action:string,payload?:Record<string,unknown>)=>Promise<T>}>()
-const sources=ref<Source[]>([]),source=ref(''),revision=ref(0),collection=ref(0),query=ref(''),error=ref(''),notice=ref(''),saving=ref(false),active=ref(''),part=ref(0)
-const task=cloudTask(props.invoke,'content'),selected=computed(()=>sources.value.find(s=>s.id===source.value)),posts=computed(()=>(task.job.value?.result?.items??[]) as Post[]),post=computed(()=>posts.value.find(p=>p.id===active.value))
-watch(source,()=>{collection.value=0});watch([source,collection,query],()=>{task.clear();active.value='';part.value=0})
-async function load(){saving.value=true;error.value='';try{const r=await props.invoke<{sources:Source[];settings:{default_source:string;revision:number}}>('guides.schema');sources.value=r.sources;source.value=r.settings.default_source;revision.value=r.settings.revision}catch(e){error.value=e instanceof Error?e.message:'攻略设置无法读取。'}finally{saving.value=false}}
-async function save(){saving.value=true;error.value='';notice.value='';try{const r=await props.invoke<{settings:{revision:number}}>('guides.configure',{default_source:source.value,revision:revision.value});revision.value=r.settings.revision;notice.value='默认攻略来源已保存。'}catch(e){error.value=e instanceof Error?e.message:'保存失败，请刷新设置。'}finally{saving.value=false}}
-async function search(next=false){const offset=next?task.job.value?.result?.next_offset??0:0;active.value='';part.value=0;await task.start({kind:'guides',source:source.value,collection_offset:collection.value,query:query.value.trim(),offset})}
-void load();onUnmounted(task.dispose)
+import { computed, onUnmounted, ref, watch } from 'vue'
+import StatusLine from './shell/StatusLine.vue'
+import EmptyState from './shell/EmptyState.vue'
+import { useShell } from './shell/context'
+import { useOperation } from './shell/status'
+import { cloudTask } from './cloud'
+
+// 攻略: posts of the reference miyoushe collections, read as a content task
+// that is polled until it completes.
+interface Source { id: string; name: string; collections: string[] }
+interface Post { id: string; title: string; url: string; parts?: string[]; images?: string[] }
+const shell = useShell()
+const { busy, error, notice, run } = useOperation('攻略设置操作未完成，请重试。')
+const task = cloudTask(shell.invoke, 'content')
+const sources = ref<Source[]>([]), source = ref(''), revision = ref(0), collection = ref(0), query = ref(''), active = ref(''), part = ref(0)
+const selected = computed(() => sources.value.find(item => item.id === source.value))
+const posts = computed(() => (task.job.value?.result?.items ?? []) as Post[])
+const post = computed(() => posts.value.find(item => item.id === active.value))
+const running = computed(() => task.job.value?.state === 'running')
+watch(source, () => { collection.value = 0 })
+watch([source, collection, query], () => { task.clear(); active.value = ''; part.value = 0 })
+async function load() {
+  await run(async () => {
+    const result = await shell.invoke<{ sources: Source[]; settings: { default_source: string; revision: number } }>('guides.schema')
+    sources.value = result.sources; source.value = result.settings.default_source; revision.value = result.settings.revision
+  })
+}
+async function save() {
+  await run(async () => {
+    const result = await shell.invoke<{ settings: { revision: number } }>('guides.configure', { default_source: source.value, revision: revision.value })
+    revision.value = result.settings.revision
+  }, '默认攻略来源已保存。')
+}
+async function search(next = false) {
+  const offset = next ? task.job.value?.result?.next_offset ?? 0 : 0
+  active.value = ''; part.value = 0
+  await task.start({ kind: 'guides', source: source.value, collection_offset: collection.value, query: query.value.trim(), offset })
+}
+function open(item: Post) { active.value = item.id; part.value = 0 }
+void load()
+onUnmounted(task.dispose)
 </script>
-<template><section><div class="section-heading"><h2>攻略来源</h2><button :disabled="saving" @click="load">刷新设置</button></div><p>按固定参考的米游社合集查找攻略。攻略保留作者观点与原文，图片在官方原图链接中查看。</p><form class="query-form" @submit.prevent="search()"><label>来源<select v-model="source" :disabled="saving"><option v-for="s in sources" :key="s.id" :value="s.id">{{s.name}}</option></select></label><label>合集<select v-model="collection"><option v-for="(id,i) in selected?.collections" :key="id" :value="i">{{i+1}} · {{id}}</option></select></label><label>角色名或标题关键词<input v-model="query" maxlength="100" placeholder="可留空浏览本合集"></label><div class="actions"><button :disabled="saving||task.busy.value||task.job.value?.state==='running'">查询攻略合集</button><button type="button" :disabled="saving||!source" @click="save">设为默认来源</button></div></form><p v-if="error||task.error.value||task.job.value?.message" role="alert" class="feedback danger">{{error||task.error.value||task.job.value?.message}}</p><p v-if="notice" role="status">{{notice}}</p><p v-if="task.job.value?.state==='running'">正在读取… <button @click="task.cancel">取消</button><button @click="task.poll">刷新进度</button></p><template v-if="task.job.value?.state==='completed'"><p>本合集匹配 {{task.job.value.result?.total}} 篇。</p><ul class="guide-list"><li v-for="p in posts" :key="p.id"><button @click="active=p.id;part=0">{{p.title}}</button><a :href="p.url" target="_blank" rel="noreferrer">官方原文</a></li></ul><button v-if="Number(task.job.value.result?.next_offset)>=0" @click="search(true)">下一页攻略</button><article v-if="post"><h3>{{post.title}}</h3><p class="prose">{{post.parts?.[part]||'以图片为主，请查看官方原图。'}}</p><div class="actions" v-if="(post.parts?.length??0)>1"><button :disabled="part<=0" @click="part--">上一段</button><span>{{part+1}} / {{post.parts?.length}}</span><button :disabled="part+1>=(post.parts?.length??0)" @click="part++">下一段</button></div><ul><li v-for="(url,i) in post.images" :key="url"><a :href="url" target="_blank" rel="noreferrer">官方攻略原图 {{i+1}}</a></li></ul></article></template></section></template>
-<style scoped>label{display:grid;gap:8px;min-width:0}input,select{min-width:0}.guide-list{list-style:none;padding:0;display:grid;gap:12px}.guide-list li{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.guide-list button{text-align:left;white-space:normal}.prose{white-space:pre-wrap;overflow-wrap:anywhere}</style>
+
+<template>
+  <section class="section" aria-labelledby="guides-title">
+    <div class="section-heading"><div class="titles"><h2 id="guides-title">攻略</h2><p>按固定参考的米游社合集查找攻略。攻略保留作者观点与原文，图片在官方原图链接中查看。</p></div><button type="button" :disabled="busy" @click="load">刷新设置</button></div>
+    <form class="field-row" @submit.prevent="search()">
+      <fieldset :disabled="busy">
+        <label class="field"><span>来源</span><select v-model="source"><option v-for="item in sources" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
+        <label class="field"><span>合集</span><select v-model="collection"><option v-for="(id, index) in selected?.collections" :key="id" :value="index">{{ index + 1 }} · {{ id }}</option></select></label>
+        <label class="field"><span>角色名或标题关键词</span><input v-model="query" maxlength="100" placeholder="留空浏览本合集"></label>
+        <div class="actions"><button class="primary" type="submit" :disabled="task.busy.value || running">{{ running ? '正在读取…' : '查询攻略合集' }}</button><button type="button" :disabled="!source" @click="save">设为默认来源</button></div>
+      </fieldset>
+    </form>
+    <StatusLine kind="error" :text="error || task.error.value || task.job.value?.message || ''" />
+    <StatusLine kind="success" :text="notice" />
+    <StatusLine v-if="running" kind="info" text="正在读取攻略合集…"><template #actions><button type="button" class="compact" :disabled="task.busy.value" @click="task.cancel">取消</button><button type="button" class="compact" @click="task.poll">刷新进度</button></template></StatusLine>
+    <template v-if="task.job.value?.state === 'completed'">
+      <p class="hint">本合集匹配 {{ task.job.value.result?.total }} 篇。</p>
+      <EmptyState v-if="!posts.length" icon="compass" title="没有匹配的攻略" text="换一个合集或关键词再查询。" />
+      <ul v-else class="rows">
+        <li v-for="item in posts" :key="item.id">
+          <div class="row-main"><strong>{{ item.title }}</strong></div>
+          <div class="row-actions"><button type="button" class="compact" :aria-current="item.id === active ? 'true' : undefined" @click="open(item)">查看正文</button><a :href="item.url" target="_blank" rel="noreferrer">官方原文</a></div>
+        </li>
+      </ul>
+      <div v-if="Number(task.job.value.result?.next_offset) >= 0" class="actions"><button type="button" :disabled="task.busy.value" @click="search(true)">下一页攻略</button></div>
+      <article v-if="post" class="panel">
+        <header><h3>{{ post.title }}</h3></header>
+        <p class="prose">{{ post.parts?.[part] || '以图片为主，请查看官方原图。' }}</p>
+        <div v-if="(post.parts?.length ?? 0) > 1" class="actions"><button type="button" class="compact" :disabled="part <= 0" @click="part--">上一段</button><span class="muted">{{ part + 1 }} / {{ post.parts?.length }}</span><button type="button" class="compact" :disabled="part + 1 >= (post.parts?.length ?? 0)" @click="part++">下一段</button></div>
+        <div v-if="post.images?.length" class="actions"><a v-for="(url, index) in post.images" :key="url" :href="url" target="_blank" rel="noreferrer">官方攻略原图 {{ index + 1 }}</a></div>
+      </article>
+    </template>
+    <EmptyState v-else-if="!task.job.value && !task.busy.value" icon="compass" title="选择来源与合集后查询" text="匹配的攻略会列在这里，点“查看正文”阅读原文。" />
+  </section>
+</template>

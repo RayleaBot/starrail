@@ -1,4 +1,4 @@
 import { createApp } from 'vue'
-import GamePanel from './GamePanel.vue'
+import App from './App.vue'
 import './style.css'
-createApp(GamePanel).mount('#app')
+createApp(App).mount('#app')
