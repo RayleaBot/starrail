@@ -7,8 +7,13 @@ import (
 	"strings"
 )
 
+// Talent is one skill of a character (its kind, tag and the level its
+// numbers hold at), a light cone's skill, or an eidolon.
 type Talent struct {
 	Name        string   `json:"name"`
+	Type        string   `json:"type,omitempty"`
+	Tag         string   `json:"tag,omitempty"`
+	Level       int      `json:"level,omitempty"`
 	Description []string `json:"description"`
 }
 type Entry struct {
@@ -26,6 +31,19 @@ type Entry struct {
 	Materials   map[string]string `json:"materials,omitempty"`
 	Stats       map[string]any    `json:"stats,omitempty"`
 	Talents     []Talent          `json:"talents,omitempty"`
+	Cons        []Talent          `json:"cons,omitempty"`
+}
+
+// EntrySummary is an entry without its texts, enough to list and pick it.
+type EntrySummary struct {
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Aliases []string `json:"aliases,omitempty"`
+	Abbr    string   `json:"abbr,omitempty"`
+	Kind    string   `json:"kind"`
+	Rarity  int      `json:"rarity"`
+	Element string   `json:"element,omitempty"`
+	Weapon  string   `json:"weapon,omitempty"`
 }
 type Catalog struct {
 	ArtifactSets map[string]string `json:"artifact_sets,omitempty"`
@@ -55,6 +73,15 @@ func ParseCatalog(raw []byte) (Catalog, error) {
 		catalog.byID[entry.ID] = index
 	}
 	return catalog, nil
+}
+
+// Summaries lists every entry in catalog order.
+func (c Catalog) Summaries() []EntrySummary {
+	list := make([]EntrySummary, 0, len(c.Entries))
+	for _, entry := range c.Entries {
+		list = append(list, EntrySummary{ID: entry.ID, Name: entry.Name, Aliases: entry.Aliases, Abbr: entry.Abbr, Kind: entry.Kind, Rarity: entry.Rarity, Element: entry.Element, Weapon: entry.Weapon})
+	}
+	return list
 }
 func (c Catalog) Get(id string) (Entry, bool) {
 	index, ok := c.byID[id]

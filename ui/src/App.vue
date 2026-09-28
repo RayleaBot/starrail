@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { usePluginHost } from '@rayleabot/plugin-ui'
-import { arkDefaults, roleKey, shellKey, type Account, type AliasConflict, type Bot, type Game, type RoleOption, type Settings, type Shell } from './shell/context'
+import { arkDefaults, roleKey, shellKey, type Account, type AliasConflict, type Bot, type CatalogSummary, type Game, type LoadState, type RoleCharacter, type RoleOption, type Settings, type Shell } from './shell/context'
 import { useOperation } from './shell/status'
 import StatusLine from './shell/StatusLine.vue'
 import QueryWorkspace from './workspaces/QueryWorkspace.vue'
@@ -75,7 +75,46 @@ function chosen() {
   if (!current) throw new Error('请先选择已授权的角色。')
   return { account_ref: current.account.ref, role_ref: current.role.ref }
 }
-const shell: Shell = { page, invoke, game, bots, catalogVersion, settings, saveSettings, accounts, accountsLoaded, accountIssue, nextAccountPage, loadAccounts, roles, selection, selectedRole, chosen }
+
+// The catalog is read once; the role's characters once per role, through the
+// same official overview the 角色 query shows.
+const catalog = ref<CatalogSummary[]>([]), catalogState = ref<LoadState>('idle')
+let catalogPending: Promise<void> | undefined
+function loadCatalog(): Promise<void> {
+  if (catalogState.value === 'ready') return Promise.resolve()
+  if (catalogPending) return catalogPending
+  catalogState.value = 'loading'
+  catalogPending = invoke<{ entries: CatalogSummary[] }>('catalog.list')
+    .then(result => { catalog.value = result.entries; catalogState.value = 'ready' })
+    .catch(() => { catalogState.value = 'failed' })
+    .finally(() => { catalogPending = undefined })
+  return catalogPending
+}
+const characters = ref<RoleCharacter[]>([]), charactersState = ref<LoadState>('idle'), charactersIssue = ref('')
+const characterCache = new Map<string, RoleCharacter[]>()
+let charactersPending: { key: string; promise: Promise<void> } | undefined
+async function loadCharacters(force = false): Promise<void> {
+  const key = selection.value, operation = game.value?.operations.find(item => item.input === 'characters_optional')
+  if (!selectedRole.value || !operation) { characters.value = []; charactersState.value = 'idle'; return }
+  const cached = characterCache.get(key)
+  if (cached && !force) { characters.value = cached; charactersState.value = 'ready'; return }
+  if (charactersPending?.key === key) return charactersPending.promise
+  characters.value = []; charactersState.value = 'loading'; charactersIssue.value = ''
+  const promise = invoke<{ panels?: { id: string; name: string; level: number; rank: number; element?: string }[] }>('query', { ...chosen(), operation: operation.name, input: {} })
+    .then(result => {
+      const list = (result.panels ?? []).map(panel => ({ id: panel.id, name: panel.name, level: panel.level, rank: panel.rank, element: panel.element }))
+      characterCache.set(key, list)
+      if (selection.value === key) { characters.value = list; charactersState.value = 'ready' }
+    })
+    .catch(cause => { if (selection.value === key) { charactersState.value = 'failed'; charactersIssue.value = cause instanceof Error && cause.message ? cause.message : '角色列表读取失败。' } })
+    .finally(() => { if (charactersPending?.key === key) charactersPending = undefined })
+  charactersPending = { key, promise }
+  return promise
+}
+// A role change shows its cached characters at once and leaves the rest to
+// the lists that need them.
+watch(selection, () => { const cached = characterCache.get(selection.value); characters.value = cached ?? []; charactersState.value = cached ? 'ready' : 'idle'; charactersIssue.value = '' })
+const shell: Shell = { page, invoke, game, bots, catalogVersion, settings, saveSettings, accounts, accountsLoaded, accountIssue, nextAccountPage, loadAccounts, roles, selection, selectedRole, chosen, catalog, catalogState, loadCatalog, characters, charactersState, charactersIssue, loadCharacters }
 provide(shellKey, shell)
 void host.ready.then(() => run(load)).catch(cause => { error.value = cause instanceof Error ? cause.message : '页面连接失败。' })
 </script>
@@ -87,6 +126,5 @@ void host.ready.then(() => run(load)).catch(cause => { error.value = cause insta
     </div>
     <div v-else-if="!game" class="skeleton" role="status" aria-label="正在读取插件资料"><span /><span /><span /></div>
     <component :is="workspace" v-else />
-    <footer class="shell-footer"><a href="./source.zip" download>本版本对应源码</a></footer>
   </main>
 </template>

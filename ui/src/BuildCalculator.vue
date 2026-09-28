@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { alignBuildRows, damageGain, weaponPromotions, type BuildPrepared, type BuildSkill, type CharacterBuild, type BuildConditions } from './build'
 import BuildConditionsEditor from './BuildConditionsEditor.vue'
+import CharacterSelect from './shell/CharacterSelect.vue'
 import StatusLine from './shell/StatusLine.vue'
 import type { BuildInvoke } from './build'
 
@@ -41,17 +42,8 @@ async function calculate() {
     if (!Number.isInteger(enemyLevel.value) || enemyLevel.value < 1 || enemyLevel.value > 200) throw new Error('敌人等级应为 1–200 的整数。')
     const candidate = weaponID.value ? { id: weaponID.value, level: weaponLevel.value, promote: promote.value, refinement: refinement.value } : { id: '', level: 0, promote: 0, refinement: 1 }
     if (changeWeapon.value && weaponID.value && (!Number.isInteger(weaponLevel.value) || !promotions.value.includes(promote.value) || !Number.isInteger(refinement.value) || refinement.value < 1 || refinement.value > 5)) throw new Error('请检查武器等级、突破阶段和精炼。')
-    let sourceID = equipmentSource.value.trim()
-    if (changeEquipment.value) {
-      if (!sourceID) throw new Error('请填写装备来源角色。')
-      if (!/^\d+$/.test(sourceID)) {
-        const found = await props.invoke<{ entries: { id: string; name: string }[] }>('catalog.search', { query: sourceID, kind: 'character' })
-        const exact = found.entries.filter(e => e.name === sourceID)
-        if (exact.length === 1) sourceID = exact[0]!.id
-        else if (found.entries.length === 1) sourceID = found.entries[0]!.id
-        else throw new Error('装备来源角色未唯一匹配，请填写准确名称或 ID。')
-      }
-    }
+    const sourceID = equipmentSource.value
+    if (changeEquipment.value && !sourceID) throw new Error('请选择装备来源角色。')
     const output = await props.invoke<{ build: CharacterBuild }>('build.compare', { ...choice(), enemy_level: enemyLevel.value, ...(changeWeapon.value ? { candidate_weapon: candidate } : {}), ...(changeEquipment.value ? { equipment_from_character_id: sourceID } : {}), ...(conditions.value ? { conditions: conditions.value } : {}) })
     if (!disposed && revision === started) result.value = output.build
   } catch (cause) { if (!disposed) error.value = cause instanceof Error ? cause.message : '换装计算未完成，请稍后重试。' }
@@ -87,7 +79,8 @@ function gain(row: ReturnType<typeof alignBuildRows>[number]) { const key = crit
           </template>
         </div>
         <div v-if="changeEquipment" class="field-grid">
-          <label class="field wide"><span>装备来源角色</span><input v-model="equipmentSource" placeholder="同一游戏账号下的角色名称或 ID" required><span class="hint">只调入已查询到的整套装备用于模拟；角色、技能和光锥仍按当前选择计算。</span></label>
+          <CharacterSelect v-model="equipmentSource" class="wide" source="role" label="装备来源角色" :exclude="[characterId]" />
+          <p class="hint wide">只调入同一游戏账号下该角色已查询到的整套装备用于模拟；角色、技能和光锥仍按当前选择计算。</p>
         </div>
         <BuildConditionsEditor v-model="conditions" :character-id="characterId" :disabled="busy" :invoke="invoke" />
         <div class="actions"><button class="primary" type="submit">{{ conditions ? '计算自定义候选' : changeWeapon || changeEquipment ? '计算换装收益' : '按当前条件重算' }}</button></div>

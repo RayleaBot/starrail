@@ -222,7 +222,7 @@ func PanelView(game Game, panels []CharacterPanel, uid string) View {
 	}
 	if len(panels) > 1 {
 		for _, p := range panels {
-			v.Rows = append(v.Rows, Row{Label: p.Name, Value: p.ID + " · 等级 " + strconv.Itoa(p.Level) + " · " + strconv.Itoa(p.Rank) + " 阶"})
+			v.Rows = append(v.Rows, Row{Label: p.Name, Value: "等级 " + strconv.Itoa(p.Level) + " · 星魂 " + strconv.Itoa(p.Rank)})
 		}
 		v.Note = "请指定角色名称或 ID 查看完整面板。"
 		return v

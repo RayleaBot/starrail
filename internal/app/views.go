@@ -61,6 +61,42 @@ func kindLabel(kind string) string {
 	}
 	return "资料"
 }
+
+// statLabels names the catalog's attribute keys as the game does, in the
+// game's order.
+var statLabels = []struct{ key, label string }{{"hp", "生命值"}, {"atk", "攻击力"}, {"def", "防御力"}, {"speed", "速度"}, {"cpct", "暴击率"}, {"cdmg", "暴击伤害"}, {"aggro", "嘲讽值"}, {"sp", "能量上限"}}
+
+func statRows(stats map[string]any) []Row {
+	rows := []Row{}
+	for _, stat := range statLabels {
+		value, ok := stats[stat.key].(float64)
+		if !ok {
+			continue
+		}
+		text := strconv.FormatFloat(value, 'f', -1, 64)
+		if stat.key == "cpct" || stat.key == "cdmg" {
+			text += "%"
+		}
+		rows = append(rows, Row{Label: stat.label, Value: text})
+	}
+	return rows
+}
+
+// talentTitle writes a skill as the game lists it: its kind, name and tag,
+// and the level its numbers hold at.
+func talentTitle(t Talent) string {
+	title := t.Name
+	if t.Type != "" {
+		title = t.Type + " · " + title
+	}
+	if t.Tag != "" {
+		title += "（" + t.Tag + "）"
+	}
+	if t.Level > 0 {
+		title += " · " + strconv.Itoa(t.Level) + " 级数值"
+	}
+	return title
+}
 func EntryView(game Game, entry Entry) View {
 	v := View{Title: entry.Name, Subtitle: game.Name + " · " + kindLabel(entry.Kind), Rows: []Row{}, Sections: []Section{}}
 	if entry.Rarity > 0 {
@@ -71,10 +107,17 @@ func EntryView(game Game, entry Entry) View {
 		v.Rows = append(v.Rows, Row{Label: "属性", Value: entry.Element})
 	}
 	if entry.Weapon != "" {
-		v.Rows = append(v.Rows, Row{Label: "类型", Value: entry.Weapon})
+		v.Rows = append(v.Rows, Row{Label: "命途", Value: entry.Weapon})
 	}
 	if entry.Description != "" {
 		v.Sections = append(v.Sections, Section{Title: "介绍", Text: entry.Description})
+	}
+	if rows := statRows(entry.Stats); len(rows) > 0 {
+		title := "基础属性"
+		if level := number(entry.Stats["level"]); level > 0 {
+			title += "（" + strconv.Itoa(level) + " 级）"
+		}
+		v.Sections = append(v.Sections, Section{Title: title, Rows: rows})
 	}
 	if len(entry.Materials) > 0 {
 		rows := []Row{}
@@ -89,7 +132,10 @@ func EntryView(game Game, entry Entry) View {
 		v.Sections = append(v.Sections, Section{Title: "养成材料", Rows: rows})
 	}
 	for _, talent := range entry.Talents {
-		v.Sections = append(v.Sections, Section{Title: talent.Name, Text: strings.Join(talent.Description, "\n")})
+		v.Sections = append(v.Sections, Section{Title: talentTitle(talent), Text: strings.Join(talent.Description, "\n")})
+	}
+	for index, con := range entry.Cons {
+		v.Sections = append(v.Sections, Section{Title: "星魂 " + strconv.Itoa(index+1) + " · " + con.Name, Text: strings.Join(con.Description, "\n")})
 	}
 	return v
 }

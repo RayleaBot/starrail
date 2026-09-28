@@ -28,7 +28,7 @@ func TestLiveGrowthBusinessDTO(t *testing.T) {
 		if json.Unmarshal(raw, &value) != nil {
 			t.Fatal("invalid DTO")
 		}
-		plan, err := prepareGrowth(value.CharacterID, value.Detail)
+		plan, err := prepareGrowth(value.CharacterID, value.Detail, Catalog{})
 		if err != nil {
 			t.Fatal(err)
 		}

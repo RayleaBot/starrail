@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import BusinessView from './BusinessView.vue'
 import CloudOCRComparison from './CloudOCRComparison.vue'
+import CharacterSelect from './shell/CharacterSelect.vue'
 import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
 import { useShell } from './shell/context'
@@ -23,7 +24,13 @@ watch(advanced, () => { main.clear(); detail.clear() }, { deep: true })
 watch(authenticated, value => { if (!value) advanced.value = []; main.clear(); detail.clear() })
 const mode = ref('usage'), uid = ref(''), character = ref(''), consent = ref(false)
 const imageURL = ref(''), ocrSlot = ref(1), forge = ref(true)
-const uidList = ref(''), characterIDs = ref(''), rankQuery = ref('dmg'), refreshRank = ref(false)
+const uidList = ref(''), characterIDs = ref<string[]>([]), rankQuery = ref('dmg'), refreshRank = ref(false)
+// 同 UID 多角色排名 picks several characters from the bundled catalog, at
+// most 250, the limit the service takes.
+const characterLimit = 250
+const catalogCharacters = computed(() => shell.catalog.value.filter(entry => entry.kind === 'character').sort((a, b) => b.rarity - a.rarity || a.name.localeCompare(b.name, 'zh-Hans-CN')))
+const tooMany = computed(() => characterIDs.value.length > characterLimit)
+watch(mode, value => { if (value === 'self_rank') void shell.loadCatalog() }, { immediate: true })
 const sort = ref('dmg_avg'), limit = ref(20), op = ref(''), cons = ref(0), op2 = ref(''), cons2 = ref(6), selected = ref('')
 const operators = [{ value: '=', label: '等于' }, { value: '>=', label: '大于等于' }, { value: '<=', label: '小于等于' }, { value: '>', label: '大于' }, { value: '<', label: '小于' }, { value: '!=', label: '不等于' }]
 const pending = computed(() => busy.value || job.value?.state === 'running')
@@ -38,10 +45,11 @@ watch(consent, accepted => { if (!accepted) { main.clear(); detail.clear() } })
 async function start() {
   if (!consent.value) return
   detail.clear()
+  if (mode.value === 'self_rank' && tooMany.value) { error.value = `最多选择 ${characterLimit} 个角色。`; return }
   const filters = []
   if (op.value) filters.push({ op: op.value, value: cons.value })
   if (op2.value) filters.push({ op: op2.value, value: cons2.value })
-  await main.start({ mode: mode.value, uid: uid.value.trim(), character_id: character.value.trim(), consent: true, sort: sort.value, limit: limit.value, filters, image_url: imageURL.value.trim(), slot: Number(ocrSlot.value), forge: forge.value, uids: uidList.value.split(/[\s,，]+/).filter(Boolean), character_ids: characterIDs.value.split(/[\s,，]+/).filter(Boolean), query: rankQuery.value, refresh: refreshRank.value, authenticated: authenticated.value, advanced_filters: advanced.value.map(f => ({ ...f, value: fieldSchema(f.field)?.kind === 'number' || fieldSchema(f.field)?.kind === 'choice' ? Number(f.value) : f.value })) })
+  await main.start({ mode: mode.value, uid: uid.value.trim(), character_id: character.value, consent: true, sort: sort.value, limit: limit.value, filters, image_url: imageURL.value.trim(), slot: Number(ocrSlot.value), forge: forge.value, uids: uidList.value.split(/[\s,，]+/).filter(Boolean), character_ids: [...characterIDs.value], query: rankQuery.value, refresh: refreshRank.value, authenticated: authenticated.value, advanced_filters: advanced.value.map(f => ({ ...f, value: fieldSchema(f.field)?.kind === 'number' || fieldSchema(f.field)?.kind === 'choice' ? Number(f.value) : f.value })) })
 }
 async function readPanel(index: number) {
   if (!consent.value || !job.value || detailPending.value) return
@@ -61,7 +69,7 @@ onUnmounted(() => { main.dispose(); detail.dispose() })
         <label class="field"><span>云查询内容</span><select v-model="mode"><option value="usage">查询额度</option><option value="rank">玩家角色排名</option><option value="distribution">角色总体分布</option><option value="custom">自定义角色排名</option><option value="panel">接收云端面板</option><option value="ocr">装备截图识别与比较</option><option value="self_rank">同 UID 多角色排名</option><option value="group_rank">同角色多 UID 排名</option></select></label>
         <label v-if="['rank', 'panel', 'self_rank'].includes(mode)" class="field"><span>发送给云服务的公开 UID</span><input v-model="uid" inputmode="numeric" pattern="[0-9]{6,12}" required></label>
         <p v-if="mode === 'panel'" class="hint wide">请先在原机器人向 ark 上传面板，再于十分钟有效期内接收。这里只查看角色资料，不覆盖本地数据。</p>
-        <label v-if="['rank', 'distribution', 'custom', 'group_rank'].includes(mode)" class="field"><span>角色名称或 ID</span><input v-model="character" required></label>
+        <CharacterSelect v-if="['rank', 'distribution', 'custom', 'group_rank'].includes(mode)" v-model="character" source="catalog" label="角色" />
         <label v-if="mode === 'group_rank'" class="field wide"><span>公开 UID 列表</span><textarea v-model="uidList" rows="3" maxlength="700" placeholder="逗号或空格分隔，最多 50 个" required></textarea></label>
         <template v-if="mode === 'ocr'">
           <label class="field"><span>装备图片 HTTPS 地址</span><input v-model="imageURL" type="url" maxlength="4096" placeholder="https://…" required></label>
@@ -69,7 +77,7 @@ onUnmounted(() => { main.dispose(); detail.dispose() })
           <label class="check wide"><input v-model="forge" type="checkbox">截图包含重塑 / 重投前后两件装备</label>
           <p class="hint wide">图片链接将发送给 ark OCR；请使用不含账号凭据的游戏装备截图。识别后可自行选择角色作模拟对比。</p>
         </template>
-        <label v-if="mode === 'self_rank'" class="field wide"><span>角色 ID 列表</span><textarea v-model="characterIDs" rows="3" maxlength="3000" placeholder="逗号或空格分隔，最多 250 个" required></textarea></label>
+        <label v-if="mode === 'self_rank'" class="field wide"><span>角色</span><select v-model="characterIDs" multiple size="8" required :disabled="shell.catalogState.value === 'loading'" :aria-invalid="tooMany ? 'true' : undefined"><option v-for="entry in catalogCharacters" :key="entry.id" :value="entry.id">{{ entry.rarity ? `${entry.name} · ${entry.rarity} 星` : entry.name }}</option></select><span v-if="shell.catalogState.value === 'failed'" class="hint danger-text">图鉴清单读取失败。 <button type="button" class="compact ghost" @click="shell.loadCatalog()">重试</button></span><span v-else class="hint" :class="{ 'danger-text': tooMany }">按住 Ctrl 或 Shift 可多选，最多 {{ characterLimit }} 个；已选 {{ characterIDs.length }} 个。</span></label>
         <label v-if="['rank', 'group_rank'].includes(mode)" class="field"><span>排名类别</span><select v-model="rankQuery"><option value="dmg">伤害</option><option value="mark">装备评分</option><option v-if="mode === 'rank'" value="all">两类分别展示</option></select></label>
         <label v-if="mode === 'rank'" class="check wide"><input v-model="refreshRank" type="checkbox">请求 ark 刷新此角色的收录排名</label>
         <template v-if="mode === 'custom'">
@@ -93,7 +101,7 @@ onUnmounted(() => { main.dispose(); detail.dispose() })
           </div>
         </template>
         <label class="check wide"><input v-model="consent" type="checkbox">同意将所填 UID、角色、筛选条件及选择的图片链接发送给所选第三方服务（ark.ivny.cn 或 akasha.cv），并按选择读取公开面板；不发送 CK 或 QQ</label>
-        <div class="actions"><button class="primary" type="submit" :disabled="!consent">{{ pending ? '正在查询…' : '开始云查询' }}</button></div>
+        <div class="actions"><button class="primary" type="submit" :disabled="!consent || (mode === 'self_rank' && tooMany)">{{ pending ? '正在查询…' : '开始云查询' }}</button></div>
       </fieldset>
     </form>
     <StatusLine kind="error" :text="error" />

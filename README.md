@@ -32,7 +32,7 @@
 
 ## 详细面板与评分
 
-角色面板展示官方属性、装备词条、技能及星魂；管理页可展开效果说明。可输入角色名称/ID，留空显示轻量角色概览。
+角色面板展示官方属性、装备词条、技能及星魂；管理页可展开效果说明。管理页从当前角色拥有的角色中选择，不选则显示轻量角色概览；聊天中写角色名称或 ID。
 
 使用 `*希儿遗器 [UID]`（也可写 `*评分 希儿`），管理页也可计算。评分与伤害先读本地保存的面板，没有时读取本人账号的官方面板并保存；权重按上游规则随角色当前属性、星魂与配装自动选择。缺少必要数据的装备不评分。评分不是完整伤害计算。
 
@@ -99,10 +99,10 @@ go test ./...
 corepack pnpm --dir ui test
 corepack pnpm --dir ui run build
 $env:RAYLEA_PLUGIN_BUILD_USE_WORKSPACE='1'
-go run github.com/RayleaBot/RayleaBot/sdk/go/cmd/raylea-plugin build-go --backend ./cmd/plugin-starrail --target windows-x64 --include DATA_SOURCES.md=DATA_SOURCES.md --include .rayleabot/source.zip=ui/source.zip
+go run github.com/RayleaBot/RayleaBot/sdk/go/cmd/raylea-plugin build-go --backend ./cmd/plugin-starrail --target windows-x64 --include DATA_SOURCES.md=DATA_SOURCES.md
 ```
 
-打包前运行 `python scripts/bundle-artwork.py --references <参考项目/2026-09-15>`，把模板用到的上游图片、字体与资料文件从固定提交复制到 `assets/`（不纳入版本库，构建时随包分发），再运行 `python scripts/source-bundle.py` 生成管理页提供下载的源码包。源码包含本插件与相邻 RayleaBot 的 SDK 源码及 `go.work`，可按上述命令构建；SDK v0.7.0 发布前，独立检出仍需相邻的 RayleaBot 仓库。
+打包前运行 `python scripts/bundle-artwork.py --references <参考项目/2026-09-15>`，把模板用到的上游图片、字体与资料文件从固定提交复制到 `assets/`（不纳入版本库，构建时随包分发）。SDK v0.7.0 发布前，独立检出仍需相邻的 RayleaBot 仓库。
 
 另支持 `linux-x64` 和 `macos-arm64`。数据文件位于宿主提供的本插件数据目录内；抽卡记录属于非凭据业务数据，使用原子文件替换保存。
 
@@ -112,7 +112,7 @@ Go 测试、Vue 类型检查、UIGF 导入导出测试和生产构建已通过�
 
 体力聊天查询已通过真人验收。尚未完成其余真实业务查询、全角色伤害/装备评分、全部挑战详情与历史功能、自动抽卡拉取、社区任务与其余提醒、云排名/OCR、海外认证及完整升级恢复验收。这是基础版本，不能视为参考插件的全部功能已经复刻。全量范围保留在 RayleaBot `docs/plans/game-plugins/`。
 
-本项目采用 AGPL-3.0；管理页提供本版本对应源码下载。[资料来源与上游许可](./DATA_SOURCES.md)保留固定快照信息。
+本项目采用 AGPL-3.0。[资料来源与上游许可](./DATA_SOURCES.md)保留固定快照信息。
 
 
 ## 查询、历史与群榜

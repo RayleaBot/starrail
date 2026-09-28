@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { BuildConditions } from './build'
+import CharacterSelect from './shell/CharacterSelect.vue'
 import StatusLine from './shell/StatusLine.vue'
+import { useShell } from './shell/context'
 
 // BuildConditionsEditor builds the custom candidate: teammates, bonuses and
 // the reference buffs to switch off, saved as named presets per character.
@@ -9,7 +11,8 @@ interface Field { key: string; label: string; unit: string; max: number }
 interface Preset { ref: string; revision: number; name: string; character_id: string; conditions: BuildConditions }
 const props = defineProps<{ characterId: string; modelValue: BuildConditions | null; disabled: boolean; invoke: <T>(action: string, payload?: Record<string, unknown>) => Promise<T> }>()
 const emit = defineEmits<{ 'update:modelValue': [value: BuildConditions | null] }>()
-const fields = ref<Field[]>([]), presets = ref<Preset[]>([]), preset = ref(''), name = ref(''), query = ref(''), source = ref(-1), field = ref('atkPct'), amount = ref(0), error = ref(''), busy = ref(false), notice = ref(''), confirm = ref<HTMLDialogElement | null>(null)
+const shell = useShell()
+const fields = ref<Field[]>([]), presets = ref<Preset[]>([]), preset = ref(''), name = ref(''), teammate = ref(''), source = ref(-1), field = ref('atkPct'), amount = ref(0), error = ref(''), busy = ref(false), notice = ref(''), confirm = ref<HTMLDialogElement | null>(null)
 let disposed = false
 const available = computed(() => presets.value.filter(p => p.character_id === props.characterId))
 const selected = computed(() => presets.value.find(p => p.ref === preset.value))
@@ -18,9 +21,15 @@ function update(fn: (c: BuildConditions) => void) { const c = JSON.parse(JSON.st
 function enabled(event: Event) { if ((event.target as HTMLInputElement).checked) update(() => {}); else emit('update:modelValue', null) }
 async function load() { try { const [schema, list] = await Promise.all([props.invoke<{ fields: Field[] }>('build.conditions'), props.invoke<{ items: Preset[] }>('build.presets.list')]); if (!disposed) { fields.value = schema.fields; presets.value = list.items } } catch (e) { if (!disposed) error.value = e instanceof Error ? e.message : '方案资料读取失败。' } }
 void load(); onUnmounted(() => { disposed = true })
-watch(() => props.characterId, () => { preset.value = ''; name.value = ''; source.value = -1; error.value = ''; emit('update:modelValue', null) })
+watch(() => props.characterId, () => { preset.value = ''; name.value = ''; teammate.value = ''; source.value = -1; error.value = ''; emit('update:modelValue', null) })
 function loadPreset() { if (!selected.value) return; name.value = selected.value.name; emit('update:modelValue', JSON.parse(JSON.stringify(selected.value.conditions))); source.value = -1; notice.value = '方案已载入，请重新计算。' }
-async function addTeammate() { if (busy.value || !props.modelValue) return; busy.value = true; error.value = ''; try { const result = await props.invoke<{ entries: { id: string; name: string }[] }>('catalog.search', { kind: 'character', query: query.value.trim() }); const exact = result.entries.filter(e => e.name === query.value.trim() || e.id === query.value.trim()); const found = exact.length === 1 ? exact[0] : result.entries.length === 1 ? result.entries[0] : undefined; if (!found || found.id === props.characterId || props.modelValue.team.some(t => t.character_id === found.id)) throw Error('请填写唯一匹配且不重复的队友名称或 ID。'); if (!disposed) { update(c => c.team.push({ character_id: found.id, name: found.name, bonuses: {} })); query.value = '' } } catch (e) { if (!disposed) error.value = e instanceof Error ? e.message : '队友查询失败。' } finally { busy.value = false } }
+// The teammate is picked from the catalog the shell holds, so its name comes
+// from there; the picker already leaves out this character and the team.
+function addTeammate() {
+  const found = shell.catalog.value.find(entry => entry.id === teammate.value)
+  if (!props.modelValue || !found || found.id === props.characterId || props.modelValue.team.some(t => t.character_id === found.id)) return
+  update(c => c.team.push({ character_id: found.id, name: found.name, bonuses: {} })); teammate.value = ''; error.value = ''
+}
 function addBonus() { const schema = fields.value.find(f => f.key === field.value); if (!schema || !Number.isFinite(amount.value) || amount.value < 0 || amount.value > schema.max) { error.value = '请在所列范围内填写增益。'; return } update(c => { const target = source.value < 0 ? c.bonuses : c.team[source.value]?.bonuses; if (target) target[field.value] = Number(amount.value) }); error.value = '' }
 async function save(asNew: boolean) { if (!props.modelValue || busy.value) return; busy.value = true; error.value = ''; try { const existing = asNew ? undefined : selected.value; const result = await props.invoke<{ items: Preset[]; preset: Preset }>('build.presets.save', { name: name.value, character_id: props.characterId, conditions: props.modelValue, ...(existing ? { ref: existing.ref, revision: existing.revision } : {}) }); if (!disposed) { presets.value = result.items; preset.value = result.preset.ref; notice.value = '方案已保存。' } } catch (e) { if (!disposed) error.value = e instanceof Error ? e.message : '方案保存失败。' } finally { busy.value = false } }
 async function remove() { const p = selected.value; if (!p) return; busy.value = true; error.value = ''; try { const result = await props.invoke<{ items: Preset[] }>('build.presets.remove', { ref: p.ref, revision: p.revision }); if (!disposed) { presets.value = result.items; preset.value = ''; notice.value = '方案已删除。'; confirm.value?.close() } } catch (e) { error.value = e instanceof Error ? e.message : '方案删除失败。' } finally { busy.value = false } }
@@ -45,8 +54,8 @@ async function remove() { const p = selected.value; if (!p) return; busy.value =
         <label class="field"><span>候选敌人抗性（%，留空沿用参考）</span><input type="number" min="-100" max="100" step="any" :value="modelValue.enemy_resistance ?? ''" @input="update(c => { const v = ($event.target as HTMLInputElement).value; if (v === '') delete c.enemy_resistance; else c.enemy_resistance = Number(v) })"></label>
       </div>
       <div class="field-row">
-        <label class="field"><span>添加模拟队友</span><input v-model="query" placeholder="角色名称或 ID"></label>
-        <button type="button" :disabled="!query.trim() || modelValue.team.length >= 3" @click="addTeammate">添加队友</button>
+        <CharacterSelect v-model="teammate" source="catalog" label="添加模拟队友" none="选择队友" :exclude="[characterId, ...modelValue.team.map(t => t.character_id)]" />
+        <button type="button" :disabled="!teammate || modelValue.team.length >= 3" @click="addTeammate">添加队友</button>
       </div>
       <ul v-if="modelValue.team.length" class="rows">
         <li v-for="(t, index) in modelValue.team" :key="t.character_id"><div class="row-main"><strong>{{ t.name }}</strong></div><div class="row-actions"><button type="button" class="compact danger" :aria-label="`移除队友${t.name}`" @click="update(c => c.team.splice(index, 1)); source = -1">移除</button></div></li>

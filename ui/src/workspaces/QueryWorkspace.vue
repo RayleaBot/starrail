@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import Workspace, { type Section } from '../shell/Workspace.vue'
 import StatusLine from '../shell/StatusLine.vue'
 import EmptyState from '../shell/EmptyState.vue'
+import CharacterSelect from '../shell/CharacterSelect.vue'
 import { regions, useShell } from '../shell/context'
 import { useOperation } from '../shell/status'
 import { useReader } from '../reader'
@@ -24,7 +25,7 @@ const sections: Section[] = [
 // 游戏查询: one operation of the selected role, with the results and the
 // tools that read the same panels (score, skills, build comparison). The
 // query runs by itself once the role and the operation's choices are set;
-// the button only repeats it or submits a typed character name.
+// the button only repeats it.
 const query = useOperation('查询未完成，请重试。')
 const activeSection = ref('')
 const operationName = ref(shell.game.value?.operations[0]?.name ?? '')
@@ -39,14 +40,6 @@ watch(selectedOperation, value => { period.value = value?.input === 'rogue_perio
 watch(shell.selection, () => { panels.value = []; view.value = null })
 watch([period, queryMonth, summaryPool], () => { view.value = null })
 
-async function resolveCharacter(name: string): Promise<string> {
-  if (/^\d+$/.test(name)) return name
-  const found = await shell.invoke<{ entries: { id: string; name: string }[] }>('catalog.search', { query: name, kind: 'character' })
-  const exact = found.entries.filter(entry => entry.name === name || entry.id === name)
-  if (exact.length === 1) return exact[0]!.id
-  if (found.entries.length === 1) return found.entries[0]!.id
-  throw new Error('角色名未唯一匹配，请在图鉴中确认角色 ID。')
-}
 const reader = useReader(query, async stale => {
   view.value = null
   const input: Record<string, unknown> = {}
@@ -54,18 +47,18 @@ const reader = useReader(query, async stale => {
   if (kind === 'starrail_pool') input.gacha_type = summaryPool.value
   if (kind === 'period' || kind === 'rogue_period') input.schedule_type = period.value
   if (kind === 'year_month' && queryMonth.value.trim()) input.month = queryMonth.value.trim()
-  if (kind === 'characters_optional' && character.value.trim()) input.character_ids = [await resolveCharacter(character.value.trim())]
+  if (kind === 'characters_optional' && character.value) input.character_ids = [character.value]
   const result = await shell.invoke<{ view: View; panels?: Panel[] }>('query', { ...shell.chosen(), operation: operationName.value, input })
   if (stale()) return
   view.value = result.view; panels.value = result.panels ?? []; scoreCharacter.value = panels.value[0]?.id ?? ''
 })
 // The read is automatic while the section is shown and a role is selected:
-// choices from a select run at once, a typed month runs once it is complete
-// and an empty character name shows the overview; a typed name is submitted.
+// choices from a select run at once, a typed month runs once it is complete,
+// and a chosen character narrows the read while none shows the overview.
 const ready = computed(() => activeSection.value === 'query' && !!shell.selectedRole.value)
 watch([ready, shell.selection, operationName, period, summaryPool], ([ok]) => { if (ok) reader.request(100) })
 watch(queryMonth, () => { if (ready.value && monthValid.value) reader.request(600) })
-watch(character, value => { if (ready.value && value.trim() === '') reader.request(300) })
+watch(character, () => { if (ready.value) reader.request(100) })
 function runQuery() { if (shell.selectedRole.value) reader.request() }
 async function scorePanel() {
   await query.run(async () => {
@@ -93,8 +86,8 @@ async function readProfile() { await showcase.run(async () => { profileView.valu
           <label v-if="inputKind === 'period' || inputKind === 'rogue_period'" class="field"><span>期数</span><select v-model="period"><option :value="1">本期</option><option :value="2">上期</option><option v-if="inputKind === 'rogue_period'" :value="3">接口默认范围</option></select></label>
           <label v-if="inputKind === 'year_month'" class="field"><span>月份</span><input v-model="queryMonth" inputmode="numeric" placeholder="YYYYMM，留空为默认月份" :aria-invalid="monthValid ? undefined : 'true'"><span v-if="!monthValid" class="hint danger-text">月份是六位数字，例如 202609。</span></label>
           <label v-if="inputKind === 'starrail_pool'" class="field"><span>卡池</span><select v-model="summaryPool"><option value="11">角色活动跃迁</option><option value="12">光锥活动跃迁</option><option value="21">联动角色跃迁</option><option value="22">联动光锥跃迁</option><option value="1">常驻跃迁</option><option value="2">始发跃迁</option></select></label>
-          <label v-if="inputKind === 'characters_optional'" class="field"><span>角色名称或 ID</span><input v-model="character" placeholder="留空显示角色概览，输入后按查询"></label>
-          <div class="actions"><button :class="inputKind === 'characters_optional' && character.trim() ? 'primary' : ''" type="submit" :disabled="!shell.selectedRole.value || query.busy.value">{{ query.busy.value ? '正在查询…' : view ? '重新查询' : '查询' }}</button><button type="button" :disabled="!shell.selectedRole.value || query.busy.value" @click="setDefault">设为默认角色</button><span v-if="query.busy.value" class="hint" role="status">正在查询 {{ selectedOperation?.label }}…</span></div>
+          <CharacterSelect v-if="inputKind === 'characters_optional'" v-model="character" source="role" none="角色概览（全部角色）" label="角色" />
+          <div class="actions"><button type="submit" :disabled="!shell.selectedRole.value || query.busy.value">{{ query.busy.value ? '正在查询…' : view ? '重新查询' : '查询' }}</button><button type="button" :disabled="!shell.selectedRole.value || query.busy.value" @click="setDefault">设为默认角色</button><span v-if="query.busy.value" class="hint" role="status">正在查询 {{ selectedOperation?.label }}…</span></div>
         </form>
         <StatusLine kind="error" :text="query.error.value" />
         <StatusLine kind="success" :text="query.notice.value" />

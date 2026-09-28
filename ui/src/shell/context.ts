@@ -6,6 +6,11 @@ export interface Role { ref: string; uid: string; nickname: string; region: stri
 export interface Account { cloud_configured?: string[]; ref: string; account_label: string; roles: Role[]; status: string; owner: { actor_id: string } }
 export interface RoleOption { key: string; label: string; role: Role; account: Account }
 export interface Bot { source_protocol: string; source_adapter: string; id: string }
+// CatalogSummary is one bundled catalog entry without its details.
+export interface CatalogSummary { id: string; name: string; kind: string; rarity: number; element?: string; weapon?: string; abbr?: string; aliases?: string[] }
+// RoleCharacter is one character the selected role owns, from the official overview.
+export interface RoleCharacter { id: string; name: string; level: number; rank: number; element?: string }
+export type LoadState = 'idle' | 'loading' | 'ready' | 'failed'
 export type Invoke = <T>(action: string, payload?: Record<string, unknown>) => Promise<T>
 
 // ark-plugin's settings, under its names and with its defaults.
@@ -35,6 +40,17 @@ export interface Shell {
   selection: Ref<string>
   selectedRole: ComputedRef<RoleOption | undefined>
   chosen(): { account_ref: string; role_ref: string }
+  // The bundled catalog's entries, read once for every list that offers a
+  // character or light cone to pick.
+  catalog: Ref<CatalogSummary[]>
+  catalogState: Ref<LoadState>
+  loadCatalog(): Promise<void>
+  // The selected role's own characters from the official overview, cached
+  // per role; lists that act on the role's characters pick from these.
+  characters: Ref<RoleCharacter[]>
+  charactersState: Ref<LoadState>
+  charactersIssue: Ref<string>
+  loadCharacters(force?: boolean): Promise<void>
 }
 
 export const shellKey: InjectionKey<Shell> = Symbol('shell')

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue'
 import BusinessView, { type View } from './BusinessView.vue'
+import CharacterSelect from './shell/CharacterSelect.vue'
 import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
 import { useShell } from './shell/context'
@@ -33,11 +34,11 @@ const reader = useReader(operation, async stale => {
   const result = await shell.invoke<Summary>('cloud.archive.list', shell.chosen())
   if (!stale() && !disposed) accept(result)
 })
-watch(shell.selection, () => { summary.value = null; view.value = null; clearing.value = false; file.value = null; if (fileInput.value) fileInput.value.value = ''; transfer.clear(); consent.value = false; reader.request() })
+watch(shell.selection, () => { summary.value = null; view.value = null; clearing.value = false; captureCharacter.value = ''; file.value = null; if (fileInput.value) fileInput.value.value = ''; transfer.clear(); consent.value = false; reader.request() })
 watch(authenticated, () => { transfer.clear(); consent.value = false })
 if (shell.selectedRole.value) reader.request()
 async function open(id: string) { await run(async () => { const result = await shell.invoke<{ panels: { id: string; name: string; view: View }[] }>('cloud.archive.get', { ...shell.chosen(), character_id: id }); view.value = result.panels[0]?.view ?? null }) }
-async function capture() { await run(async () => { const result = await shell.invoke<{ note: string }>('cloud.archive.capture', { ...shell.chosen(), character_id: captureCharacter.value.trim() }); notice.value = result.note; await load() }) }
+async function capture() { await run(async () => { const result = await shell.invoke<{ note: string }>('cloud.archive.capture', { ...shell.chosen(), character_id: captureCharacter.value }); notice.value = result.note; await load() }) }
 async function importFile() {
   const current = shell.selectedRole.value
   if (!file.value || !current) return
@@ -96,7 +97,7 @@ onUnmounted(() => { disposed = true; stopping.value = true; transfer.dispose(); 
         <h3>从本人官方面板建立交换副本</h3>
         <form class="field-row" @submit.prevent="capture">
           <fieldset :disabled="busy">
-            <label class="field"><span>读取官方面板的角色名称或 ID</span><input v-model="captureCharacter" required></label>
+            <CharacterSelect v-model="captureCharacter" source="role" label="读取官方面板的角色" />
             <button type="submit" :disabled="!captureCharacter">读取并保存官方面板</button>
           </fieldset>
         </form>

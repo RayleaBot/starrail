@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 type GrowthSkill struct {
@@ -28,7 +29,61 @@ type GrowthPlan struct {
 	Skills        []GrowthSkill `json:"skills"`
 }
 
-func prepareGrowth(id string, data map[string]any) (GrowthPlan, error) {
+// growthSkillKinds are the calculator's skill icons and point-id suffixes in
+// the order the game lists a character's skills; the catalog names them.
+var growthSkillKinds = []struct {
+	icon, kind string
+}{{"_normal", "普攻"}, {"_bp", "战技"}, {"_ultra", "终结技"}, {"_passive", "天赋"}, {"_maze", "秘技"}}
+
+// growthSkillName names a calculator skill point, which the official
+// calculator lists without a name: by its icon or its point-id suffix through
+// the catalog's talents, traces by their kind, the rest by their ID.
+func growthSkillName(catalog Catalog, characterID string, raw map[string]any, id int) string {
+	entry, hasEntry := catalog.Get(characterID)
+	byKind := func(kind string) string {
+		if hasEntry {
+			for _, talent := range entry.Talents {
+				if talent.Type == kind {
+					return talent.Name
+				}
+			}
+		}
+		return kind
+	}
+	icon := strings.ToLower(asText(raw["item_url"]))
+	for _, skill := range growthSkillKinds {
+		if icon != "" && strings.Contains(icon, skill.icon) {
+			return byKind(skill.kind)
+		}
+	}
+	if strings.Contains(icon, "skilltree") {
+		return "额外能力"
+	}
+	character, _ := strconv.Atoi(characterID)
+	suffix := -1
+	if character > 0 && id/1000 == character {
+		suffix = id % 1000
+	} else if character > 0 && id/100 == character {
+		suffix = id % 100
+	}
+	if suffix >= 1 && suffix <= len(growthSkillKinds) {
+		return byKind(growthSkillKinds[suffix-1].kind)
+	}
+	if suffix >= 101 && suffix <= 199 {
+		return "额外能力 " + strconv.Itoa(suffix-100)
+	}
+	if suffix >= 201 && suffix <= 299 {
+		return "属性加成 " + strconv.Itoa(suffix-200)
+	}
+	switch number(raw["point_type"]) {
+	case 1:
+		return "属性加成 " + strconv.Itoa(id)
+	case 3:
+		return "额外能力 " + strconv.Itoa(id)
+	}
+	return "技能 " + strconv.Itoa(id)
+}
+func prepareGrowth(id string, data map[string]any, catalog Catalog) (GrowthPlan, error) {
 	avatar := asObject(data["avatar"])
 	if avatar == nil {
 		return GrowthPlan{}, gameError("growth_unavailable", "官方未提供此角色的养成详情。")
@@ -73,7 +128,7 @@ func prepareGrowth(id string, data map[string]any) (GrowthPlan, error) {
 			return plan, gameError("growth_unavailable", "技能养成详情暂不兼容。")
 		}
 		if skill.Name == "" {
-			skill.Name = "技能/行迹 " + strconv.Itoa(skill.ID)
+			skill.Name = growthSkillName(catalog, id, s, skill.ID)
 		}
 		skill.Target = skill.Current
 		plan.Skills = append(plan.Skills, skill)
@@ -91,7 +146,7 @@ func (a *App) growthAction(ctx context.Context, client AccountsClient, action st
 		if err != nil {
 			return nil, err
 		}
-		plan, err := prepareGrowth(id, result.Data)
+		plan, err := prepareGrowth(id, result.Data, a.Catalog)
 		return map[string]any{"plan": plan}, err
 	}
 	if action != "growth.compute" {

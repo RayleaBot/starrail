@@ -908,6 +908,8 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 			view.Subtitle = saved.Nickname + " · " + uid
 		}
 		return map[string]any{"view": view}, nil
+	case "catalog.list":
+		return map[string]any{"entries": a.Catalog.Summaries(), "version": a.Catalog.Version}, nil
 	case "catalog.search":
 		entries := a.Catalog.Search(asText(input["query"]), asText(input["kind"]), 50, a.aliasMap(event))
 		return map[string]any{"entries": entries, "version": a.Catalog.Version}, nil

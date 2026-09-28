@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
+import CharacterSelect from './shell/CharacterSelect.vue'
 import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
 import { useShell } from './shell/context'
@@ -8,14 +9,14 @@ import { uploadMedia, readMedia, type MediaEntry } from './media'
 import { useReader } from './reader'
 
 // 图库: the operator's own character photos, uploaded and read in chunks;
-// the list follows the search text, the linked character its own search.
-// The preview is a data: URL because the host's CSP allows no blob: images.
+// the list follows the search text, the linked character is picked from the
+// catalog. The preview is a data: URL because the host's CSP allows no blob:
+// images.
 const shell = useShell()
 const operation = useOperation('图库操作未完成，请重试。')
 const { busy, error, notice, run } = operation
-const items = ref<MediaEntry[]>([]), total = ref(0), totalBytes = ref(0), next = ref<number | null>(null), query = ref('')
+const items = ref<MediaEntry[]>([]), total = ref(0), totalBytes = ref(0), next = ref<number | null>(null), query = ref(''), filterCharacter = ref('')
 const catalogID = ref(''), source = ref(''), license = ref('本人有权使用'), rights = ref(false), files = ref<File[]>([]), progress = ref('')
-const catalogQuery = ref(''), entries = ref<{ id: string; name: string }[]>([])
 const preview = ref(''), selected = ref<MediaEntry | null>(null), editing = ref<MediaEntry | null>(null), removeRef = ref('')
 const prefix = computed(() => shell.game.value?.prefix ?? '')
 const fileName = computed(() => selected.value ? `${selected.value.title}.${selected.value.mime.split('/')[1]}` : '')
@@ -27,7 +28,7 @@ async function operate(work: () => Promise<void>, success = '') {
   progress.value = ''
 }
 async function list(offset = 0) {
-  const result = await shell.invoke<{ items: MediaEntry[]; total: number; total_bytes: number; next_offset: number | null }>('media.list', { query: query.value, offset })
+  const result = await shell.invoke<{ items: MediaEntry[]; total: number; total_bytes: number; next_offset: number | null }>('media.list', { query: query.value, catalog_id: filterCharacter.value, offset })
   items.value = offset ? [...items.value, ...result.items] : result.items
   total.value = result.total; totalBytes.value = result.total_bytes; next.value = result.next_offset
 }
@@ -92,13 +93,9 @@ async function remove(entry: MediaEntry) {
   }, '素材已删除。')
 }
 const lister = useReader(operation, async stale => {
-  const result = await shell.invoke<{ items: MediaEntry[]; total: number; total_bytes: number; next_offset: number | null }>('media.list', { query: query.value, offset: 0 })
+  const result = await shell.invoke<{ items: MediaEntry[]; total: number; total_bytes: number; next_offset: number | null }>('media.list', { query: query.value, catalog_id: filterCharacter.value, offset: 0 })
   if (stale()) return
   items.value = result.items; total.value = result.total; totalBytes.value = result.total_bytes; next.value = result.next_offset
-})
-const finder = useReader(operation, async stale => {
-  const result = await shell.invoke<{ entries: { id: string; name: string }[] }>('catalog.search', { query: catalogQuery.value, kind: 'character' })
-  if (!stale()) entries.value = result.entries
 })
 lister.request()
 onUnmounted(() => { disposed = true; controller?.abort(); clearPreview() })
@@ -109,13 +106,14 @@ onUnmounted(() => { disposed = true; controller?.abort(); clearPreview() })
     <div class="section-heading"><div class="titles"><h2 id="media-title">图库</h2><p>只保存你导入的角色照片，关联角色后供“{{ prefix }}角色名照片”与角色卡片使用。原图支持 PNG、JPEG、GIF、WebP，每张不超过 4 MiB、2400 万像素；全库最多 2000 项、512 MiB。</p></div></div>
     <dl class="metrics"><div><dt>匹配</dt><dd>{{ total }} 项</dd></div><div><dt>全库占用</dt><dd>{{ (totalBytes / 1024 / 1024).toFixed(1) }} MiB</dd></div></dl>
     <form class="field-row" @submit.prevent="lister.request()">
-      <fieldset :disabled="busy && !lister.loading.value && !finder.loading.value">
-        <label class="field"><span>搜索素材</span><input v-model="query" placeholder="标题或角色 ID，输入后自动查询" @input="lister.request(500)"></label>
+      <fieldset :disabled="busy && !lister.loading.value">
+        <label class="field"><span>搜索素材</span><input v-model="query" placeholder="标题或来源关键词，输入后自动查询" @input="lister.request(500)"></label>
+        <CharacterSelect v-model="filterCharacter" source="catalog" none="全部角色" label="关联角色" @change="lister.request()" />
         <button type="submit">{{ lister.loading.value ? '正在查询…' : '重新查询' }}</button>
       </fieldset>
     </form>
     <StatusLine v-if="lister.loading.value" kind="info" text="正在查询图库…" />
-    <StatusLine kind="error" :text="error"><template v-if="lister.failed.value || finder.failed.value" #actions><button class="compact" type="button" :disabled="busy" @click="lister.failed.value ? lister.request() : finder.request()">重试</button></template></StatusLine>
+    <StatusLine kind="error" :text="error"><template v-if="lister.failed.value" #actions><button class="compact" type="button" :disabled="busy" @click="lister.request()">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
     <StatusLine v-if="progress" kind="info" :text="progress"><template #actions><button type="button" class="compact" @click="controller?.abort()">停止上传</button></template></StatusLine>
     <ul v-if="items.length" class="rows">
@@ -130,16 +128,12 @@ onUnmounted(() => { disposed = true; controller?.abort(); clearPreview() })
     <div class="subsection">
       <h3>导入图片或资源目录</h3>
       <form class="field-grid" @submit.prevent="upload">
-        <fieldset :disabled="busy && !lister.loading.value && !finder.loading.value">
+        <fieldset :disabled="busy && !lister.loading.value">
           <label class="field"><span>选择图片</span><input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple @change="choose"></label>
           <label class="field"><span>选择目录</span><input type="file" webkitdirectory multiple @change="choose"></label>
           <label class="field"><span>来源或作者</span><input v-model="source" maxlength="512" placeholder="原作者或你自己的素材"></label>
           <label class="field"><span>使用许可</span><input v-model="license" maxlength="256" required></label>
-          <div class="field-row wide">
-            <label class="field"><span>查找关联角色</span><input v-model="catalogQuery" placeholder="角色名或 ID，输入后自动查找" @input="finder.request(500)" @keydown.enter.prevent="finder.request()"></label>
-            <button type="button" @click="finder.request()">{{ finder.loading.value ? '正在查找…' : '重新查找' }}</button>
-            <label class="field"><span>关联角色</span><select v-model="catalogID"><option value="">不关联</option><option v-for="entry in entries" :key="entry.id" :value="entry.id">{{ entry.name }} · {{ entry.id }}</option></select></label>
-          </div>
+          <CharacterSelect v-model="catalogID" source="catalog" none="不关联" label="关联角色" />
           <p class="hint wide">已选 {{ files.length }} 张图片，非图片文件自动忽略。批量导入使用相同的关联角色，之后可逐项修改。</p>
           <label class="check wide"><input v-model="rights" type="checkbox">确认我有权在此机器人中使用这些素材</label>
           <div class="actions"><button class="primary" type="submit" :disabled="!rights || !files.length || !license.trim()">{{ busy && progress ? '正在导入…' : '导入所选图片' }}</button></div>
@@ -153,7 +147,7 @@ onUnmounted(() => { disposed = true; controller?.abort(); clearPreview() })
       <form class="field-grid" @submit.prevent="save">
         <fieldset :disabled="busy">
           <label class="field"><span>标题</span><input v-model="editing.title" maxlength="120" required></label>
-          <label class="field"><span>关联角色 ID</span><input v-model="editing.catalog_id"></label>
+          <CharacterSelect v-model="editing.catalog_id" source="catalog" none="不关联" label="关联角色" />
           <label class="field"><span>来源</span><input v-model="editing.source" maxlength="512"></label>
           <label class="field"><span>使用许可</span><input v-model="editing.license" maxlength="256" required></label>
           <div class="actions"><button class="primary" type="submit">{{ busy ? '正在保存…' : '保存素材信息' }}</button></div>
