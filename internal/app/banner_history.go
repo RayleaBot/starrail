@@ -117,7 +117,21 @@ func (a *App) bannerQuery(input map[string]any) (map[string]any, error) {
 	if end < total {
 		next = &end
 	}
-	return map[string]any{"pools": matches[offset:end], "appearances": appearances, "total": total, "next_offset": next, "version": resourceVersion(game), "coverage": "fixed_reference", "date": date.Format("2006-01-02")}, nil
+	// The page offers every version (newest first) and every featured name
+	// to pick from instead of typing them.
+	versions, names := []string{}, []string{}
+	for i := len(game.Data.Resources.Pools) - 1; i >= 0; i-- {
+		p := game.Data.Resources.Pools[i]
+		if !slices.Contains(versions, p.Version) {
+			versions = append(versions, p.Version)
+		}
+		for _, name := range allBannerNames(p, "all") {
+			if !slices.Contains(names, name) {
+				names = append(names, name)
+			}
+		}
+	}
+	return map[string]any{"pools": matches[offset:end], "appearances": appearances, "total": total, "next_offset": next, "version": resourceVersion(game), "coverage": "fixed_reference", "date": date.Format("2006-01-02"), "versions": versions, "names": names}, nil
 }
 
 type VersionDrawCount struct {

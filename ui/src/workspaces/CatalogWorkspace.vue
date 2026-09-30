@@ -6,7 +6,8 @@ import EmptyState from '../shell/EmptyState.vue'
 import { useShell, type AliasConflict, type CatalogSummary } from '../shell/context'
 import { useOperation } from '../shell/status'
 import { useReader } from '../reader'
-import ResourceLibrary from '../ResourceLibrary.vue'
+import MaterialLibrary from '../MaterialLibrary.vue'
+import BannerLibrary from '../BannerLibrary.vue'
 import GuidesPanel from '../GuidesPanel.vue'
 import PublicContent from '../PublicContent.vue'
 import ArtworkPanel from '../ArtworkPanel.vue'
@@ -15,7 +16,8 @@ import MediaLibrary from '../MediaLibrary.vue'
 const shell = useShell()
 const sections: Section[] = [
   { id: 'catalog', label: '图鉴', icon: 'book' },
-  { id: 'resources', label: '材料与卡池', icon: 'cube' },
+  { id: 'materials', label: '材料', icon: 'cube' },
+  { id: 'banners', label: '卡池', icon: 'cards' },
   { id: 'guides', label: '攻略', icon: 'compass' },
   { id: 'content', label: '公告与活动', icon: 'megaphone' },
   { id: 'artwork', label: '素材源', icon: 'image' },
@@ -88,7 +90,7 @@ function aliasTarget(id: string): string { return shell.catalog.value.find(item 
 </script>
 
 <template>
-  <Workspace title="资料" description="本地图鉴、材料与卡池、攻略、官方公告与活动，以及出图素材与照片图库；这些内容不需要选择角色。" :sections="sections">
+  <Workspace title="资料" description="本地图鉴、材料、卡池、攻略、官方公告与活动，以及出图素材与照片图库；这些内容不需要选择角色。" :sections="sections">
     <template #default="{ active }">
       <section v-if="active === 'catalog'" ref="catalogSection" class="section" aria-labelledby="catalog-title">
         <div class="section-heading"><div class="titles"><h2 id="catalog-title">图鉴</h2><p>本地资料 · {{ shell.catalogVersion.value }}。全部角色与光锥都在列表里，按属性、命途、星级筛选或输入名称即可缩小范围；第一项会自动打开，选中的条目也可以添加常用别名。</p></div></div>
@@ -176,7 +178,8 @@ function aliasTarget(id: string): string { return shell.catalog.value.find(item 
           <p v-else class="hint">还没有自定义别名。</p>
         </div>
       </section>
-      <ResourceLibrary v-else-if="active === 'resources'" />
+      <MaterialLibrary v-else-if="active === 'materials'" />
+      <BannerLibrary v-else-if="active === 'banners'" />
       <GuidesPanel v-else-if="active === 'guides'" />
       <PublicContent v-else-if="active === 'content'" />
       <ArtworkPanel v-else-if="active === 'artwork'" />
