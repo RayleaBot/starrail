@@ -128,9 +128,11 @@ func (a *App) onlineCommand(ctx context.Context, event *rayleabot.EventContext) 
 	// Upstream reads every page of fifty; this stops in time to reply
 	// within the event, which only drops the earliest days.
 	deadline := time.Now().Add(40 * time.Second)
-	records := []onlineRecord{}
+	// The official list pages by the last record's ID; upstream's page numbers
+	// no longer advance.
+	records, cursor := []onlineRecord{}, "0"
 	for page := 1; time.Now().Before(deadline); page++ {
-		result, err := client.Execute(ctx, choice, a.Game.ID+".billing", map[string]any{"category": "power", "page": page, "page_size": 50})
+		result, err := client.Execute(ctx, choice, a.Game.ID+".billing", map[string]any{"category": "power", "page": page, "page_size": 50, "end_id": cursor})
 		if err != nil {
 			if page == 1 {
 				return event.SendText(friendlyError(err))
@@ -148,9 +150,11 @@ func (a *App) onlineCommand(ctx context.Context, event *rayleabot.EventContext) 
 				records = append(records, onlineRecord{when, count})
 			}
 		}
-		if result.Data["has_more"] != true {
+		next := asText(result.Data["next_end_id"])
+		if result.Data["has_more"] != true || next == "" || next == cursor {
 			break
 		}
+		cursor = next
 		time.Sleep(500 * time.Millisecond)
 	}
 	if len(records) == 0 {
