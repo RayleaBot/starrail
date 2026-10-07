@@ -14,10 +14,10 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/artwork"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
-	"github.com/RayleaBot/plugin-starrail/internal/pluginmeta"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/artwork"
+	"github.com/RayleaBot/starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/pluginmeta"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 type Operation struct {

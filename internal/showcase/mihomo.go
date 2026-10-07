@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 // Source is Mihomo's parsed Star Rail API in Chinese. miao reads Mihomo's

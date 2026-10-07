@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // Miao's Star Rail calendar skips these announcements by ID and by title.

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
 func syncTaskID(game, provider string, choice Selection) string {

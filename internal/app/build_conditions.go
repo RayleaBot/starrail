@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/RayleaBot/plugin-starrail/internal/localdata"
+	"github.com/RayleaBot/starrail/internal/localdata"
 )
 
 type BuildConditions struct {

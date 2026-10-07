@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // ledgerCountArtwork maps the images the ledger-count page names to their

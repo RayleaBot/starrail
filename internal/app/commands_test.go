@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/pluginmeta"
+	"github.com/RayleaBot/starrail/internal/pluginmeta"
 )
 
 func TestCommandSetFollowsHostMatchingOrder(t *testing.T) {

@@ -3,7 +3,7 @@ package images
 import (
 	"strconv"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // chargeArtwork maps the images StarRail-plugin's charge page and its

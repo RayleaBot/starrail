@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
 // miaoGachaArtwork are the fonts and backgrounds of miao's gacha-detail and

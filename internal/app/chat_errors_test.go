@@ -13,7 +13,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/artwork"
+	"github.com/RayleaBot/starrail/internal/artwork"
 )
 
 func TestArtworkStatusDoesNotSendLocalErrors(t *testing.T) {

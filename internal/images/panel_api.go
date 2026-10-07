@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // APICard draws 面板列表 and 面板更新 the way StarRail-plugin's new_card page

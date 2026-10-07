@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/pluginmeta"
+	"github.com/RayleaBot/starrail/internal/pluginmeta"
 )
 
 // The shipped manifests follow upstream wording; these cases pin the words

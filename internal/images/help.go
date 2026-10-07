@@ -3,7 +3,7 @@ package images
 import (
 	"fmt"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // helpIcons gives each command the icon of the StarRail-plugin help entry

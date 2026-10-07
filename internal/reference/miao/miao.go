@@ -7,7 +7,7 @@ import (
 	"embed"
 	"io/fs"
 
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 //go:embed bootstrap.js common.js runner.js

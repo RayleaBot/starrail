@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 func decodeRecord(t *testing.T, text string) map[string]any {

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
 // dailyFixture is a stored daily sync due at eight, Beijing time, on

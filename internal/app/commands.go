@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/RayleaBot/plugin-starrail/internal/pluginmeta"
+	"github.com/RayleaBot/starrail/internal/pluginmeta"
 )
 
 // commandSet maps the command word the host delivered back to this plugin's

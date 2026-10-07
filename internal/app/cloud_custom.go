@@ -12,7 +12,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 // ark-plugin's custom ranking (apps/customRank.js): ark<角色>[伤害|圣遗物]

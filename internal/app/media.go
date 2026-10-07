@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/localdata"
+	"github.com/RayleaBot/starrail/internal/localdata"
 )
 
 const mediaMaxBytes = 4 * 1024 * 1024

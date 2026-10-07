@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 // score-vectors.json holds three shared panels and the expected per-slot marks

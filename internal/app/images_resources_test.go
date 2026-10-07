@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/artwork"
+	"github.com/RayleaBot/starrail/internal/artwork"
 )
 
 func TestImageResourcesAddEachFileOnce(t *testing.T) {

@@ -3,7 +3,7 @@ package assets
 import (
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // The plugin starts exactly this way; a manifest or data change that the shared

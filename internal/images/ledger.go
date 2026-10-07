@@ -4,7 +4,7 @@ import (
 	"math/rand/v2"
 	"strconv"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // ledgerArtwork maps the images and font the Star Rail ledger page names to

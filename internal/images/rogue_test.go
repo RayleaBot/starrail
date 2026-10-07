@@ -3,8 +3,8 @@ package images_test
 import (
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/images"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/images"
 )
 
 func TestRogueFollowsStarRailPlugin(t *testing.T) {

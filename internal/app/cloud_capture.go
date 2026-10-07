@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 // subAttr is the substat of a relic rarity's table with a key, as miao's

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
 type BannerAppearance struct {

@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/localdata"
+	"github.com/RayleaBot/starrail/internal/localdata"
 )
 
 type BillingRow struct {

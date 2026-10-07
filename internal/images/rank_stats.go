@@ -1,7 +1,7 @@
 package images
 
 import (
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // rankStatsArtwork maps the miao images the rank statistics stylesheet names

@@ -5,12 +5,12 @@ import (
 	"embed"
 	"io/fs"
 
-	plugin "github.com/RayleaBot/plugin-starrail"
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/images"
-	"github.com/RayleaBot/plugin-starrail/internal/panelapi"
-	"github.com/RayleaBot/plugin-starrail/internal/reference/miao"
-	"github.com/RayleaBot/plugin-starrail/internal/showcase"
+	plugin "github.com/RayleaBot/starrail"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/images"
+	"github.com/RayleaBot/starrail/internal/panelapi"
+	"github.com/RayleaBot/starrail/internal/reference/miao"
+	"github.com/RayleaBot/starrail/internal/showcase"
 )
 
 //go:embed catalog.json

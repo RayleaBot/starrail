@@ -3,7 +3,7 @@ package images
 import (
 	"strconv"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // artifactListArtwork maps the images named in the converted stylesheets

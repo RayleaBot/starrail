@@ -3,7 +3,7 @@ package images
 import (
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // The expected strings are what JavaScript's toFixed and miao's Format print.

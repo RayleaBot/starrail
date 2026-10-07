@@ -9,8 +9,8 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 // panelArtwork maps the miao images named in the panel stylesheet to their

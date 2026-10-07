@@ -14,7 +14,7 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
 // A warp link pasted in chat is read as Yunzai's gcLog reads a Star Rail

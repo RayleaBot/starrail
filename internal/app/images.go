@@ -9,9 +9,9 @@ import (
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/artwork"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/artwork"
+	"github.com/RayleaBot/starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 // Image is a reply drawn with one of the game plugin's own templates, laid out

@@ -99,7 +99,7 @@ go test ./...
 corepack pnpm --dir ui test
 corepack pnpm --dir ui run build
 $env:RAYLEA_PLUGIN_BUILD_USE_WORKSPACE='1'
-go run github.com/RayleaBot/RayleaBot/sdk/go/cmd/raylea-plugin build-go --backend ./cmd/plugin-starrail --target windows-x64 --include DATA_SOURCES.md=DATA_SOURCES.md
+go run github.com/RayleaBot/RayleaBot/sdk/go/cmd/raylea-plugin build-go --backend ./cmd/starrail --target windows-x64 --include DATA_SOURCES.md=DATA_SOURCES.md
 ```
 
 打包前运行 `python scripts/bundle-artwork.py --references <参考项目/2026-09-15>`，把模板用到的上游图片、字体与资料文件从固定提交复制到 `assets/`（不纳入版本库，构建时随包分发）。SDK v0.7.0 发布前，独立检出仍需相邻的 RayleaBot 仓库。

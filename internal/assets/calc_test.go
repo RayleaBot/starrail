@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 type vector struct {

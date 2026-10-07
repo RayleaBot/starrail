@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 // The record API shows substats cut, not rounded; miao's MysPanelHSR takes

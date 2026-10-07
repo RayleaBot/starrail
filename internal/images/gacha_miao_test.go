@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/assets"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
-	"github.com/RayleaBot/plugin-starrail/internal/images"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/assets"
+	"github.com/RayleaBot/starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/images"
 )
 
 func TestMiaoGachaPagesFollowGachaData(t *testing.T) {

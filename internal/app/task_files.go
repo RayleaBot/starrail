@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/RayleaBot/plugin-starrail/internal/localdata"
+	"github.com/RayleaBot/starrail/internal/localdata"
 )
 
 // storedTask is a scheduled task kept in its own file.

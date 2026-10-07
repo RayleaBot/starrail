@@ -1,6 +1,6 @@
 package images
 
-import "github.com/RayleaBot/plugin-starrail/internal/app"
+import "github.com/RayleaBot/starrail/internal/app"
 
 // AtlasIndex draws Atlas's numbered list the way its resource/massage
 // text.html does: the sender's name, then each entry beside its number.

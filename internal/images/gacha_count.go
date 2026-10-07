@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
 // countWords are stripped before picking the pool, as LogCount.getPool does.

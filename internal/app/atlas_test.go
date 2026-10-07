@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/artwork"
-	"github.com/RayleaBot/plugin-starrail/internal/pluginmeta"
+	"github.com/RayleaBot/starrail/internal/artwork"
+	"github.com/RayleaBot/starrail/internal/pluginmeta"
 )
 
 func TestAtlasRulesTakeMessagesAsPickRule(t *testing.T) {

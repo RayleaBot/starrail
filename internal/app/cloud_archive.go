@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/localdata"
+	"github.com/RayleaBot/starrail/internal/localdata"
 )
 
 var cloudTreePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,32}$`)

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
 func TestGachaFollowsStarRailPlugin(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/assets"
-	"github.com/RayleaBot/plugin-starrail/internal/showcase"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/assets"
+	"github.com/RayleaBot/starrail/internal/showcase"
 )
 
 // The fixture follows Mihomo's parsed answer with one relic; its values are

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/localdata"
+	"github.com/RayleaBot/starrail/internal/localdata"
 )
 
 // APICharacter is a character StarRail-plugin's panel service returned, as its

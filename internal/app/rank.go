@@ -14,7 +14,7 @@ import (
 	"unicode/utf8"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 // Group panel ranks follow miao-plugin's ProfileRank: every panel a member

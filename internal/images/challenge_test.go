@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/artwork"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
-	"github.com/RayleaBot/plugin-starrail/internal/reference/miao"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/artwork"
+	"github.com/RayleaBot/starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference/miao"
 )
 
 func clock(year, month, day int) map[string]any {

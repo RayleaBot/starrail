@@ -1,4 +1,4 @@
-module github.com/RayleaBot/plugin-starrail
+module github.com/RayleaBot/starrail
 
 go 1.26.6
 

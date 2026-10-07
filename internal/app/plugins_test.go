@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
-	"github.com/RayleaBot/plugin-starrail/internal/reference/miao"
+	"github.com/RayleaBot/starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference/miao"
 )
 
 // pluginFile reads a file of this plugin, for tests that need the shipped

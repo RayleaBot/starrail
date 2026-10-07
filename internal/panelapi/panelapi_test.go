@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // The pinned signing script runs in the engine and gives upstream's header:

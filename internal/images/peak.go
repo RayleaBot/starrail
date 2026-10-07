@@ -1,7 +1,7 @@
 package images
 
 import (
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // peakArtwork maps the fixed images of the Anomaly Arbitration pages to their

@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/assets"
-	"github.com/RayleaBot/plugin-starrail/internal/images"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/assets"
+	"github.com/RayleaBot/starrail/internal/images"
 )
 
 func decodeJSON(t *testing.T, text string) map[string]any {

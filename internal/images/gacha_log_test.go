@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/gacha"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
 func TestGachaLogFollowsYunzai(t *testing.T) {

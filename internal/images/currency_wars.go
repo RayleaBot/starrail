@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // currencyWarsArtwork maps the images and font both 货币战争 pages name to

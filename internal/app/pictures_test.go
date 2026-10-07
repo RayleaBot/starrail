@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/artwork"
+	"github.com/RayleaBot/starrail/internal/artwork"
 )
 
 func writeArtwork(t *testing.T, root, name, content string) {

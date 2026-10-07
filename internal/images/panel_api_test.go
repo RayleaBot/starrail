@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/artwork"
-	"github.com/RayleaBot/plugin-starrail/internal/images"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/artwork"
+	"github.com/RayleaBot/starrail/internal/images"
 )
 
 // The panel writes numbers as new_panel.html does: totals floored, bases

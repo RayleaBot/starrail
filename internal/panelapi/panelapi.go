@@ -14,8 +14,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 // signScript is resources/fuck/fuck: the signing function in base64.

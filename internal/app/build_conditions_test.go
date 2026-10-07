@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 func TestConditionScopeAndPresetRevision(t *testing.T) {

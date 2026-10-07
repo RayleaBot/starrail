@@ -5,7 +5,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // monthColors is ECharts' default palette, which upstream's chart uses.

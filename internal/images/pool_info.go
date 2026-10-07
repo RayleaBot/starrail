@@ -4,7 +4,7 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // poolArtwork are the fonts and backgrounds of miao's gacha-info page.

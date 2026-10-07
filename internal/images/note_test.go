@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 func TestNoteFollowsStarRailPlugin(t *testing.T) {

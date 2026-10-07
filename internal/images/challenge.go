@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // challengeKind is one of the three records StarRail-plugin draws with

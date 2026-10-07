@@ -1,7 +1,7 @@
 package images
 
 import (
-	"github.com/RayleaBot/plugin-starrail/internal/app"
+	"github.com/RayleaBot/starrail/internal/app"
 )
 
 // commonItemArtwork is miao's shared item frames and fonts the training page

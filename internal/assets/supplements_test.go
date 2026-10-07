@@ -7,7 +7,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 func supplementalProfile(t *testing.T, key string, rank int) (reference.Character, map[string]any) {

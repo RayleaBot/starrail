@@ -3,7 +3,7 @@ package app
 import (
 	"testing"
 
-	"github.com/RayleaBot/plugin-starrail/internal/reference"
+	"github.com/RayleaBot/starrail/internal/reference"
 )
 
 func TestBuildPanelKeepsTotalTalentLevelsAndServantSkills(t *testing.T) {
