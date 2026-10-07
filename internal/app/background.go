@@ -25,10 +25,18 @@ func detach(ctx context.Context, event *rayleabot.EventContext, result any) erro
 	return err
 }
 
-// clock is the time background flows pace their pages by; tests set their
-// own.
+// clock is the time flows read and background flows pace their pages by;
+// tests set their own.
 type clock interface {
+	Now() time.Time
 	Sleep(context.Context, time.Duration) error
+}
+
+func (a *App) now() time.Time {
+	if a.clock != nil {
+		return a.clock.Now()
+	}
+	return time.Now()
 }
 
 // sleep waits for d or until ctx ends.

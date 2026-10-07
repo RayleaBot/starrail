@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
@@ -22,7 +23,10 @@ func TestOnlineTimeFollowsTheRecordCursor(t *testing.T) {
 		}
 		return list
 	}
-	host := newSDKHost(t, pluginApp(t), func(request rayleabot.ServiceCallRequest, _ bool) (map[string]any, string) {
+	a := pluginApp(t)
+	// The reply lists the last seven days up to today, the newest records' day.
+	a.clock = &fakeClock{at: time.Date(2026, 9, 28, 21, 0, 0, 0, chinaZone)}
+	host := newSDKHost(t, a, func(request rayleabot.ServiceCallRequest, _ bool) (map[string]any, string) {
 		switch request.Method {
 		case "list":
 			owner := map[string]any{"source_protocol": "onebot11", "source_adapter": "a", "bot_id": "bot", "actor_id": "u"}

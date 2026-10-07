@@ -160,7 +160,7 @@ func (a *App) onlineCommand(ctx context.Context, event *rayleabot.EventContext) 
 	if len(records) == 0 {
 		return event.SendText("暂无记录")
 	}
-	today := time.Now().In(chinaZone)
+	today := a.now().In(chinaZone)
 	image := OnlineImage{Role: role, Details: onlinePeriods(records, today)}
 	image.Dates, image.Hours = onlineDays(records, today)
 	view := View{Title: "在线时长", Subtitle: "UID " + role.UID, Rows: []Row{}, Note: "数据由米游社开拓力回复推算估计，不保证准确性，仅供参考"}
