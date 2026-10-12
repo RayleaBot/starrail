@@ -38,7 +38,6 @@ async function remove() { const p = selected.value; if (!p) return; busy.value =
 <template>
   <div class="subsection">
     <h3>自定义队伍与条件</h3>
-    <p class="hint">全局方案：所有机器人共用，不保存账号或面板。</p>
     <label class="check"><input type="checkbox" :checked="modelValue !== null" :disabled="disabled || busy" @change="enabled">建立自定义队伍与条件候选</label>
     <div class="field-row">
       <label class="field"><span>本角色已保存方案</span><select v-model="preset" :disabled="disabled || busy"><option value="">选择方案</option><option v-for="p in available" :key="p.ref" :value="p.ref">{{ p.name }}</option></select></label>
