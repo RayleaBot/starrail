@@ -75,7 +75,7 @@ func (a *App) manageReminder(ctx context.Context, event *rayleabot.EventContext,
 	switch action {
 	case "reminder.list":
 		items, err := a.Reminders.List()
-		items = slices.DeleteFunc(items, func(task Reminder) bool { return task.Kind != "" })
+		items = slices.DeleteFunc(items, func(task Reminder) bool { return task.Kind != "" || !visibleOwner(event, task.Owner) })
 		return map[string]any{"items": items}, err
 	case "reminder.remove":
 		return a.removeDelegatedTask(ctx, event, asText(input["ref"]), "")
@@ -155,8 +155,8 @@ func (a *App) removeDelegatedTask(ctx context.Context, event *rayleabot.EventCon
 			return gameError("reminder_missing", "提醒不存在或已移除。")
 		}
 		task = (*items)[i]
-		if event.Event.EventType != "management.action" && !task.Owner.same(chatOwner(event)) {
-			return gameError("source_invalid", "只能移除自己的提醒。")
+		if !visibleOwner(event, task.Owner) {
+			return accountMismatch()
 		}
 		*items = slices.Delete(*items, i, i+1)
 		return nil

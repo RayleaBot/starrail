@@ -1,7 +1,7 @@
 <script lang="ts">
 // The list item shape and status labels are shared with the merged task list.
 export interface MonthlyTask { ref: string; role: { uid: string; nickname: string }; owner: { actor_id: string }; hour: number; minute?: number; enabled: boolean; last_code: string; next_check_ms: number; expires_at_ms: number }
-export const monthlyLabels: Record<string, string> = { collected: '月报已保存' }
+export const monthlyLabels: Record<string, string> = { bot_assigned: '归属已更新，请重新开启', collected: '月报已保存' }
 </script>
 <script setup lang="ts">
 import { ref, watch } from 'vue'

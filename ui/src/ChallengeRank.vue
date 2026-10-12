@@ -29,7 +29,7 @@ const reader = useReader(operation, async stale => {
   }
   if (!kind.value) return
   const start = target
-  const result = await shell.invoke<{ groups: Partition[]; revision: number }>('challenge.list', { scope: props.scope, kind: kind.value, season: season.value, dimension: dimension.value, offset: start })
+  const result = await shell.invoke<{ groups: Partition[]; revision: number }>('challenge.list', { group_id: props.scope.group_id, kind: kind.value, season: season.value, dimension: dimension.value, offset: start })
   if (stale()) return
   groups.value = result.groups; revision.value = result.revision; offset.value = start; loaded.value = true
 })
@@ -38,7 +38,7 @@ watch(kind, () => { if (!selected.value?.metrics.some(metric => metric.key === d
 async function clear() {
   if (!confirming.value) return
   await run(async () => {
-    await shell.invoke('challenge.clear', { scope: props.scope, kind: kind.value, season: season.value, revision: revision.value, confirmed: true })
+    await shell.invoke('challenge.clear', { group_id: props.scope.group_id, kind: kind.value, season: season.value, revision: revision.value, confirmed: true })
     groups.value = []; loaded.value = false; confirming.value = false
   }, '已清空所选玩法及期次的成绩。')
 }

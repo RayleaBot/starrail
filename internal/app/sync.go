@@ -12,6 +12,15 @@ import (
 )
 
 func (a *App) manageSync(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
+	if action != "gacha.sync.start" {
+		choice, err := a.Syncs.Choice(asText(input["ref"]))
+		if err != nil || choice.Link {
+			return nil, syncError(gacha.ErrSync)
+		}
+		if _, err := authorizeCloudRole(ctx, a.accountClient(event), Selection{AccountRef: choice.AccountRef, RoleRef: choice.RoleRef}); err != nil {
+			return nil, err
+		}
+	}
 	return a.syncAction(ctx, a.accountClient(event), action, input)
 }
 func (a *App) syncAction(ctx context.Context, client AccountsClient, action string, input map[string]any) (result map[string]any, err error) {
@@ -191,7 +200,12 @@ func (a *App) backgroundSyncAction(ctx context.Context, event *rayleabot.EventCo
 	switch action {
 	case "gacha.task.cancel":
 		ref := asText(input["ref"])
-		if !a.BackgroundSyncs.cancel(func(item BackgroundSync) bool { return item.Ref == ref }, "sync_canceled") {
+		for _, item := range a.BackgroundSyncs.list() {
+			if item.Ref == ref && !visibleOwner(event, item.Owner) {
+				return nil, accountMismatch()
+			}
+		}
+		if !a.BackgroundSyncs.cancel(func(item BackgroundSync) bool { return item.Ref == ref && visibleOwner(event, item.Owner) }, "sync_canceled") {
 			return nil, gameError("sync_task_missing", "没有正在进行的这项后台同步。")
 		}
 		return map[string]any{"canceled": true}, nil

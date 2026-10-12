@@ -27,6 +27,7 @@ const available = computed(() => !!shell.selectedRole.value && overseas(shell.se
 const states: Record<string, string> = { creating: '创建中', waiting: '等待调度', running: '同步中', completed: '已完成', paused: '已暂停', expired: '已到期', failed: '未完成', canceled: '已取消' }
 const chips: Record<string, string> = { completed: 'success', failed: 'danger', expired: 'danger', paused: 'warning', canceled: 'warning' }
 const reasons: Record<string, string> = {
+  bot_assigned: '归属已更新，请重新运行',
   queued: '已排队', sync_running: '正在读取官方记录', sync_completed: '本轮同步完成', sync_canceled: '已取消，原档案保持不变', sync_timeout: '后台期限内未读完，原档案保持不变', expired: '授权已到期，请移除后重新创建', archive_removed: '档案已移除，同步已停止',
   'sync_completed.notification_failed': '记录已保存，结果通知未能发送', 'plugin.game_sync_conflict': '档案发生变化，请确认后重新运行', 'plugin.game_sync_invalid': '官方分页或记录异常，原档案保留',
   'plugin.account_delegation_denied': '委托已撤销或失效，请重新创建', 'plugin.account_caller_denied': '本游戏的账号授权已撤销', 'plugin.account_not_found': '账号已移除', 'plugin.account_role_denied': '角色授权已变更',

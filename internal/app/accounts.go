@@ -52,10 +52,11 @@ type ServiceCaller interface {
 	CallService(context.Context, rayleabot.ServiceCallRequest, any) error
 }
 type AccountsClient struct {
-	Caller   ServiceCaller
-	Provider string
-	Game     string
-	Bots     []rayleabot.Bot
+	Caller        ServiceCaller
+	Provider      string
+	Game          string
+	Bots          []rayleabot.Bot
+	ManagementBot rayleabot.BotAccount // Local checks only; the host supplies service origin.
 }
 
 func (c AccountsClient) call(ctx context.Context, method string, params map[string]any, out any) error {
@@ -63,7 +64,12 @@ func (c AccountsClient) call(ctx context.Context, method string, params map[stri
 	if provider == "" {
 		provider = "raylea.mihoyo-accounts"
 	}
-	return c.Caller.CallService(ctx, rayleabot.ServiceCallRequest{TargetPluginID: provider, Service: "accounts", ServiceVersion: 1, Method: method, Params: params}, out)
+	err := c.Caller.CallService(ctx, rayleabot.ServiceCallRequest{TargetPluginID: provider, Service: "accounts", ServiceVersion: 1, Method: method, Params: params}, out)
+	var failure *rayleabot.ActionError
+	if c.ManagementBot.BotID != "" && errors.As(err, &failure) && (failure.Code == "plugin.account_subject_denied" || failure.Code == "plugin.account_not_found" || failure.Code == "plugin.account_role_denied") {
+		return &rayleabot.ActionError{Code: failure.Code, Message: "所选账号或角色不在当前机器人授权范围内，请刷新角色列表。", Details: failure.Details}
+	}
+	return err
 }
 func (c AccountsClient) List(ctx context.Context, page int) (Accounts, error) {
 	result := Accounts{}
@@ -71,6 +77,9 @@ func (c AccountsClient) List(ctx context.Context, page int) (Accounts, error) {
 	for index := range result.Items {
 		result.Items[index].Owner.resolve(c.Bots, result.Items[index].Ref)
 		result.Items[index].Roles = slices.DeleteFunc(result.Items[index].Roles, func(role Role) bool { return role.Game != c.Game })
+	}
+	if c.ManagementBot.BotID != "" {
+		result.Items = slices.DeleteFunc(result.Items, func(account Account) bool { return !belongsToBot(account.Owner, c.ManagementBot) })
 	}
 	return result, err
 }

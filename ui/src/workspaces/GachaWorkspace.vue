@@ -27,10 +27,10 @@ const archives = ref<SavedArchive[]>([]), view = ref<View | null>(null)
 const historyArchive = ref<SavedArchive | null>(null), historyKey = ref(0)
 const removeCandidate = ref<SavedArchive | null>(null), removeDialog = ref<HTMLDialogElement | null>(null)
 const sections = computed<Section[]>(() => [
-  { id: 'archives', label: '档案', icon: 'cards', count: archives.value.length },
+  { id: 'archives', label: '全局档案', icon: 'cards', count: archives.value.length },
   { id: 'sync', label: '官方同步', icon: 'sync' },
-  { id: 'import', label: '导入记录', icon: 'upload' },
-  { id: 'simulation', label: '模拟抽卡', icon: 'dice' },
+  { id: 'import', label: '全局导入', icon: 'upload' },
+  { id: 'simulation', label: '全局模拟', icon: 'dice' },
 ])
 async function loadArchives() { archives.value = (await shell.invoke<{ items: SavedArchive[] }>('gacha.list')).items }
 let summaryTarget: SavedArchive | null = null
@@ -155,6 +155,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
 <template>
   <Workspace title="抽卡" description="跃迁档案的同步、导入、统计与导出；官方同步和后台任务使用上方选择的角色。" :sections="sections" roles>
     <template #default="{ active, select }">
+      <StatusLine v-if="active !== 'sync'" kind="info" text="全局区域：抽卡档案按 UID 共享，模拟额度与管理端模拟由所有机器人共用。" />
       <section v-if="active === 'archives'" class="section" aria-labelledby="archives-title">
         <div class="section-heading"><div class="titles"><h2 id="archives-title">档案</h2><p>本插件保存的跃迁记录，按 UID 与区服分档；上方角色对应的档案会自动显示统计与明细，其他档案可从行内打开，或导出为 UIGF 文件。</p></div><button type="button" :disabled="archive.busy.value" @click="archive.run(loadArchives)">刷新</button></div>
         <StatusLine v-if="archive.busy.value && !archives.length" kind="info" text="正在读取档案…" />
@@ -172,7 +173,7 @@ onUnmounted(() => { disposed = true; syncController?.abort() })
         <GachaHistory v-if="historyArchive" :key="historyKey" :uid="historyArchive.uid" :region="historyArchive.region" :disabled="archive.busy.value" />
         <dialog ref="removeDialog" aria-labelledby="remove-title" @cancel="archive.busy.value && $event.preventDefault()">
           <h2 id="remove-title">移除抽卡档案 {{ removeCandidate?.uid }}</h2>
-          <p>将删除本插件保存的此区服记录，并取消对应的后台同步、暂停每日同步。建议先导出保留副本。</p>
+          <p>将删除所有机器人共享的此区服记录，并取消对应的全部后台同步、暂停每日同步。建议先导出保留副本。</p>
           <p v-if="archive.error.value" role="alert" class="danger-text">{{ archive.error.value }}</p>
           <div class="actions"><button type="button" autofocus :disabled="archive.busy.value" @click="removeDialog?.close()">取消</button><button type="button" class="destructive" :disabled="archive.busy.value" @click="removeArchive">{{ archive.busy.value ? '正在移除…' : '移除档案' }}</button></div>
         </dialog>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, provide, ref, watch } from 'vue'
-import { usePluginHost } from '@rayleabot/plugin-ui'
-import { arkDefaults, botAccounts, roleKey, shellKey, type Account, type AliasConflict, type Bot, type CatalogSummary, type Game, type LoadState, type RoleCharacter, type RoleOption, type Settings, type Shell } from './shell/context'
+import { PluginUIClient, usePluginHost } from '@rayleabot/plugin-ui'
+import { arkDefaults, roleKey, shellKey, type Account, type AliasConflict, type CatalogSummary, type Game, type LoadState, type RoleCharacter, type RoleOption, type Settings, type Shell } from './shell/context'
 import { useOperation } from './shell/status'
 import StatusLine from './shell/StatusLine.vue'
 import QueryWorkspace from './workspaces/QueryWorkspace.vue'
@@ -26,7 +26,7 @@ const page: Page = requested in workspaces ? requested as Page : absorbed[reques
 const workspace = workspaces[page]
 
 const game = ref<Game | null>(null)
-const bots = ref<Bot[]>([])
+const bots = computed(() => host.bot.value ? [{ source_protocol: host.bot.value.source_protocol, id: host.bot.value.bot_id, nickname: host.bot.value.nickname }] : [])
 const catalogVersion = ref('')
 const settings = ref<Settings>({ account_provider: 'raylea.mihoyo-accounts', image_replies: true, alias_permission: 0, custom_aliases: {}, ark: { ...arkDefaults } })
 const accounts = ref<Account[]>([])
@@ -49,6 +49,7 @@ async function loadAccounts(index = 0) {
     if (!roles.value.some(item => item.key === selection.value)) selection.value = roles.value[0]?.key ?? ''
     accountIssue.value = ''
   } catch (cause) {
+    accounts.value = []; selection.value = ''; nextAccountPage.value = null
     accountIssue.value = cause instanceof Error ? cause.message : '账号服务暂不可用。'
   } finally {
     accountsLoaded.value = true
@@ -63,9 +64,8 @@ async function saveSettings(patch: Partial<Settings>): Promise<AliasConflict[]> 
   return checked.conflicts
 }
 async function load() {
-  const result = await invoke<{ game: Game; bots?: Bot[]; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; custom_aliases?: Record<string, string>; ark?: Partial<Settings['ark']> } }>('status')
+  const result = await invoke<{ game: Game; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; custom_aliases?: Record<string, string>; ark?: Partial<Settings['ark']> } }>('status')
   game.value = result.game
-  bots.value = botAccounts(result.bots ?? [])
   catalogVersion.value = result.catalog_version
   settings.value = { account_provider: result.settings.account_provider, image_replies: result.settings.image_replies, alias_permission: result.settings.alias_permission ?? 0, custom_aliases: result.settings.custom_aliases ?? {}, ark: { ...arkDefaults, ...result.settings.ark } }
   if (accountPages.has(page)) await loadAccounts()
@@ -114,7 +114,10 @@ async function loadCharacters(force = false): Promise<void> {
 // A role change shows its cached characters at once and leaves the rest to
 // the lists that need them.
 watch(selection, () => { const cached = characterCache.get(selection.value); characters.value = cached ?? []; charactersState.value = cached ? 'ready' : 'idle'; charactersIssue.value = '' })
-const shell: Shell = { page, invoke, game, bots, catalogVersion, settings, saveSettings, accounts, accountsLoaded, accountIssue, nextAccountPage, loadAccounts, roles, selection, selectedRole, chosen, catalog, catalogState, loadCatalog, characters, charactersState, charactersIssue, loadCharacters }
+const shell: Shell = { page, invoke, game, bots, bot: host.bot,
+  apiRequest: (method, path) => host.client.apiRequest(method, path),
+  assignHistory: (bot, payload) => new PluginUIClient({ pluginId: host.client.pluginId, pageId: 'groups', bot }).invokeAction('history.assign', payload),
+  catalogVersion, settings, saveSettings, accounts, accountsLoaded, accountIssue, nextAccountPage, loadAccounts, roles, selection, selectedRole, chosen, catalog, catalogState, loadCatalog, characters, charactersState, charactersIssue, loadCharacters }
 provide(shellKey, shell)
 void host.ready.then(() => run(load)).catch(cause => { error.value = cause instanceof Error ? cause.message : '页面连接失败。' })
 </script>

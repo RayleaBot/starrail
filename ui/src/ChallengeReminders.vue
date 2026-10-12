@@ -2,7 +2,7 @@
 // The list item shape, weekday names and status labels are shared with the merged task list.
 export interface ChallengeTask { ref: string; challenge_kind: string; metric: string; threshold: number; hour: number; minute: number; weekday: number; role: { uid: string; nickname: string }; owner: { actor_id: string }; enabled: boolean; last_code: string; next_check_ms: number; expires_at_ms: number }
 export const weekdays = ['每日', '每周一', '每周二', '每周三', '每周四', '每周五', '每周六', '每周日']
-export const challengeLabels: Record<string, string> = { notified: '已发送提醒', target_met: '已达到目标', metric_unknown: '官方未提供所选指标', check_attempted: '已尝试检查', notification_failed: '发送结果未确认', expired: '委托到期', 'plugin.upstream_device_required': '需要官方设备验证', 'plugin.upstream_challenge_required': '需要官方验证', 'plugin.account_delegation_denied': '委托失效', 'plugin.account_caller_denied': '插件授权已撤销', 'plugin.game_challenge_unavailable': '官方成绩暂不可用' }
+export const challengeLabels: Record<string, string> = { bot_assigned: '归属已更新，请重新开启', notified: '已发送提醒', target_met: '已达到目标', metric_unknown: '官方未提供所选指标', check_attempted: '已尝试检查', notification_failed: '发送结果未确认', expired: '委托到期', 'plugin.upstream_device_required': '需要官方设备验证', 'plugin.upstream_challenge_required': '需要官方验证', 'plugin.account_delegation_denied': '委托失效', 'plugin.account_caller_denied': '插件授权已撤销', 'plugin.game_challenge_unavailable': '官方成绩暂不可用' }
 </script>
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'

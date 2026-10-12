@@ -140,7 +140,7 @@ func TestBackgroundSyncStopsWhenCanceled(t *testing.T) {
 	accounts.onRead = func(n int) {
 		if n == 3 {
 			items := a.BackgroundSyncs.list()
-			if _, err := a.backgroundSyncAction(t.Context(), nil, "gacha.task.cancel", map[string]any{"ref": items[0].Ref}); err != nil {
+			if _, err := a.backgroundSyncAction(t.Context(), managementEvent("onebot11", "bot"), "gacha.task.cancel", map[string]any{"ref": items[0].Ref}); err != nil {
 				t.Error(err)
 			}
 		}

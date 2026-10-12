@@ -296,7 +296,8 @@ func decodeObject(value any, target any) error {
 	return json.Unmarshal(raw, target)
 }
 func (a *App) accountClient(event *rayleabot.EventContext) AccountsClient {
-	return AccountsClient{Caller: event.Actions(), Provider: settings(event).AccountProvider, Game: a.Game.ID, Bots: event.Bots}
+	bot, _ := event.Event.ManagementBot()
+	return AccountsClient{Caller: event.Actions(), Provider: settings(event).AccountProvider, Game: a.Game.ID, Bots: event.Bots, ManagementBot: bot}
 }
 func (a *App) operation(name string) (Operation, bool) {
 	for _, item := range a.Game.Operations {
@@ -818,6 +819,29 @@ func (a *App) commandInput(operation Operation, args []string, aliases map[strin
 }
 
 func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
+	if bot, ok := event.Event.ManagementBot(); ok {
+		if err := checkManagementInput(bot, input); err != nil {
+			return nil, err
+		}
+	}
+	if accountManagementAction(action) {
+		bot, err := managementAccount(event)
+		if err != nil {
+			return nil, err
+		}
+		if action == "groups.list" {
+			return a.listManagementGroups(bot, input)
+		}
+		if action == "groups.set" || action == "groups.clear" || action == "challenge.list" || action == "challenge.clear" {
+			input, err = managementGroupInput(bot, input)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if strings.HasPrefix(action, "history.") {
+		return a.managementHistory(ctx, event, action, input)
+	}
 	switch action {
 	case "public.query":
 		result, err := a.accountClient(event).PublicProfile(ctx, asText(input["uid"]), asText(input["region"]))
@@ -867,7 +891,7 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 	case "build.conditions", "build.presets.list", "build.presets.save", "build.presets.remove":
 		return a.buildPresetAction(action, input)
 	case "status":
-		return map[string]any{"game": a.Game, "catalog_version": a.Catalog.Version, "catalog_entries": len(a.Catalog.Entries), "settings": settings(event), "bots": event.Bots}, nil
+		return map[string]any{"game": a.Game, "catalog_version": a.Catalog.Version, "catalog_entries": len(a.Catalog.Entries), "settings": settings(event)}, nil
 	case "accounts.list":
 		result, err := a.accountClient(event).List(ctx, number(input["page"]))
 		return map[string]any{"accounts": result}, err

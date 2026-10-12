@@ -166,12 +166,6 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 		if j == nil {
 			return nil, gameError("billing_missing", "收集任务已失效，请重新开始。")
 		}
-		if action == "billing.sync.cancel" {
-			j.timer.Stop()
-			delete(a.BillingJobs.items, ref)
-			return map[string]any{"canceled": true}, nil
-		}
-		j.timer.Reset(15 * time.Minute)
 		client.Provider = j.Provider
 		role, err := authorizeCloudRole(ctx, client, j.Selection)
 		if err != nil {
@@ -180,6 +174,12 @@ func (a *App) billingManage(ctx context.Context, client AccountsClient, action s
 		if role.UID != j.Role.UID || role.Region != j.Role.Region {
 			return nil, gameError("role_missing", "任务角色授权已变化。")
 		}
+		if action == "billing.sync.cancel" {
+			j.timer.Stop()
+			delete(a.BillingJobs.items, ref)
+			return map[string]any{"canceled": true}, nil
+		}
+		j.timer.Reset(15 * time.Minute)
 		var q struct {
 			Sequence int `json:"sequence"`
 		}

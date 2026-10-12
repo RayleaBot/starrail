@@ -157,6 +157,10 @@ func (a *App) cloudArchiveAction(ctx context.Context, event *rayleabot.EventCont
 	if action == "cloud.archive.receive" {
 		a.Cloud.mu.Lock()
 		job := a.Cloud.jobs[asText(input["ref"])]
+		if job != nil && job.bot.BotID != "" && job.bot != client.ManagementBot {
+			a.Cloud.mu.Unlock()
+			return nil, accountMismatch()
+		}
 		if job == nil || job.game != a.Game.ID || job.State != "completed" || len(job.exchange) == 0 {
 			a.Cloud.mu.Unlock()
 			return nil, gameError("cloud_missing", "交换下载已失效，请重新下载。")

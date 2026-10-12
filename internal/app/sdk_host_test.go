@@ -270,10 +270,23 @@ func (h *sdkHost) manage(action string, input map[string]any) (map[string]any, [
 
 // postManage posts an action of the management page and returns its ID.
 func (h *sdkHost) postManage(action string, input map[string]any) string {
+	var bot *rayleabot.BotAccount
+	if accountManagementAction(action) {
+		bot = &rayleabot.BotAccount{SourceProtocol: "onebot11", BotID: "bot"}
+	}
+	return h.postManageFor(bot, action, input)
+}
+
+func (h *sdkHost) postManageFor(bot *rayleabot.BotAccount, action string, input map[string]any) string {
 	h.t.Helper()
 	h.next++
 	id := fmt.Sprintf("manage-%d", h.next)
-	h.post(id, map[string]any{"type": "event", "request_id": id, "event": map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": map[string]any{"action": action, "payload": input}}})
+	payload := map[string]any{"action": action, "payload": input}
+	if bot != nil {
+		payload["page_id"] = "overview"
+		payload["bot"] = bot
+	}
+	h.post(id, map[string]any{"type": "event", "request_id": id, "event": map[string]any{"event_id": id, "event_type": "management.action", "source_protocol": "management", "source_adapter": "management.ui", "timestamp": time.Now().Unix(), "payload": payload}})
 	return id
 }
 

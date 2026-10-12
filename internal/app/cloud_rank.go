@@ -145,6 +145,9 @@ func (c *CloudClient) rankPanelRequest(game string, input CloudInput) (string, m
 		return "", nil, input, gameError("cloud_consent_required", "请确认向 ark 云服务读取所选公开面板。")
 	}
 	j := c.jobs[input.Ref]
+	if j != nil && j.bot.BotID != "" && j.bot != input.bot {
+		return "", nil, input, accountMismatch()
+	}
 	if j == nil || j.game != game || j.State != "completed" || j.Ranking == nil || input.Index == nil || *input.Index < 0 || *input.Index >= len(j.Ranking.Rows) || !j.Ranking.Rows[*input.Index].CanReadPanel {
 		return "", nil, input, gameError("cloud_missing", "此榜单条目不可读取或查询已失效，请重新查询排名。")
 	}

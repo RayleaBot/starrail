@@ -24,7 +24,9 @@ func (a *App) syncTaskAction(ctx context.Context, event *rayleabot.EventContext,
 	switch action {
 	case "gacha.task.list":
 		items, err := a.SyncTasks.List()
-		return map[string]any{"items": items, "syncs": a.BackgroundSyncs.list()}, err
+		items = slices.DeleteFunc(items, func(item SyncTask) bool { return !visibleOwner(event, item.Owner) })
+		syncs := slices.DeleteFunc(a.BackgroundSyncs.list(), func(item BackgroundSync) bool { return !visibleOwner(event, item.Owner) })
+		return map[string]any{"items": items, "syncs": syncs}, err
 	case "gacha.task.remove":
 		var t SyncTask
 		err := a.SyncTasks.edit(asText(input["ref"]), func(items *[]SyncTask, i int) error {
@@ -32,6 +34,9 @@ func (a *App) syncTaskAction(ctx context.Context, event *rayleabot.EventContext,
 				return gameError("sync_task_missing", "同步任务不存在。")
 			}
 			t = (*items)[i]
+			if !visibleOwner(event, t.Owner) {
+				return accountMismatch()
+			}
 			*items = slices.Delete(*items, i, i+1)
 			return nil
 		})
@@ -64,6 +69,9 @@ func (a *App) rerunSyncTask(ctx context.Context, event *rayleabot.EventContext, 
 	if i < 0 {
 		return nil, gameError("sync_task_missing", "同步任务不存在。")
 	}
+	if !visibleOwner(event, items[i].Owner) {
+		return nil, accountMismatch()
+	}
 	// The account check runs before the task is edited, outside the store's
 	// lock.
 	client := AccountsClient{Caller: event.Actions(), Provider: items[i].Provider, Game: a.Game.ID}
@@ -76,6 +84,9 @@ func (a *App) rerunSyncTask(ctx context.Context, event *rayleabot.EventContext, 
 			return gameError("sync_task_missing", "同步任务不存在。")
 		}
 		t := &(*items)[i]
+		if !visibleOwner(event, t.Owner) {
+			return accountMismatch()
+		}
 		if t.State == "running" || t.State == "creating" {
 			return gameError("sync_task_running", "此任务正在处理，请查看进度。")
 		}

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import Icon from './Icon.vue'
 import RolePicker from './RolePicker.vue'
 import { useShell } from './context'
+import { sectionStorageKey } from '../bot-history'
 
 export interface Section { id: string; label: string; icon: string; count?: number }
 
@@ -14,7 +15,7 @@ const props = defineProps<{ title: string; description?: string; sections: Secti
 // keeps a section's state outside the slot can read only while it is shown.
 const emit = defineEmits<{ section: [id: string] }>()
 const shell = useShell()
-const storageKey = `raylea.starrail.section:${shell.page}`
+const storageKey = sectionStorageKey(shell.page, shell.bot.value)
 function remembered(): string {
   try { return sessionStorage.getItem(storageKey) ?? '' } catch { return '' }
 }
@@ -38,6 +39,7 @@ function move(offset: number) {
     <div class="titles">
       <h1>{{ props.title }}</h1>
       <p v-if="props.description">{{ props.description }}</p>
+      <p v-if="shell.bot.value" class="hint">当前机器人：{{ shell.bot.value.nickname || shell.bot.value.bot_id }}<template v-if="shell.bot.value.nickname">（{{ shell.bot.value.bot_id }}）</template><template v-if="shell.bot.value.state !== 'online'"> · {{ shell.bot.value.state === 'no_connection' ? '无连接' : '离线' }}，仍可编辑已保存数据</template></p>
     </div>
     <RolePicker v-if="props.roles" :label="props.roleLabel" />
   </header>

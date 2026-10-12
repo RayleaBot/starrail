@@ -1,7 +1,7 @@
 <script lang="ts">
 // The list item shape and status labels are shared with the merged task list.
 export interface ReminderTask { ref: string; role: { uid: string; nickname: string }; owner: { actor_id: string; source_protocol: string; bot_id: string }; threshold: number; enabled: boolean; armed: boolean; expires_at_ms: number; last_checked_ms: number; last_attempt_ms: number; next_check_ms: number; last_code: string }
-export const reminderLabels: Record<string, string> = { checked: '已检查', notified: '已发送提醒', notification_attempted: '已尝试发送', notification_failed: '发送未确认', expired: '委托到期', 'plugin.account_caller_denied': '游戏授权已撤销', 'plugin.account_delegation_denied': '委托失效', 'plugin.account_not_found': '账号已移除', 'plugin.account_role_denied': '角色授权失效', 'plugin.upstream_auth_invalid': '账号需要重新登录', 'plugin.upstream_device_required': '需要官方设备验证，已退避', 'plugin.upstream_challenge_required': '需要官方验证，已退避', 'plugin.vault_locked': '账号库锁定', 'plugin.game_note_invalid': '体力数据暂不兼容' }
+export const reminderLabels: Record<string, string> = { bot_assigned: '归属已更新，请重新开启', checked: '已检查', notified: '已发送提醒', notification_attempted: '已尝试发送', notification_failed: '发送未确认', expired: '委托到期', 'plugin.account_caller_denied': '游戏授权已撤销', 'plugin.account_delegation_denied': '委托失效', 'plugin.account_not_found': '账号已移除', 'plugin.account_role_denied': '角色授权失效', 'plugin.upstream_auth_invalid': '账号需要重新登录', 'plugin.upstream_device_required': '需要官方设备验证，已退避', 'plugin.upstream_challenge_required': '需要官方验证，已退避', 'plugin.vault_locked': '账号库锁定', 'plugin.game_note_invalid': '体力数据暂不兼容' }
 </script>
 <script setup lang="ts">
 import { ref, watch } from 'vue'

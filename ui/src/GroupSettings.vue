@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
-import { botKey, botLabel, useShell } from './shell/context'
+import { botLabel, useShell } from './shell/context'
 import { useOperation } from './shell/status'
 import { useReader } from './reader'
 import type { Scope } from './ChallengeRank.vue'
@@ -16,7 +16,7 @@ const shell = useShell()
 const operation = useOperation('群设置操作未完成，请重试。')
 const { busy, error, notice, run } = operation
 const groups = ref<Group[]>([]), page = ref(0), next = ref<number | null>(null)
-const editing = ref<Group | null>(null), bot = ref(''), groupID = ref(''), enabled = ref('default'), images = ref('default'), aliases = ref<{ name: string; id: string }[]>([]), clearing = ref<Group | null>(null)
+const editing = ref<Group | null>(null), groupID = ref(''), enabled = ref('default'), images = ref('default'), aliases = ref<{ name: string; id: string }[]>([]), clearing = ref<Group | null>(null)
 function scopeKey(scope: Scope) { return JSON.stringify([scope.source_protocol, scope.bot_id, scope.group_id]) }
 function edit(item: Group) {
   editing.value = item
@@ -31,9 +31,9 @@ async function load() {
   emit('listed', result.items.map(item => item.scope))
 }
 function create() {
-  const chosen = shell.bots.value.find(item => botKey(item) === bot.value)
+  const chosen = shell.bot.value
   if (!chosen || !groupID.value.trim()) return
-  edit({ scope: { source_protocol: chosen.source_protocol, bot_id: chosen.id, group_id: groupID.value.trim() }, revision: 0, config: {}, rank_entries: 0 })
+  edit({ scope: { source_protocol: chosen.source_protocol, bot_id: chosen.bot_id, group_id: groupID.value.trim() }, revision: 0, config: {}, rank_entries: 0 })
 }
 async function save() {
   if (!editing.value) return
@@ -45,7 +45,7 @@ async function save() {
       map[key] = row.id.trim()
     }
     const config = { aliases: map, ...(enabled.value === 'default' ? {} : { enabled: enabled.value === 'true' }), ...(images.value === 'default' ? {} : { image_replies: images.value === 'true' }) }
-    await shell.invoke('groups.set', { scope: editing.value!.scope, revision: editing.value!.revision, config })
+    await shell.invoke('groups.set', { group_id: editing.value!.scope.group_id, revision: editing.value!.revision, config })
     editing.value = null
     await load()
   }, '群内游戏设置已保存。')
@@ -53,7 +53,7 @@ async function save() {
 async function clear() {
   if (!clearing.value) return
   await run(async () => {
-    await shell.invoke('groups.clear', { scope: clearing.value!.scope, revision: clearing.value!.revision })
+    await shell.invoke('groups.clear', { group_id: clearing.value!.scope.group_id, revision: clearing.value!.revision })
     clearing.value = null; editing.value = null
     await load()
   }, '已恢复默认设置并清空此群的本地参评记录。')
@@ -68,12 +68,10 @@ lister.request()
     <div class="section-heading"><div class="titles"><h2 id="groups-title">群设置</h2><p>群内设置优先于本游戏的全局设置，按机器人和群分别保存。排行只收录用户主动提交的装备评分与挑战成绩；云端排名不在此管理。</p></div><button type="button" :disabled="busy" @click="lister.request()">{{ lister.loading.value ? '正在读取…' : '刷新列表' }}</button></div>
     <form class="field-row" @submit.prevent="create">
       <fieldset :disabled="busy && !lister.loading.value">
-        <label class="field"><span>群所属机器人</span><select v-model="bot" required><option value="" disabled>选择机器人</option><option v-for="item in shell.bots.value" :key="botKey(item)" :value="botKey(item)">{{ botLabel(shell.bots.value, item.source_protocol, item.id) }}</option></select></label>
         <label class="field"><span>群 ID</span><input v-model="groupID" maxlength="256" required></label>
-        <button type="submit" :disabled="!bot || !groupID.trim()">编辑此群</button>
+        <button type="submit" :disabled="!shell.bot.value || !groupID.trim()">编辑此群</button>
       </fieldset>
     </form>
-    <p v-if="!shell.bots.value.length" class="hint">当前没有可选的机器人，无法添加新群；已保存的群仍可编辑。</p>
     <StatusLine v-if="lister.loading.value && !groups.length" kind="info" text="正在读取群列表…" />
     <StatusLine kind="error" :text="error"><template v-if="lister.failed.value" #actions><button class="compact" type="button" :disabled="busy" @click="lister.request()">重试</button></template></StatusLine>
     <StatusLine kind="success" :text="notice" />
@@ -104,7 +102,7 @@ lister.request()
           <div v-if="clearing && scopeKey(clearing.scope) === scopeKey(item.scope)" class="confirm"><p>将恢复群 {{ item.scope.group_id }} 的默认设置，并删除全部主动提交的本地评分和挑战成绩。</p><div class="actions"><button type="button" class="compact" :disabled="busy" @click="clearing = null">保留群记录</button><button type="button" class="compact destructive" :disabled="busy" @click="clear">确认清空群记录</button></div></div>
         </li>
       </ul>
-      <EmptyState v-else-if="!lister.loading.value" icon="people" title="当前页没有群设置" text="用上方表单按机器人和群 ID 添加，或翻到其他页。" />
+      <EmptyState v-else-if="!lister.loading.value" icon="people" title="当前页没有群设置" text="输入群 ID 添加，或翻到其他页。" />
       <div class="actions"><button type="button" :disabled="busy || page === 0" @click="turn(page - 1)">上一页</button><span class="muted">第 {{ page + 1 }} 页</span><button type="button" :disabled="busy || next === null" @click="turn(next!)">下一页</button></div>
     </div>
   </section>

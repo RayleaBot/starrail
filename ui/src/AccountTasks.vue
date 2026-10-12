@@ -1,7 +1,7 @@
 <script lang="ts">
 // The list item shape and status labels are shared with the merged task list.
 export interface CommunityTask { ref: string; kind: string; account_ref: string; owner: { actor_id: string }; role: { nickname: string }; enabled: boolean; once: boolean; hour: number; minute: number; last_code: string; next_check_ms: number; expires_at_ms: number; community?: { cursor: number; steps?: unknown[]; remaining?: string; state?: string } }
-export const communityLabels: Record<string, string> = { step_attempted: '已记下尝试，等待结果', step_completed: '本步完成', completed: '本轮完成', completed_with_remaining: '本轮结束，仍有可获取米游币', step_outcome_unknown: '上一步结果未确认，本轮已停止', cloud_attempted: '已尝试云签到，结果待核对', cloud_completed: '云钱包查询已完成', expired: '委托已到期', 'plugin.upstream_community_unavailable': '社区授权需处理', 'plugin.account_cloud_unavailable': '尚未配置云授权', 'plugin.upstream_cloud_unavailable': '云授权需处理', 'plugin.game_community_posts_missing': '讨论区帖子不足', 'plugin.upstream_challenge_required': '需要官方验证', 'plugin.upstream_device_required': '需要设备验证' }
+export const communityLabels: Record<string, string> = { bot_assigned: '归属已更新，请重新开启', step_attempted: '已记下尝试，等待结果', step_completed: '本步完成', completed: '本轮完成', completed_with_remaining: '本轮结束，仍有可获取米游币', step_outcome_unknown: '上一步结果未确认，本轮已停止', cloud_attempted: '已尝试云签到，结果待核对', cloud_completed: '云钱包查询已完成', expired: '委托已到期', 'plugin.upstream_community_unavailable': '社区授权需处理', 'plugin.account_cloud_unavailable': '尚未配置云授权', 'plugin.upstream_cloud_unavailable': '云授权需处理', 'plugin.game_community_posts_missing': '讨论区帖子不足', 'plugin.upstream_challenge_required': '需要官方验证', 'plugin.upstream_device_required': '需要设备验证' }
 </script>
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'

@@ -2044,35 +2044,43 @@
     "pages": [
       {
         "id": "overview",
-        "label": "查询"
+        "label": "查询",
+        "scope": "bot_account"
       },
       {
         "id": "catalog",
-        "label": "资料"
+        "label": "资料",
+        "scope": "global"
       },
       {
         "id": "gacha",
-        "label": "抽卡"
+        "label": "抽卡",
+        "scope": "bot_account"
       },
       {
         "id": "tasks",
-        "label": "定时任务"
+        "label": "定时任务",
+        "scope": "bot_account"
       },
       {
         "id": "account",
-        "label": "账号操作"
+        "label": "账号操作",
+        "scope": "bot_account"
       },
       {
         "id": "groups",
-        "label": "群管理"
+        "label": "群管理",
+        "scope": "bot_account"
       },
       {
         "id": "cloud",
-        "label": "ark 云端"
+        "label": "ark 云端",
+        "scope": "bot_account"
       },
       {
         "id": "settings",
-        "label": "设置"
+        "label": "设置",
+        "scope": "global"
       }
     ]
   }

@@ -296,6 +296,7 @@ func (a *App) checkPushes(ctx context.Context, event *rayleabot.EventContext, re
 func (a *App) subscriptionManage(ctx context.Context, event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
 	if action == "content.subscription.list" {
 		items, err := a.Subscriptions.List()
+		items = slices.DeleteFunc(items, func(item ContentSubscription) bool { return !visibleOwner(event, item.Owner) })
 		return map[string]any{"items": items}, err
 	}
 	if action != "content.subscription.remove" || input["confirm"] != true {
@@ -305,6 +306,9 @@ func (a *App) subscriptionManage(ctx context.Context, event *rayleabot.EventCont
 	err := a.Subscriptions.edit(ref, func(items *[]ContentSubscription, i int) error {
 		if i < 0 {
 			return gameError("subscription_missing", "推送已不存在。")
+		}
+		if !visibleOwner(event, (*items)[i].Owner) {
+			return accountMismatch()
 		}
 		*items = slices.Delete(*items, i, i+1)
 		return nil
