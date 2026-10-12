@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import Icon from './Icon.vue'
 import RolePicker from './RolePicker.vue'
 import { useShell } from './context'
-import { sectionStorageKey } from '../bot-history'
+import { sectionStorageKey } from './section-storage'
 
 export interface Section { id: string; label: string; icon: string; count?: number }
 

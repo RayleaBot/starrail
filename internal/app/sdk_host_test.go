@@ -44,10 +44,8 @@ type sdkHost struct {
 	busy     bool
 	// onSend sees each message.send before the host answers it, while the
 	// event sending it waits; it may post and await other events.
-	onSend        func(rayleabot.MessageSendRequest)
-	createFailure string
-	sendFailure   string
-	storage       func(map[string]any) (map[string]any, string)
+	onSend      func(rayleabot.MessageSendRequest)
+	sendFailure string
 	// pending are the events posted and not yet ended; ended are the frames
 	// that ended events while another was awaited.
 	pending map[string]bool
@@ -191,9 +189,6 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		}
 		return h.service(request, scheduled)
 	case "scheduler.create":
-		if h.createFailure != "" {
-			return nil, h.createFailure
-		}
 		h.jobs[asText(data["task_id"])] = maps.Clone(asObject(data["payload"]))
 		h.created = append(h.created, data)
 		return map[string]any{"task_id": data["task_id"]}, ""
@@ -230,8 +225,6 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		return nil, "platform.render_unavailable"
 	case "logger.write":
 		return map[string]any{}, ""
-	case "storage.kv":
-		return h.storage(data)
 	}
 	h.t.Fatalf("unexpected action %s", action)
 	return nil, ""

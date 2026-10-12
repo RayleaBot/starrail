@@ -3,7 +3,6 @@ import { ref, watch } from 'vue'
 import Workspace, { type Section } from '../shell/Workspace.vue'
 import StatusLine from '../shell/StatusLine.vue'
 import HelpPanel from '../HelpPanel.vue'
-import HistoryOwnership from '../HistoryOwnership.vue'
 import { useShell, type ArkSettings } from '../shell/context'
 import { useOperation } from '../shell/status'
 
@@ -12,7 +11,6 @@ const sections: Section[] = [
   { id: 'general', label: '查询设置', icon: 'sliders' },
   { id: 'ark', label: 'ark 扩展', icon: 'cloud' },
   { id: 'commands', label: '命令与版本', icon: 'info' },
-  { id: 'history', label: '历史数据与归属', icon: 'history' },
 ]
 // Drafts are edited copies; a save writes them back through the shell.
 const general = useOperation('设置未保存，请重试。')
@@ -91,7 +89,6 @@ async function saveArk() { await arkState.run(async () => { await shell.saveSett
       </section>
 
       <HelpPanel v-else-if="active === 'commands'" />
-      <HistoryOwnership v-else-if="active === 'history'" />
     </template>
   </Workspace>
 </template>

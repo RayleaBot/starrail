@@ -319,33 +319,6 @@ func customRankKey(event *rayleabot.EventContext, messageID string) string {
 	return "ark-query:" + event.Event.SourceProtocol + ":" + event.Event.BotID + ":" + messageID
 }
 
-// Old query caches contain no account identity. Migrate a known legacy key
-// when it is quoted, without extending the original five-minute lifetime.
-func customRankCache(ctx context.Context, event *rayleabot.EventContext, messageID string) (rayleabot.ActionResult, error) {
-	key := customRankKey(event, messageID)
-	value, err := event.Actions().KVGet(ctx, key)
-	if err != nil || value["exists"] == true {
-		return value, err
-	}
-	for _, adapter := range legacyAdapters(event) {
-		old, err := event.Actions().KVGet(ctx, "ark-query:"+adapter+":"+messageID)
-		if err != nil {
-			return nil, err
-		}
-		if old["exists"] != true {
-			continue
-		}
-		ttl := time.Until(time.UnixMilli(int64(number(old["expires_at_ms"])))) / time.Second * time.Second
-		if ttl > 0 {
-			if _, err := event.Actions().KVSetWithOptions(ctx, key, old["value"], rayleabot.KVSetOptions{TTL: ttl}); err != nil {
-				return nil, err
-			}
-		}
-		return old, nil
-	}
-	return value, nil
-}
-
 // customRankView is the custom ranking in text, for replies without images.
 func customRankView(game Game, image CloudRankImage) View {
 	title := image.Character.Name + map[string]string{"mark": "遗器评分"}[image.Mode] + "排行"
@@ -429,7 +402,7 @@ func (a *App) customRankPanel(ctx context.Context, event *rayleabot.EventContext
 		return event.Result(map[string]any{"handled": false})
 	}
 	index, _ := strconv.Atoi(args[0])
-	remembered, err := customRankCache(ctx, event, quoted)
+	remembered, err := event.Actions().KVGet(ctx, customRankKey(event, quoted))
 	cache := asObject(remembered["value"])
 	if err != nil || remembered["exists"] != true || asText(cache["query_id"]) == "" {
 		return event.SendText("未找到该排行图片的查询缓存，请重新发送 " + a.Game.Prefix + "ark自定义排行 后再获取面板")

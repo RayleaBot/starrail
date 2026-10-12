@@ -103,7 +103,7 @@ func TestGachaLinkUpdatesAUIDAtMostHourly(t *testing.T) {
 	if !jobs.markUpdated("100000001").IsZero() {
 		t.Fatal("an update that did not happen still counts")
 	}
-	owner := Subject{SourceProtocol: "onebot11", SourceAdapter: "adapter", BotID: "bot", ActorID: "user"}
+	owner := Subject{SourceProtocol: "onebot11", BotID: "bot", ActorID: "user"}
 	jobs.own(owner, gachaLink{key: "abcdefghij", region: "prod_gf_cn"}, "100000001")
 	if owned, ok := jobs.owner(owner); !ok || owned.uid != "100000001" {
 		t.Fatal("pasted link not kept for 更新跃迁记录")
@@ -194,7 +194,7 @@ func TestGachaLinkUpdateReadsTheLinkAgain(t *testing.T) {
 	}
 	a2, host2 := linkHost(t, history)
 	host2.message(warpLink, "")
-	user := Subject{SourceProtocol: "onebot11", SourceAdapter: "a", BotID: "bot", ActorID: "u"}
+	user := Subject{SourceProtocol: "onebot11", BotID: "bot", ActorID: "u"}
 	owned, _ := a2.Links.owner(user)
 	owned.link.key = "expired1"
 	a2.Links.own(user, owned.link, owned.uid)

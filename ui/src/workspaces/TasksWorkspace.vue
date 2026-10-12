@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import Workspace, { type Section } from '../shell/Workspace.vue'
 import StatusLine from '../shell/StatusLine.vue'
 import EmptyState from '../shell/EmptyState.vue'
-import { botLabel, useShell } from '../shell/context'
+import { useShell } from '../shell/context'
 import { formatTime, useOperation } from '../shell/status'
 import { useReader } from '../reader'
 import Reminders, { reminderLabels, type ReminderTask } from '../Reminders.vue'
@@ -54,7 +54,7 @@ function row(kind: Kind, task: { ref: string; enabled: boolean; last_code: strin
   return { key: `${kind}:${task.ref}`, kind, ref: task.ref, ...text, status: task.enabled ? labels[task.last_code] || task.last_code || waiting : '已暂停', tone: tone(task), next_check_ms: task.next_check_ms, expires_at_ms: task.expires_at_ms }
 }
 const rows = computed<TaskRow[]>(() => [
-  ...reminders.value.map(task => row('reminder', task, reminderLabels, '等待首次检查', { remove: 'reminder.remove', subject: `${task.role.nickname} · ${task.role.uid}`, schedule: `每十分钟检查，体力达到 ${task.threshold}% 时提醒${task.enabled ? (task.armed ? '，等待达到阈值' : '，等待体力低于阈值') : ''}`, owner: `私聊 ${task.owner.actor_id} · 机器人 ${botLabel(shell.bots.value, task.owner.source_protocol, task.owner.bot_id)}` })),
+  ...reminders.value.map(task => row('reminder', task, reminderLabels, '等待首次检查', { remove: 'reminder.remove', subject: `${task.role.nickname} · ${task.role.uid}`, schedule: `每十分钟检查，体力达到 ${task.threshold}% 时提醒${task.enabled ? (task.armed ? '，等待达到阈值' : '，等待体力低于阈值') : ''}`, owner: `私聊 ${task.owner.actor_id}` })),
   ...challenges.value.map(task => row('challenge', task, challengeLabels, '等待首次检查', { remove: 'challenge.reminder.remove', subject: `${task.role.nickname} · ${task.role.uid} · ${challengeKinds.value.find(item => item.id === task.challenge_kind)?.label ?? task.challenge_kind}`, schedule: `${weekdays[task.weekday]} ${clock(task.hour, task.minute)} 检查，${task.metric} 目标 ${task.threshold}`, owner: `私聊 ${task.owner.actor_id}` })),
   ...monthlies.value.map(task => row('monthly', task, monthlyLabels, '等待首次执行', { remove: 'monthly.task.remove', subject: `${task.role.nickname} · ${task.role.uid}`, schedule: `每日 ${clock(task.hour, task.minute ?? 0)} 保存官方默认月份`, owner: `所属用户 ${task.owner.actor_id}` })),
   ...signins.value.map(task => row('signin', task, signinLabels, '等待首次检查', { remove: 'signin.task.remove', subject: `${task.role.nickname} · ${task.role.uid}`, schedule: `每日北京时间 ${task.hour ?? 0}:00 后首次检查时签到`, owner: task.notify ? `私聊通知 ${task.owner.actor_id}` : '不发送结果通知' })),

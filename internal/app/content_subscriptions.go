@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"net/url"
@@ -50,13 +52,17 @@ type ContentSubscription struct {
 	Sent     map[string]int64 `json:"sent"`
 	WarnedOn string           `json:"warned_on,omitempty"`
 	LastCode string           `json:"last_code,omitempty"`
-	// PreviousRefs keeps scheduler cleanup recoverable across a restart.
-	PreviousRefs []string `json:"previous_refs,omitempty"`
 }
 
 type ContentSubscriptions struct {
 	mu   sync.Mutex
 	Path string
+}
+
+func contentRef(game string, owner Subject, group string) string {
+	identity := strings.Join([]string{owner.SourceProtocol, owner.BotID, group}, "\x00")
+	sum := sha256.Sum256([]byte(identity))
+	return "game.content." + game + "." + hex.EncodeToString(sum[:16])
 }
 
 func (s *ContentSubscriptions) read() ([]ContentSubscription, error) {

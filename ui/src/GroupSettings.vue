@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
-import { botLabel, useShell } from './shell/context'
+import { useShell } from './shell/context'
 import { useOperation } from './shell/status'
 import { useReader } from './reader'
 import type { Scope } from './ChallengeRank.vue'
@@ -77,7 +77,7 @@ lister.request()
     <StatusLine kind="success" :text="notice" />
     <form v-if="editing" class="subsection" @submit.prevent="save">
       <fieldset :disabled="busy">
-        <h3>群 {{ editing.scope.group_id }} · {{ botLabel(shell.bots.value, editing.scope.source_protocol, editing.scope.bot_id) }}</h3>
+        <h3>群 {{ editing.scope.group_id }}</h3>
         <div class="field-grid">
           <label class="field"><span>本群游戏功能</span><select v-model="enabled"><option value="default">默认开启</option><option value="true">开启</option><option value="false">关闭</option></select></label>
           <label class="field"><span>本群回复方式</span><select v-model="images"><option value="default">跟随全局</option><option value="true">图片优先</option><option value="false">文本</option></select></label>
@@ -95,7 +95,7 @@ lister.request()
       <ul v-if="groups.length" class="rows">
         <li v-for="item in groups" :key="scopeKey(item.scope)">
           <div class="row-main">
-            <strong>{{ item.scope.group_id }} · {{ botLabel(shell.bots.value, item.scope.source_protocol, item.scope.bot_id) }}</strong>
+            <strong>{{ item.scope.group_id }}</strong>
             <div class="row-meta"><span class="chip" :class="item.config.enabled === false ? 'danger' : 'success'">{{ item.config.enabled === false ? '游戏功能关闭' : '游戏功能开启' }}</span><span>{{ item.rank_entries }} 条面板排名</span><span>{{ item.challenge_entries ?? 0 }} 条挑战成绩</span><span>{{ Object.keys(item.config.aliases ?? {}).length }} 个群别名</span></div>
           </div>
           <div class="row-actions"><button type="button" class="compact" :disabled="busy" @click="edit(item)">编辑群设置</button><button type="button" class="compact" :disabled="busy" @click="emit('rank', item.scope)">查看挑战榜</button><button type="button" class="compact danger" :disabled="busy" @click="clearing = item">恢复默认并清空排行</button></div>

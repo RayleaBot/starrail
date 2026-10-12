@@ -66,13 +66,13 @@ func (j *gachaLinks) own(owner Subject, link gachaLink, uid string) {
 			delete(j.owned, subject)
 		}
 	}
-	j.owned[owner.identity()] = ownedLink{link: link, uid: uid, expires: time.Now().Add(24 * time.Hour)}
+	j.owned[owner] = ownedLink{link: link, uid: uid, expires: time.Now().Add(24 * time.Hour)}
 }
 
 func (j *gachaLinks) owner(owner Subject) (ownedLink, bool) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	owned, ok := j.owned[owner.identity()]
+	owned, ok := j.owned[owner]
 	return owned, ok && time.Now().Before(owned.expires)
 }
 

@@ -41,7 +41,7 @@ func belongsToBot(owner Subject, bot rayleabot.BotAccount) bool {
 
 func visibleOwner(event *rayleabot.EventContext, owner Subject) bool {
 	if event.Event.EventType != "management.action" {
-		return owner.same(chatOwner(event))
+		return owner == chatOwner(event)
 	}
 	bot, ok := event.Event.ManagementBot()
 	return ok && belongsToBot(owner, bot)
@@ -77,7 +77,7 @@ func managementGroupInput(bot rayleabot.BotAccount, input map[string]any) (map[s
 	} else {
 		scope.GroupID = asText(input["group_id"])
 	}
-	scope.Protocol, scope.BotID, scope.Adapter = bot.SourceProtocol, bot.BotID, ""
+	scope.Protocol, scope.BotID = bot.SourceProtocol, bot.BotID
 	if input == nil {
 		input = map[string]any{}
 	}

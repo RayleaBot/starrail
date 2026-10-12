@@ -1,18 +1,11 @@
 import { inject, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import type { BotAccount, BotAccountRef } from '@rayleabot/plugin-ui'
-import type { APIRequest } from '../bot-history'
+import type { BotAccount } from '@rayleabot/plugin-ui'
 
 export interface Operation { name: string; label: string; command: string; input: string }
 export interface Game { id: string; name: string; prefix: string; region: string; operations: Operation[] }
 export interface Role { ref: string; uid: string; nickname: string; region: string; level: number }
 export interface Account { cloud_configured?: string[]; ref: string; account_label: string; roles: Role[]; status: string; owner: { actor_id: string } }
 export interface RoleOption { key: string; label: string; role: Role; account: Account }
-export interface Bot { source_protocol: string; id: string; nickname?: string }
-export function botLabel(bots: Bot[], protocol: string, id: string): string {
-  if (!id) return '待选择机器人账号'
-  const bot = bots.find(item => item.source_protocol === protocol && item.id === id)
-  return bot?.nickname ? `${bot.nickname}（${id}）` : id
-}
 // CatalogSummary is one bundled catalog entry without its details.
 export interface CatalogSummary { id: string; name: string; kind: string; rarity: number; element?: string; weapon?: string; abbr?: string; aliases?: string[] }
 // RoleCharacter is one character the selected role owns, from the official overview.
@@ -32,10 +25,7 @@ export interface Shell {
   page: string
   invoke: Invoke
   game: Ref<Game | null>
-  bots: Ref<Bot[]>
   bot: ComputedRef<BotAccount | null>
-  apiRequest: APIRequest
-  assignHistory(bot: BotAccountRef, payload: Record<string, unknown>): Promise<unknown>
   catalogVersion: Ref<string>
   settings: Ref<Settings>
   // saveSettings validates aliases, writes the merged settings and returns

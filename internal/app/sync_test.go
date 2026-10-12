@@ -35,7 +35,7 @@ func (s *syncAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 	case "roles":
 		return map[string]any{"roles": []any{role}}, ""
 	case "list":
-		owner := map[string]any{"source_protocol": "onebot11", "source_adapter": "a", "bot_id": "bot", "actor_id": "u"}
+		owner := map[string]any{"source_protocol": "onebot11", "bot_id": "bot", "actor_id": "u"}
 		return map[string]any{"items": []any{map[string]any{"ref": "account", "owner": owner, "account_label": "账号", "roles": []any{role}, "status": "valid"}}, "default_roles": map[string]any{}, "uid_bindings": map[string]any{}}, ""
 	case "delegation.create":
 		if request.Params["operation"] != "starrail.gacha" || request.Params["days"] != float64(30) {

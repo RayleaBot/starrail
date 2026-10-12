@@ -323,14 +323,14 @@ type atlasMenu struct {
 func (m *atlasMenus) open(owner Subject, entries []string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if menu := m.items[owner.identity()]; menu != nil {
+	if menu := m.items[owner]; menu != nil {
 		menu.entries = entries
 		return
 	}
 	if m.items == nil || len(m.items) >= 4096 {
 		m.items = map[Subject]*atlasMenu{}
 	}
-	m.items[owner.identity()] = &atlasMenu{entries: entries}
+	m.items[owner] = &atlasMenu{entries: entries}
 }
 
 // pick is select()'s bookkeeping for a sender's message: it counts the
@@ -339,12 +339,12 @@ func (m *atlasMenus) open(owner Subject, entries []string) {
 func (m *atlasMenus) pick(owner Subject, msg string) (string, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	menu := m.items[owner.identity()]
+	menu := m.items[owner]
 	if menu == nil {
 		return "", false
 	}
 	if menu.count++; menu.count >= 4 {
-		delete(m.items, owner.identity())
+		delete(m.items, owner)
 		return "", false
 	}
 	// JavaScript's Number reads the message; a number that names no entry
@@ -360,7 +360,7 @@ func (m *atlasMenus) pick(owner Subject, msg string) (string, bool) {
 func (m *atlasMenus) answered(owner Subject) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if menu := m.items[owner.identity()]; menu != nil {
+	if menu := m.items[owner]; menu != nil {
 		menu.count = 0
 	}
 }

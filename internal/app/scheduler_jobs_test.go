@@ -31,7 +31,7 @@ func (s *taskAccounts) answer(request rayleabot.ServiceCallRequest, scheduled bo
 	case "roles":
 		return map[string]any{"roles": []any{role}}, ""
 	case "list":
-		owner := map[string]any{"source_protocol": "onebot11", "source_adapter": "a", "bot_id": "bot", "actor_id": "u"}
+		owner := map[string]any{"source_protocol": "onebot11", "bot_id": "bot", "actor_id": "u"}
 		return map[string]any{"items": []any{map[string]any{"ref": "account", "owner": owner, "account_label": "账号", "roles": []any{role}, "status": "valid"}}, "default_roles": map[string]any{}, "uid_bindings": map[string]any{}}, ""
 	case "delegation.create":
 		return map[string]any{"delegation": map[string]any{"ref": "d1", "expires_at_ms": time.Now().Add(30 * 24 * time.Hour).UnixMilli()}}, ""

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import Workspace, { type Section } from '../shell/Workspace.vue'
 import StatusLine from '../shell/StatusLine.vue'
 import EmptyState from '../shell/EmptyState.vue'
-import { botLabel, useShell } from '../shell/context'
+import { useShell } from '../shell/context'
 import { useOperation } from '../shell/status'
 import GroupSettings from '../GroupSettings.vue'
 import ChallengeRank, { type Scope } from '../ChallengeRank.vue'
@@ -59,7 +59,7 @@ async function removeSubscription() {
       <section v-else-if="active === 'rank'" class="section" aria-labelledby="rank-title">
         <div class="section-heading"><div class="titles"><h2 id="rank-title">挑战排行</h2><p>各群本地保存的挑战成绩。先在群设置中对某个群点“查看挑战榜”，或在下方选择本次已列出的群。</p></div></div>
         <div v-if="known.length" class="field-row">
-          <label class="field"><span>群</span><select v-model="rankKey"><option value="" disabled>选择群</option><option v-for="scope in known" :key="scopeKey(scope)" :value="scopeKey(scope)">{{ scope.group_id }} · {{ botLabel(shell.bots.value, scope.source_protocol, scope.bot_id) }}</option></select></label>
+          <label class="field"><span>群</span><select v-model="rankKey"><option value="" disabled>选择群</option><option v-for="scope in known" :key="scopeKey(scope)" :value="scopeKey(scope)">{{ scope.group_id }}</option></select></label>
         </div>
         <ChallengeRank v-if="rankScope" :key="scopeKey(rankScope)" :scope="rankScope" />
         <EmptyState v-else icon="trophy" title="还没有选择群" text="在群设置里对某个群点“查看挑战榜”后，这里会显示该群的挑战成绩。"><button type="button" @click="select('settings')">前往群设置</button></EmptyState>
@@ -72,7 +72,7 @@ async function removeSubscription() {
         <StatusLine kind="success" :text="push.notice.value" />
         <ul v-if="subscriptions.length" class="rows">
           <li v-for="item in subscriptions" :key="item.ref">
-            <div class="row-main"><strong>群 {{ item.group_id }} · {{ botLabel(shell.bots.value, item.owner.source_protocol, item.owner.bot_id) }}</strong><div class="row-meta"><span>{{ item.kinds.map(kind => kindNames[kind] ?? kind).join('、') }}</span><span>{{ item.last_code || '等待首次检查' }}</span><span v-if="item.warned_on">到期活动已于 {{ item.warned_on }} 推送</span></div></div>
+            <div class="row-main"><strong>群 {{ item.group_id }}</strong><div class="row-meta"><span>{{ item.kinds.map(kind => kindNames[kind] ?? kind).join('、') }}</span><span>{{ item.last_code || '等待首次检查' }}</span><span v-if="item.warned_on">到期活动已于 {{ item.warned_on }} 推送</span></div></div>
             <div class="row-actions"><button type="button" class="compact danger" :disabled="push.busy.value" @click="removeRef = item.ref">移除此群的推送</button></div>
             <div v-if="removeRef === item.ref" class="confirm"><p>确认停止群 {{ item.group_id }} 的全部推送？</p><div class="actions"><button type="button" class="compact" :disabled="push.busy.value" @click="removeRef = ''">保留</button><button type="button" class="compact destructive" :disabled="push.busy.value" @click="removeSubscription">确认移除</button></div></div>
           </li>

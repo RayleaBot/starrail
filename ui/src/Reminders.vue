@@ -7,7 +7,7 @@ export const reminderLabels: Record<string, string> = { bot_assigned: '归属已
 import { ref, watch } from 'vue'
 import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
-import { botLabel, useShell } from './shell/context'
+import { useShell } from './shell/context'
 import { formatTime, useOperation } from './shell/status'
 import { useReader } from './reader'
 
@@ -56,7 +56,7 @@ lister.request()
       <li v-for="item in items" :key="item.ref">
         <div class="row-main">
           <strong>{{ item.role.nickname }} · {{ item.role.uid }}</strong>
-          <div class="row-meta"><span class="chip" :class="{ warning: !item.enabled }">{{ status(item) }}</span><span>阈值 {{ item.threshold }}%</span><span>私聊 {{ item.owner.actor_id }} · 机器人 {{ botLabel(shell.bots.value, item.owner.source_protocol, item.owner.bot_id) }}</span></div>
+          <div class="row-meta"><span class="chip" :class="{ warning: !item.enabled }">{{ status(item) }}</span><span>阈值 {{ item.threshold }}%</span><span>私聊 {{ item.owner.actor_id }}</span></div>
           <div class="row-meta"><span>最近检查 {{ formatTime(item.last_checked_ms) }} · {{ reminderLabels[item.last_code] || item.last_code || '等待首次检查' }}</span><span>下一次可检查 {{ formatTime(item.next_check_ms) }}</span><span>到期 {{ formatTime(item.expires_at_ms) }}</span></div>
         </div>
         <div class="row-actions"><button class="compact danger" type="button" :disabled="busy" @click="removal = item.ref">关闭并移除</button></div>

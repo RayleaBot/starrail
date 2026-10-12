@@ -10,7 +10,6 @@ import (
 
 type Subject struct {
 	SourceProtocol string `json:"source_protocol"`
-	SourceAdapter  string `json:"source_adapter,omitempty"` // Only retained until a legacy owner has a bot ID.
 	BotID          string `json:"bot_id"`
 	ActorID        string `json:"actor_id"`
 }
@@ -55,7 +54,6 @@ type AccountsClient struct {
 	Caller        ServiceCaller
 	Provider      string
 	Game          string
-	Bots          []rayleabot.Bot
 	ManagementBot rayleabot.BotAccount // Local checks only; the host supplies service origin.
 }
 
@@ -75,7 +73,6 @@ func (c AccountsClient) List(ctx context.Context, page int) (Accounts, error) {
 	result := Accounts{}
 	err := c.call(ctx, "list", map[string]any{"page": page}, &result)
 	for index := range result.Items {
-		result.Items[index].Owner.resolve(c.Bots, result.Items[index].Ref)
 		result.Items[index].Roles = slices.DeleteFunc(result.Items[index].Roles, func(role Role) bool { return role.Game != c.Game })
 	}
 	if c.ManagementBot.BotID != "" {
