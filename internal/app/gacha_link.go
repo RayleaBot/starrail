@@ -66,13 +66,13 @@ func (j *gachaLinks) own(owner Subject, link gachaLink, uid string) {
 			delete(j.owned, subject)
 		}
 	}
-	j.owned[owner] = ownedLink{link: link, uid: uid, expires: time.Now().Add(24 * time.Hour)}
+	j.owned[owner.identity()] = ownedLink{link: link, uid: uid, expires: time.Now().Add(24 * time.Hour)}
 }
 
 func (j *gachaLinks) owner(owner Subject) (ownedLink, bool) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	owned, ok := j.owned[owner]
+	owned, ok := j.owned[owner.identity()]
 	return owned, ok && time.Now().Before(owned.expires)
 }
 
@@ -222,7 +222,7 @@ func (a *App) checkGachaLink(ctx context.Context, link *gachaLink, length int) (
 
 // sender is the chat user who sent the event.
 func sender(event *rayleabot.EventContext) Subject {
-	return Subject{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, BotID: event.Bot.ID, ActorID: event.Event.Actor.ID}
+	return chatOwner(event)
 }
 
 // gachaLinkMessage answers a message holding a warp link as Yunzai's logUrl

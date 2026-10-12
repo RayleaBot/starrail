@@ -205,8 +205,11 @@ func notice(ctx context.Context, event *rayleabot.EventContext, text string) {
 // post sends a reply without ending the event and returns the ID the chat
 // platform gave the message.
 func post(ctx context.Context, event *rayleabot.EventContext, segments ...rayleabot.Segment) (string, error) {
-	result, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: event.Event.SourceProtocol, SourceAdapter: event.Event.SourceAdapter, TargetType: event.Event.Target.Type, TargetID: event.Event.Target.ID,
-		Message: rayleabot.MessageOut{Segments: segments}})
+	address, ok := event.Address()
+	if !ok {
+		return "", gameError("source_invalid", "消息地址不完整。")
+	}
+	result, err := event.Actions().SendTo(ctx, address, segments...)
 	if err != nil {
 		return "", err
 	}
@@ -225,7 +228,7 @@ func mentionedUser(event *rayleabot.EventContext) string {
 		if segment.Type != "at" {
 			continue
 		}
-		if user := strings.TrimSpace(asText(segment.Data["user_id"])); user != "" && user != event.Bot.ID {
+		if user := strings.TrimSpace(asText(segment.Data["user_id"])); user != "" && user != event.Event.BotID {
 			return user
 		}
 	}

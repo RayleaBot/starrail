@@ -44,7 +44,10 @@ type sdkHost struct {
 	busy     bool
 	// onSend sees each message.send before the host answers it, while the
 	// event sending it waits; it may post and await other events.
-	onSend func(rayleabot.MessageSendRequest)
+	onSend        func(rayleabot.MessageSendRequest)
+	createFailure string
+	sendFailure   string
+	storage       func(map[string]any) (map[string]any, string)
 	// pending are the events posted and not yet ended; ended are the frames
 	// that ended events while another was awaited.
 	pending map[string]bool
@@ -59,7 +62,7 @@ type hostAction struct {
 
 // newSDKHost starts the plugin with the host's init: bot "bot" on adapter
 // "a", prefix "*" and four concurrent events.
-func newSDKHost(t *testing.T, a *App, service func(rayleabot.ServiceCallRequest, bool) (map[string]any, string)) *sdkHost {
+func newSDKHost(t *testing.T, a rayleabot.Handler, service func(rayleabot.ServiceCallRequest, bool) (map[string]any, string)) *sdkHost {
 	t.Helper()
 	inReader, hostWriter := io.Pipe()
 	hostReader, outWriter := io.Pipe()
@@ -188,6 +191,9 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		}
 		return h.service(request, scheduled)
 	case "scheduler.create":
+		if h.createFailure != "" {
+			return nil, h.createFailure
+		}
 		h.jobs[asText(data["task_id"])] = maps.Clone(asObject(data["payload"]))
 		h.created = append(h.created, data)
 		return map[string]any{"task_id": data["task_id"]}, ""
@@ -210,6 +216,9 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		if h.onSend != nil {
 			h.onSend(request)
 		}
+		if h.sendFailure != "" {
+			return nil, h.sendFailure
+		}
 		return map[string]any{"message_id": fmt.Sprintf("sent-%d", len(h.sent)), "delivery_kind": "send"}, ""
 	case "event.detach":
 		if h.busy {
@@ -221,6 +230,8 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		return nil, "platform.render_unavailable"
 	case "logger.write":
 		return map[string]any{}, ""
+	case "storage.kv":
+		return h.storage(data)
 	}
 	h.t.Fatalf("unexpected action %s", action)
 	return nil, ""
@@ -232,7 +243,7 @@ func (h *sdkHost) chat(target map[string]any, text, command string, args ...stri
 	h.t.Helper()
 	h.next++
 	id := fmt.Sprintf("chat-%d", h.next)
-	event := map[string]any{"event_id": id, "event_type": "message." + asText(target["type"]), "source_protocol": "onebot11", "source_adapter": "a", "timestamp": time.Now().Unix(), "actor": map[string]any{"id": "u", "role": "admin"}, "target": target, "message": map[string]any{"plain_text": text, "segments": []any{map[string]any{"type": "text", "data": map[string]any{"text": text}}}}}
+	event := map[string]any{"event_id": id, "event_type": "message." + asText(target["type"]), "source_protocol": "onebot11", "source_adapter": "a", "bot_id": "bot", "timestamp": time.Now().Unix(), "actor": map[string]any{"id": "u", "role": "admin"}, "target": target, "message": map[string]any{"plain_text": text, "segments": []any{map[string]any{"type": "text", "data": map[string]any{"text": text}}}}}
 	if command != "" {
 		event["payload"] = map[string]any{"command": command, "args": args}
 	}

@@ -1,13 +1,13 @@
 <script lang="ts">
 // The list item shape and status labels are shared with the merged task list.
-export interface ReminderTask { ref: string; role: { uid: string; nickname: string }; owner: { actor_id: string; source_adapter: string }; threshold: number; enabled: boolean; armed: boolean; expires_at_ms: number; last_checked_ms: number; last_attempt_ms: number; next_check_ms: number; last_code: string }
+export interface ReminderTask { ref: string; role: { uid: string; nickname: string }; owner: { actor_id: string; source_protocol: string; bot_id: string }; threshold: number; enabled: boolean; armed: boolean; expires_at_ms: number; last_checked_ms: number; last_attempt_ms: number; next_check_ms: number; last_code: string }
 export const reminderLabels: Record<string, string> = { checked: '已检查', notified: '已发送提醒', notification_attempted: '已尝试发送', notification_failed: '发送未确认', expired: '委托到期', 'plugin.account_caller_denied': '游戏授权已撤销', 'plugin.account_delegation_denied': '委托失效', 'plugin.account_not_found': '账号已移除', 'plugin.account_role_denied': '角色授权失效', 'plugin.upstream_auth_invalid': '账号需要重新登录', 'plugin.upstream_device_required': '需要官方设备验证，已退避', 'plugin.upstream_challenge_required': '需要官方验证，已退避', 'plugin.vault_locked': '账号库锁定', 'plugin.game_note_invalid': '体力数据暂不兼容' }
 </script>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
-import { useShell } from './shell/context'
+import { botLabel, useShell } from './shell/context'
 import { formatTime, useOperation } from './shell/status'
 import { useReader } from './reader'
 
@@ -56,7 +56,7 @@ lister.request()
       <li v-for="item in items" :key="item.ref">
         <div class="row-main">
           <strong>{{ item.role.nickname }} · {{ item.role.uid }}</strong>
-          <div class="row-meta"><span class="chip" :class="{ warning: !item.enabled }">{{ status(item) }}</span><span>阈值 {{ item.threshold }}%</span><span>私聊 {{ item.owner.actor_id }}（{{ item.owner.source_adapter }}）</span></div>
+          <div class="row-meta"><span class="chip" :class="{ warning: !item.enabled }">{{ status(item) }}</span><span>阈值 {{ item.threshold }}%</span><span>私聊 {{ item.owner.actor_id }} · 机器人 {{ botLabel(shell.bots.value, item.owner.source_protocol, item.owner.bot_id) }}</span></div>
           <div class="row-meta"><span>最近检查 {{ formatTime(item.last_checked_ms) }} · {{ reminderLabels[item.last_code] || item.last_code || '等待首次检查' }}</span><span>下一次可检查 {{ formatTime(item.next_check_ms) }}</span><span>到期 {{ formatTime(item.expires_at_ms) }}</span></div>
         </div>
         <div class="row-actions"><button class="compact danger" type="button" :disabled="busy" @click="removal = item.ref">关闭并移除</button></div>

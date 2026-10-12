@@ -423,10 +423,10 @@ func simulationScope(event *rayleabot.EventContext) (string, error) {
 	if event.Event.EventType == "management.action" {
 		return "management", nil
 	}
-	if event.Event.Actor.ID == "" || event.Bot.ID == "" || event.Event.Target.ID == "" {
+	if event.Event.Actor.ID == "" || event.Event.BotID == "" || event.Event.Target.ID == "" {
 		return "", gameError("source_invalid", "模拟档案需要完整聊天身份。")
 	}
-	raw, _ := json.Marshal([]string{event.Event.SourceProtocol, event.Event.SourceAdapter, event.Bot.ID, event.Event.Target.Type, event.Event.Target.ID, event.Event.Actor.ID})
+	raw, _ := json.Marshal([]string{event.Event.SourceProtocol, event.Event.BotID, event.Event.Target.Type, event.Event.Target.ID, event.Event.Actor.ID})
 	return string(raw), nil
 }
 func (a *App) simulationAction(event *rayleabot.EventContext, action string, input map[string]any) (map[string]any, error) {
@@ -436,6 +436,9 @@ func (a *App) simulationAction(event *rayleabot.EventContext, action string, inp
 	}
 	if action == "simulation.configure" && event.Event.EventType != "management.action" {
 		return nil, gameError("source_invalid", "每日额度由机器人管理员设置。")
+	}
+	if err := a.Simulation.migrateScope(event, scope); err != nil {
+		return nil, err
 	}
 	return a.Simulation.Action(scope, action, input, time.Now())
 }

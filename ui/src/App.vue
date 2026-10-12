@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, provide, ref, watch } from 'vue'
 import { usePluginHost } from '@rayleabot/plugin-ui'
-import { arkDefaults, roleKey, shellKey, type Account, type AliasConflict, type Bot, type CatalogSummary, type Game, type LoadState, type RoleCharacter, type RoleOption, type Settings, type Shell } from './shell/context'
+import { arkDefaults, botAccounts, roleKey, shellKey, type Account, type AliasConflict, type Bot, type CatalogSummary, type Game, type LoadState, type RoleCharacter, type RoleOption, type Settings, type Shell } from './shell/context'
 import { useOperation } from './shell/status'
 import StatusLine from './shell/StatusLine.vue'
 import QueryWorkspace from './workspaces/QueryWorkspace.vue'
@@ -65,7 +65,7 @@ async function saveSettings(patch: Partial<Settings>): Promise<AliasConflict[]> 
 async function load() {
   const result = await invoke<{ game: Game; bots?: Bot[]; catalog_version: string; settings: { account_provider: string; image_replies: boolean; alias_permission?: number; custom_aliases?: Record<string, string>; ark?: Partial<Settings['ark']> } }>('status')
   game.value = result.game
-  bots.value = result.bots ?? []
+  bots.value = botAccounts(result.bots ?? [])
   catalogVersion.value = result.catalog_version
   settings.value = { account_provider: result.settings.account_provider, image_replies: result.settings.image_replies, alias_permission: result.settings.alias_permission ?? 0, custom_aliases: result.settings.custom_aliases ?? {}, ark: { ...arkDefaults, ...result.settings.ark } }
   if (accountPages.has(page)) await loadAccounts()

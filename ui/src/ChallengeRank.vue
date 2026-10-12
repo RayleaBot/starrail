@@ -9,7 +9,7 @@ import { useReader } from './reader'
 // 挑战排行: one group's self-submitted challenge results, by partition, paged
 // 20 at a time, read as soon as the group opens and as the filters change.
 // A late response never replaces a newer selection.
-export interface Scope { source_protocol: string; source_adapter: string; bot_id: string; group_id: string }
+export interface Scope { source_protocol: string; bot_id: string; group_id: string }
 interface Metric { key: string; label: string; lower: boolean }
 interface Kind { id: string; label: string; metrics: Metric[] }
 interface Entry { actor_id: string; nickname: string; uid: string; metrics: Record<string, number>; updated_ms: number }

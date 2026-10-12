@@ -5,7 +5,22 @@ export interface Game { id: string; name: string; prefix: string; region: string
 export interface Role { ref: string; uid: string; nickname: string; region: string; level: number }
 export interface Account { cloud_configured?: string[]; ref: string; account_label: string; roles: Role[]; status: string; owner: { actor_id: string } }
 export interface RoleOption { key: string; label: string; role: Role; account: Account }
-export interface Bot { source_protocol: string; source_adapter: string; id: string }
+export interface Bot { source_protocol: string; id: string; nickname?: string }
+export function botKey(bot: Bot): string { return JSON.stringify([bot.source_protocol, bot.id]) }
+export function botAccounts(bots: Bot[]): Bot[] {
+  const accounts = new Map<string, Bot>()
+  for (const bot of bots) {
+    if (!bot.id) continue
+    const previous = accounts.get(botKey(bot))
+    if (!previous || (!previous.nickname && bot.nickname)) accounts.set(botKey(bot), bot)
+  }
+  return [...accounts.values()]
+}
+export function botLabel(bots: Bot[], protocol: string, id: string): string {
+  if (!id) return '待选择机器人账号'
+  const bot = bots.find(item => item.source_protocol === protocol && item.id === id)
+  return bot?.nickname ? `${bot.nickname}（${id}）` : id
+}
 // CatalogSummary is one bundled catalog entry without its details.
 export interface CatalogSummary { id: string; name: string; kind: string; rarity: number; element?: string; weapon?: string; abbr?: string; aliases?: string[] }
 // RoleCharacter is one character the selected role owns, from the official overview.

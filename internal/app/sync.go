@@ -308,11 +308,11 @@ func syncNotice(role Role, result gacha.ImportResult) string {
 // tellOwner sends text to an account's chat user privately, through the bot
 // the account belongs to.
 func tellOwner(ctx context.Context, event *rayleabot.EventContext, owner Subject, text string) error {
-	if !slices.ContainsFunc(event.Bots, func(bot rayleabot.Bot) bool {
-		return bot.ID == owner.BotID && bot.SourceProtocol == owner.SourceProtocol && bot.SourceAdapter == owner.SourceAdapter
+	if owner.BotID == "" || !slices.ContainsFunc(event.Bots, func(bot rayleabot.Bot) bool {
+		return bot.ID == owner.BotID && bot.SourceProtocol == owner.SourceProtocol
 	}) {
 		return gameError("bot_missing", "所属机器人暂不可用。")
 	}
-	_, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: owner.SourceProtocol, SourceAdapter: owner.SourceAdapter, TargetType: "private", TargetID: owner.ActorID, Message: rayleabot.MessageOut{Segments: []rayleabot.Segment{rayleabot.Text(text)}}})
+	_, err := event.Actions().SendTo(ctx, rayleabot.Address{SourceProtocol: owner.SourceProtocol, BotID: owner.BotID, TargetType: "private", TargetID: owner.ActorID}, rayleabot.Text(text))
 	return err
 }

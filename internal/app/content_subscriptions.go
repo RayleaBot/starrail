@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"math"
 	"net/url"
@@ -52,6 +50,8 @@ type ContentSubscription struct {
 	Sent     map[string]int64 `json:"sent"`
 	WarnedOn string           `json:"warned_on,omitempty"`
 	LastCode string           `json:"last_code,omitempty"`
+	// PreviousRefs keeps scheduler cleanup recoverable across a restart.
+	PreviousRefs []string `json:"previous_refs,omitempty"`
 }
 
 type ContentSubscriptions struct {
@@ -265,15 +265,15 @@ func (a *App) checkPushes(ctx context.Context, event *rayleabot.EventContext, re
 		}
 		code, online := "checked", false
 		for _, bot := range event.Bots {
-			online = online || bot.ID == item.Owner.BotID && bot.SourceAdapter == item.Owner.SourceAdapter && bot.SourceProtocol == item.Owner.SourceProtocol
+			online = online || item.Owner.BotID != "" && bot.ID == item.Owner.BotID && bot.SourceProtocol == item.Owner.SourceProtocol
 		}
 		if !online {
 			code = "bot_missing"
-		} else if config, err := a.Groups.Config(GroupScope{item.Owner.SourceProtocol, item.Owner.SourceAdapter, item.Owner.BotID, item.GroupID}); err != nil || config.Enabled != nil && !*config.Enabled {
+		} else if config, err := a.Groups.Config(GroupScope{Protocol: item.Owner.SourceProtocol, BotID: item.Owner.BotID, GroupID: item.GroupID}); err != nil || config.Enabled != nil && !*config.Enabled {
 			code = "group_disabled"
 		} else {
 			send := func(segments ...rayleabot.Segment) error {
-				_, err := event.Actions().MessageSend(ctx, rayleabot.MessageSendRequest{SourceProtocol: item.Owner.SourceProtocol, SourceAdapter: item.Owner.SourceAdapter, TargetType: "group", TargetID: item.GroupID, Message: rayleabot.MessageOut{Segments: segments}})
+				_, err := event.Actions().SendTo(ctx, rayleabot.Address{SourceProtocol: item.Owner.SourceProtocol, BotID: item.Owner.BotID, TargetType: "group", TargetID: item.GroupID}, segments...)
 				return err
 			}
 			if err := a.pushGroup(ctx, event, &item, time.Now(), send); err != nil {
@@ -342,10 +342,8 @@ func (a *App) subscriptionCommand(ctx context.Context, event *rayleabot.EventCon
 		kind = pushKinds[0]
 	}
 	on := command == "subscribe"
-	owner := Subject{event.Event.SourceProtocol, event.Event.SourceAdapter, event.Bot.ID, event.Event.Actor.ID}
-	identity := strings.Join([]string{owner.SourceProtocol, owner.SourceAdapter, owner.BotID, event.Event.Target.ID}, "\x00")
-	sum := sha256.Sum256([]byte(identity))
-	ref := "game.content." + a.Game.ID + "." + hex.EncodeToString(sum[:16])
+	owner := chatOwner(event)
+	ref := contentRef(a.Game.ID, owner, event.Event.Target.ID)
 	created, emptied := false, false
 	err := a.Subscriptions.edit(ref, func(items *[]ContentSubscription, i int) error {
 		if i < 0 {

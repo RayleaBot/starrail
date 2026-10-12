@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import StatusLine from './shell/StatusLine.vue'
 import EmptyState from './shell/EmptyState.vue'
-import { useShell } from './shell/context'
+import { botKey, botLabel, useShell } from './shell/context'
 import { useOperation } from './shell/status'
 import { useReader } from './reader'
 import type { Scope } from './ChallengeRank.vue'
@@ -17,7 +17,7 @@ const operation = useOperation('群设置操作未完成，请重试。')
 const { busy, error, notice, run } = operation
 const groups = ref<Group[]>([]), page = ref(0), next = ref<number | null>(null)
 const editing = ref<Group | null>(null), bot = ref(''), groupID = ref(''), enabled = ref('default'), images = ref('default'), aliases = ref<{ name: string; id: string }[]>([]), clearing = ref<Group | null>(null)
-function scopeKey(scope: Scope) { return JSON.stringify([scope.source_protocol, scope.source_adapter, scope.bot_id, scope.group_id]) }
+function scopeKey(scope: Scope) { return JSON.stringify([scope.source_protocol, scope.bot_id, scope.group_id]) }
 function edit(item: Group) {
   editing.value = item
   enabled.value = item.config.enabled === undefined ? 'default' : String(item.config.enabled)
@@ -31,9 +31,9 @@ async function load() {
   emit('listed', result.items.map(item => item.scope))
 }
 function create() {
-  const chosen = shell.bots.value.find(item => JSON.stringify([item.source_protocol, item.source_adapter, item.id]) === bot.value)
+  const chosen = shell.bots.value.find(item => botKey(item) === bot.value)
   if (!chosen || !groupID.value.trim()) return
-  edit({ scope: { source_protocol: chosen.source_protocol, source_adapter: chosen.source_adapter, bot_id: chosen.id, group_id: groupID.value.trim() }, revision: 0, config: {}, rank_entries: 0 })
+  edit({ scope: { source_protocol: chosen.source_protocol, bot_id: chosen.id, group_id: groupID.value.trim() }, revision: 0, config: {}, rank_entries: 0 })
 }
 async function save() {
   if (!editing.value) return
@@ -68,7 +68,7 @@ lister.request()
     <div class="section-heading"><div class="titles"><h2 id="groups-title">群设置</h2><p>群内设置优先于本游戏的全局设置，按机器人和群分别保存。排行只收录用户主动提交的装备评分与挑战成绩；云端排名不在此管理。</p></div><button type="button" :disabled="busy" @click="lister.request()">{{ lister.loading.value ? '正在读取…' : '刷新列表' }}</button></div>
     <form class="field-row" @submit.prevent="create">
       <fieldset :disabled="busy && !lister.loading.value">
-        <label class="field"><span>群所属机器人</span><select v-model="bot" required><option value="" disabled>选择机器人</option><option v-for="item in shell.bots.value" :key="JSON.stringify(item)" :value="JSON.stringify([item.source_protocol, item.source_adapter, item.id])">{{ item.source_adapter }} · {{ item.id }}（{{ item.source_protocol }}）</option></select></label>
+        <label class="field"><span>群所属机器人</span><select v-model="bot" required><option value="" disabled>选择机器人</option><option v-for="item in shell.bots.value" :key="botKey(item)" :value="botKey(item)">{{ botLabel(shell.bots.value, item.source_protocol, item.id) }}</option></select></label>
         <label class="field"><span>群 ID</span><input v-model="groupID" maxlength="256" required></label>
         <button type="submit" :disabled="!bot || !groupID.trim()">编辑此群</button>
       </fieldset>
@@ -79,7 +79,7 @@ lister.request()
     <StatusLine kind="success" :text="notice" />
     <form v-if="editing" class="subsection" @submit.prevent="save">
       <fieldset :disabled="busy">
-        <h3>群 {{ editing.scope.group_id }} · {{ editing.scope.source_adapter }}</h3>
+        <h3>群 {{ editing.scope.group_id }} · {{ botLabel(shell.bots.value, editing.scope.source_protocol, editing.scope.bot_id) }}</h3>
         <div class="field-grid">
           <label class="field"><span>本群游戏功能</span><select v-model="enabled"><option value="default">默认开启</option><option value="true">开启</option><option value="false">关闭</option></select></label>
           <label class="field"><span>本群回复方式</span><select v-model="images"><option value="default">跟随全局</option><option value="true">图片优先</option><option value="false">文本</option></select></label>
@@ -97,7 +97,7 @@ lister.request()
       <ul v-if="groups.length" class="rows">
         <li v-for="item in groups" :key="scopeKey(item.scope)">
           <div class="row-main">
-            <strong>{{ item.scope.group_id }} · {{ item.scope.source_adapter }} · {{ item.scope.bot_id }}</strong>
+            <strong>{{ item.scope.group_id }} · {{ botLabel(shell.bots.value, item.scope.source_protocol, item.scope.bot_id) }}</strong>
             <div class="row-meta"><span class="chip" :class="item.config.enabled === false ? 'danger' : 'success'">{{ item.config.enabled === false ? '游戏功能关闭' : '游戏功能开启' }}</span><span>{{ item.rank_entries }} 条面板排名</span><span>{{ item.challenge_entries ?? 0 }} 条挑战成绩</span><span>{{ Object.keys(item.config.aliases ?? {}).length }} 个群别名</span></div>
           </div>
           <div class="row-actions"><button type="button" class="compact" :disabled="busy" @click="edit(item)">编辑群设置</button><button type="button" class="compact" :disabled="busy" @click="emit('rank', item.scope)">查看挑战榜</button><button type="button" class="compact danger" :disabled="busy" @click="clearing = item">恢复默认并清空排行</button></div>

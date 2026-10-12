@@ -243,6 +243,7 @@ type App struct {
 	emoticons          newsEmoticons
 	aliases            customAliases
 	usageOnce          sync.Once
+	addressMigration   addressMigration
 	// clock is nil for the wall clock.
 	clock clock
 }
@@ -295,7 +296,7 @@ func decodeObject(value any, target any) error {
 	return json.Unmarshal(raw, target)
 }
 func (a *App) accountClient(event *rayleabot.EventContext) AccountsClient {
-	return AccountsClient{Caller: event.Actions(), Provider: settings(event).AccountProvider, Game: a.Game.ID}
+	return AccountsClient{Caller: event.Actions(), Provider: settings(event).AccountProvider, Game: a.Game.ID, Bots: event.Bots}
 }
 func (a *App) operation(name string) (Operation, bool) {
 	for _, item := range a.Game.Operations {
@@ -320,6 +321,9 @@ func (a *App) routedQuery(operation Operation, query string) (string, Operation)
 }
 
 func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
+	if err := a.migrateAddresses(ctx, event); err != nil {
+		return event.Fail("plugin.game_address_migration_failed", "机器人账号迁移未完成，原记录已保留，请检查插件日志后重试。")
+	}
 	// Replies name commands with the first prefix the host gives this plugin;
 	// the list is fixed for the process session.
 	a.usageOnce.Do(func() {
