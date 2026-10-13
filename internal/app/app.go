@@ -1107,8 +1107,8 @@ func friendlyError(err error) string {
 }
 
 // sendView replies with the view's own template when it has one, then with
-// the generic summary card, and with text when image replies are off or both
-// renders fail.
+// the generic summary card, and with text when image replies are off or
+// rendering fails.
 func (a *App) sendView(ctx context.Context, event *rayleabot.EventContext, view View) error {
 	if path := a.renderView(ctx, event, view); path != "" {
 		return event.Send(event.Event.Target.Type, event.Event.Target.ID, rayleabot.Image(path))
@@ -1118,7 +1118,8 @@ func (a *App) sendView(ctx context.Context, event *rayleabot.EventContext, view 
 
 // renderView draws a view with its own template, else the generic summary
 // card, and returns the image path; it is empty when image replies are off
-// or rendering failed.
+// or rendering failed. A render timeout, a full render queue or an ended
+// event skips the summary card so the text reply still fits the deadline.
 func (a *App) renderView(ctx context.Context, event *rayleabot.EventContext, view View) string {
 	if !settings(event).ImageReplies {
 		return ""
@@ -1132,10 +1133,16 @@ func (a *App) renderView(ctx context.Context, event *rayleabot.EventContext, vie
 	_ = decodeObject(view, &data)
 	requests = append(requests, rayleabot.RenderImageRequest{Template: "summary", Output: "png", FallbackText: text, Data: data})
 	for _, request := range requests {
-		if result, err := event.Actions().RenderImage(ctx, request); err == nil {
+		result, err := event.Actions().RenderImage(ctx, request)
+		if err == nil {
 			if path := asText(result["image_path"]); path != "" {
 				return path
 			}
+			continue
+		}
+		var failure *rayleabot.ActionError
+		if ctx.Err() != nil || (errors.As(err, &failure) && (failure.Code == "platform.render_timeout" || failure.Code == "platform.render_queue_full")) {
+			return ""
 		}
 	}
 	return ""

@@ -46,6 +46,9 @@ type sdkHost struct {
 	// event sending it waits; it may post and await other events.
 	onSend      func(rayleabot.MessageSendRequest)
 	sendFailure string
+	// renderFailure is the code render.image fails with in place of
+	// platform.render_unavailable.
+	renderFailure string
 	// pending are the events posted and not yet ended; ended are the frames
 	// that ended events while another was awaited.
 	pending map[string]bool
@@ -222,6 +225,9 @@ func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (ma
 		h.detached = append(h.detached, data)
 		return map[string]any{"deadline_at_ms": time.Now().Add(detachedTimeout).UnixMilli()}, ""
 	case "render.image":
+		if h.renderFailure != "" {
+			return nil, h.renderFailure
+		}
 		return nil, "platform.render_unavailable"
 	case "logger.write":
 		return map[string]any{}, ""
