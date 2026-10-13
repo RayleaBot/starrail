@@ -96,7 +96,7 @@ func Note(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	signed := false
 	if context.Query != nil {
 		if sign, err := context.Query("starrail.sign_info", nil); err == nil {
-			signed, _ = sign.Data["is_sign"].(bool)
+			signed, _ = sign.Data["signed"].(bool)
 		}
 	}
 	return app.Image{

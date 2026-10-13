@@ -23,7 +23,7 @@ func TestNoteFollowsStarRailPlugin(t *testing.T) {
 	queried := ""
 	context := app.ImageContext{Now: now, Query: func(operation string, _ map[string]any) (app.QueryResult, error) {
 		queried = operation
-		return app.QueryResult{Data: map[string]any{"is_sign": true}}, nil
+		return app.QueryResult{Data: map[string]any{"signed": true}}, nil
 	}}
 	image, ok := Note(context, app.QueryResult{Role: app.Role{UID: "100000001", Nickname: "开拓者", Level: 70}, Data: data})
 	if !ok || image.Template != "note" || queried != "starrail.sign_info" || image.Data["signed"] != true {
