@@ -159,6 +159,7 @@ func TestLedgerMonthFollowsYunzai(t *testing.T) {
 		// is this month.
 		{"", september, 202609}, {"13", september, 202609}, {"0", september, 202609}, {"两", september, 202609},
 		{"7", september, 202607}, {"八", september, 202608},
+		{"7月", september, 202607}, {"七月", september, 202607},
 		// A month after this one is last year's.
 		{"十二", january, 202612}, {"11", january, 202611}, {"一", january, 202701},
 	} {

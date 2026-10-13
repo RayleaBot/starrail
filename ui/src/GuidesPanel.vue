@@ -51,11 +51,11 @@ onUnmounted(task.dispose)
 
 <template>
   <section class="section" aria-labelledby="guides-title">
-    <div class="section-heading"><div class="titles"><h2 id="guides-title">攻略</h2><p>按固定参考的米游社合集查找攻略；选择来源与合集后自动读取，关键词按回车查询。攻略保留作者观点与原文，图片在官方原图链接中查看。</p></div><button type="button" :disabled="busy" @click="load">刷新设置</button></div>
+    <div class="section-heading"><div class="titles"><h2 id="guides-title">攻略</h2><p>按固定参考的米游社合集查找攻略；选择来源后自动读取，关键词按回车查询。攻略保留作者观点与原文，图片在官方原图链接中查看。</p></div><button type="button" :disabled="busy" @click="load">刷新设置</button></div>
     <form class="field-row" @submit.prevent="search()">
       <fieldset :disabled="busy">
         <label class="field"><span>来源</span><select v-model="source" @change="search(false, 250)"><option v-for="item in sources" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
-        <label class="field"><span>合集</span><select v-model="collection" @change="search(false, 250)"><option v-for="(id, index) in selected?.collections" :key="id" :value="index">{{ index + 1 }} · {{ id }}</option></select></label>
+        <label v-if="(selected?.collections.length ?? 0) > 1" class="field"><span>合集</span><select v-model="collection" @change="search(false, 250)"><option v-for="(id, index) in selected?.collections" :key="id" :value="index">{{ index + 1 }} · {{ id }}</option></select></label>
         <label class="field"><span>角色名或标题关键词</span><input v-model="query" maxlength="100" placeholder="留空浏览本合集"></label>
         <div class="actions"><button type="submit" :disabled="task.busy.value || running">{{ task.busy.value || running ? '正在读取…' : '查询' }}</button><button type="button" :disabled="!source" @click="save">设为默认来源</button></div>
       </fieldset>
@@ -65,7 +65,7 @@ onUnmounted(task.dispose)
     <StatusLine v-if="reader.pending.value || task.busy.value || running" kind="info" text="正在读取攻略合集…"><template v-if="running" #actions><button type="button" class="compact" :disabled="task.busy.value" @click="task.cancel">取消</button><button type="button" class="compact" @click="task.poll">刷新进度</button></template></StatusLine>
     <template v-if="task.job.value?.state === 'completed'">
       <p class="hint">本合集匹配 {{ task.job.value.result?.total }} 篇。</p>
-      <EmptyState v-if="!posts.length" icon="compass" title="没有匹配的攻略" text="换一个合集或关键词再查询。" />
+      <EmptyState v-if="!posts.length" icon="compass" title="没有匹配的攻略" text="换一个来源或关键词再查询。" />
       <ul v-else class="rows">
         <li v-for="item in posts" :key="item.id">
           <div class="row-main"><strong>{{ item.title }}</strong></div>
@@ -80,6 +80,6 @@ onUnmounted(task.dispose)
         <div v-if="post.images?.length" class="actions"><a v-for="(url, index) in post.images" :key="url" :href="url" target="_blank" rel="noreferrer">官方攻略原图 {{ index + 1 }}</a></div>
       </article>
     </template>
-    <EmptyState v-else-if="!task.job.value && !task.busy.value && !reader.pending.value" icon="compass" title="选择来源与合集后自动读取" text="匹配的攻略会列在这里，点“查看正文”阅读原文。" />
+    <EmptyState v-else-if="!task.job.value && !task.busy.value && !reader.pending.value" icon="compass" title="选择来源后自动读取" text="匹配的攻略会列在这里，点“查看正文”阅读原文。" />
   </section>
 </template>

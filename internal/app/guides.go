@@ -16,7 +16,7 @@ type GuideSource struct {
 	Collections []string `json:"collections"`
 }
 
-var guideSources = []GuideSource{{"1", "初始镜像", []string{"1996095"}}, {"2", "小橙子阿", []string{"1998643"}}, {"3", "星穹中心", []string{"2029394", "2009142", "2038092"}}}
+var guideSources = []GuideSource{{"1", "HoYo青枫", []string{"1998324"}}, {"2", "让我摸个鱼吧Moyu", []string{"2259414"}}, {"3", "祈鸢ya", []string{"2049699"}}}
 
 type GuideConfig struct {
 	Revision uint64 `json:"revision"`

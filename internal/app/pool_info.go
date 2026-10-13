@@ -4,6 +4,7 @@ import (
 	"context"
 	"slices"
 	"strings"
+	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
@@ -27,14 +28,26 @@ func (a *App) poolCommand(ctx context.Context, event *rayleabot.EventContext, co
 	page := PoolImage{}
 	label := ""
 	matches := func(pool PoolInfo) bool { return false }
-	if command == "calendar" {
+	switch command {
+	case "pool-help":
+		pool, current := currentPool(a.Game.Data.Resources.Pools, a.now())
+		if pool.Version == "" {
+			return event.SendText("暂无卡池资料")
+		}
+		if !current {
+			ended, _, _ := strings.Cut(pool.To, " ")
+			notice(ctx, event, "卡池资料只收录到 "+pool.Version+pool.Half+"（"+ended+" 结束），尚未收录当前卡池，以下为最近收录的版本。")
+		}
+		label = a.Game.Name + pool.Version
+		matches = func(p PoolInfo) bool { return p.Version == pool.Version }
+	case "calendar":
 		version, half := args[0], ""
 		if len(args) > 1 && (args[1] == "上半" || args[1] == "下半") {
 			half = args[1]
 		}
 		label = a.Game.Name + version + half
 		matches = func(pool PoolInfo) bool { return pool.Version == version && (half == "" || pool.Half == half) }
-	} else {
+	default:
 		label = args[0]
 		page.Detail = len(args) > 1 && (args[1] == "详情" || args[1] == "详细")
 		aliases := a.aliasMap(event)
@@ -71,4 +84,21 @@ func (a *App) poolCommand(ctx context.Context, event *rayleabot.EventContext, co
 		}
 	}
 	return a.sendView(ctx, event, view)
+}
+
+// currentPool is the banner open at now (China time) or, between banners,
+// the next to open; when every banner has ended it is the last one to have
+// opened and current is false. The data's times are China time written as
+// 2006-01-02 15:04:05, which compare as text.
+func currentPool(pools []PoolInfo, now time.Time) (pool PoolInfo, current bool) {
+	stamp := now.In(chinaZone).Format(time.DateTime)
+	for _, p := range pools {
+		switch {
+		case p.To >= stamp && (!current || p.From < pool.From):
+			pool, current = p, true
+		case !current && p.From > pool.From:
+			pool = p
+		}
+	}
+	return pool, current
 }

@@ -23,18 +23,30 @@ func TestCalendarTimesFollowMiaoStarRail(t *testing.T) {
 }
 
 func TestCalendarRotationsCountFromMonday(t *testing.T) {
-	// Tuesday 2026-09-22: the week's Monday is 09-21, 161 days after 04-13,
-	// so Memory of Chaos began 35 days earlier, on 08-17.
-	now := time.Date(2026, 9, 22, 12, 0, 0, 0, chinaTime)
+	// Tuesday 2026-10-13: Monday is 10-12, before two of the new bases.
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, chinaTime)
 	periods := calendarAbyss(now, now.AddDate(0, 0, 7), [2]string{"2026-09-10 12:00:00", "2026-10-21 12:00:00"})
 	found := map[string]calendarPeriod{}
 	for _, period := range periods {
 		found[period.kind] = period
 	}
-	if chaos := found["abyss-1"]; !chaos.start.Equal(time.Date(2026, 8, 17, 4, 0, 0, 0, chinaTime)) || !chaos.end.Equal(time.Date(2026, 9, 28, 4, 0, 0, 0, chinaTime)) {
+	if chaos := found["abyss-1"]; !chaos.end.Equal(time.Date(2026, 11, 2, 4, 0, 0, 0, chinaTime)) {
 		t.Errorf("chaos = %v", chaos)
+	}
+	if fiction := found["abyss-2"]; !fiction.end.Equal(time.Date(2026, 10, 19, 4, 0, 0, 0, chinaTime)) {
+		t.Errorf("fiction = %v", fiction)
+	}
+	if shadow := found["abyss-3"]; !shadow.start.Equal(time.Date(2026, 10, 5, 4, 0, 0, 0, chinaTime)) || !shadow.end.Equal(time.Date(2026, 11, 16, 4, 0, 0, 0, chinaTime)) {
+		t.Errorf("shadow = %v", shadow)
 	}
 	if peak := found["abyss-4"]; !peak.start.Equal(time.Date(2026, 9, 10, 11, 0, 0, 0, chinaTime)) || !peak.end.Equal(time.Date(2026, 10, 21, 3, 59, 0, 0, chinaTime)) {
 		t.Errorf("peak = %v", peak)
+	}
+	now = time.Date(2026, 11, 10, 12, 0, 0, 0, chinaTime)
+	for _, period := range calendarAbyss(now, now.AddDate(0, 0, 7), [2]string{}) {
+		found[period.kind] = period
+	}
+	if chaos := found["abyss-1"]; !chaos.start.Equal(time.Date(2026, 11, 2, 4, 0, 0, 0, chinaTime)) || !chaos.end.Equal(time.Date(2026, 12, 14, 4, 0, 0, 0, chinaTime)) {
+		t.Errorf("chaos = %v", chaos)
 	}
 }

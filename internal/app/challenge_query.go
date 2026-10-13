@@ -19,10 +19,10 @@ var challengeCommands = []string{"starrail.abyss", "starrail.abyss_latest", "sta
 var detailedRecords = []string{"starrail.challenge", "starrail.story", "starrail.boss", "starrail.peak"}
 
 // wordEndedCommands are the queries whose upstream rules end with the word:
-// StarRail-plugin's 体力 (Yunzai's too, with 树脂 and 查询体力), 月历 and its
-// other words, and 货币战争, and miao's 练度统计. A message with anything
+// StarRail-plugin's 体力 (Yunzai's too, with 树脂 and 查询体力) and 货币战争,
+// and miao's 练度统计. A message with anything
 // after the word matches none of them, so it is left to other plugins.
-var wordEndedCommands = []string{"note", "monthly", "currency_wars", "training"}
+var wordEndedCommands = []string{"note", "currency_wars", "training"}
 
 // firstNumber is how StarRail-plugin reads the UID (userUid, and hkrpg's
 // card): the first number anywhere in the message, a UID or not.

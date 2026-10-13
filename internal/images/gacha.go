@@ -1,10 +1,10 @@
 package images
 
 import (
-	"encoding/json"
-	"regexp"
+	"slices"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -12,14 +12,39 @@ import (
 	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
-// gachaWords are stripped from the command word before picking the pool, as
-// StarRail-plugin's gatcha command does. Upstream leaves 统计 in, so every
-// 统计 word its rule takes, as 角色统计, fell to the overview; it is
-// stripped here with the others.
-var gachaWords = regexp.MustCompile(`#|\*|＊|星铁|星轨|崩铁|星穹铁道|穹批|跃迁|抽卡|记录|分析|统计`)
+// gachaPools are the warp pools upstream reports, in its order, followed by
+// the two collaboration warps upstream does not read.
+var gachaPools = []struct{ id, name string }{{"1", "群星跃迁"}, {"2", "新手跃迁"}, {"11", "限定跃迁"}, {"12", "光锥跃迁"}, {"21", "角色联动跃迁"}, {"22", "光锥联动跃迁"}}
 
-// gachaPools are the warp pools upstream reports, in its order.
-var gachaPools = []struct{ id, name string }{{"1", "群星跃迁"}, {"2", "新手跃迁"}, {"11", "限定跃迁"}, {"12", "光锥跃迁"}}
+// gachaSelection reads the warps a record word names: nil when it names
+// none, as 跃迁记录, 抽卡统计 or up记录, and all when it says 全部. A
+// collaboration word is read before the character or light cone warp its
+// name holds; 联动 alone is both collaboration warps. 抽卡, 抽奖, 集录,
+// 喵喵 and a glued UID name no warp.
+func gachaSelection(word string) (pools []string, all bool) {
+	has := func(names ...string) bool {
+		return slices.ContainsFunc(names, func(name string) bool { return strings.Contains(word, name) })
+	}
+	switch {
+	case has("全部"):
+		return nil, true
+	case has("角色联动"):
+		return []string{"21"}, false
+	case has("光锥联动", "武器联动"):
+		return []string{"22"}, false
+	case has("联动"):
+		return []string{"21", "22"}, false
+	case has("新手"):
+		return []string{"2"}, false
+	case has("常驻"):
+		return []string{"1"}, false
+	case has("角色"):
+		return []string{"11"}, false
+	case has("光锥", "武器"):
+		return []string{"12"}, false
+	}
+	return nil, false
+}
 
 const timeLayout = "2006-01-02 15:04:05"
 
@@ -33,32 +58,15 @@ var gachaArtwork = [][2]string{
 }
 
 // Gacha draws warp records the way StarRail-plugin's gatcha/new does: the
-// overview (all pulls, this banner's pulls, pity on the limited pools and,
-// for the overview, holdings) and either every pool's five-stars or one
-// pool's four- and five-stars grouped by banner; Yunzai's and miao's pages
-// are drawn by their own builders.
+// overview includes collaboration warps and shows five-stars and holdings;
+// named warps show four- and five-stars grouped by banner. GachaStat draws
+// gacha-stat's per-version statistics.
 func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
-	switch image.Command {
-	case "gacha-detail":
-		return GachaDetail(context, image)
-	case "gacha-stat":
+	if image.Command == "gacha-stat" {
 		return GachaStat(context, image)
-	case "gacha-log":
-		return GachaLog(context, image)
-	case "gacha-versions":
-		return GachaCount(context, image)
 	}
-	kind := 0
-	switch gachaWords.ReplaceAllString(image.Word, "") {
-	case "角色":
-		kind = 11
-	case "武器", "光锥":
-		kind = 12
-	case "常驻":
-		kind = 1
-	case "新手":
-		kind = 2
-	}
+	pools, _ := gachaSelection(image.Word)
+	overview := pools == nil
 	now := context.Now.In(chinaTime)
 	var banners []app.PoolInfo
 	if context.Game.Data != nil {
@@ -79,8 +87,7 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 	if len(current) > 0 {
 		firstTime, lastTime = current[0].To, current[0].From
 	}
-	characterTotals, coneTotals := holdingTotals(context)
-	allTotal := characterTotals[0] + characterTotals[1] + coneTotals[0] + coneTotals[1]
+	allTotal := holdingTotal(context.Catalog)
 	hold := [2]int{}
 	holdRate := [2]int{}
 	pity := map[string][2]int{"1": {}, "2": {}, "11": {}, "12": {}}
@@ -105,14 +112,14 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 		return id
 	}
 	filterRank := 5
-	if kind != 0 {
+	if !overview {
 		filterRank = 4
 	}
 	lists := []any{}
 	counts := map[string]int{}
 	for _, pool := range gachaPools {
-		wanted := (kind == 0 && pool.id != "2") || strconv.Itoa(kind) == pool.id
-		if !wanted {
+		// The overview reads every warp but the departure warp.
+		if overview && pool.id == "2" || !overview && !slices.Contains(pools, pool.id) {
 			continue
 		}
 		records := []gacha.Record{}
@@ -226,9 +233,13 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 			resources = append(resources, resource)
 		}
 	}
+	total := 0
+	for _, count := range counts {
+		total += count
+	}
 	return app.Image{Template: "gacha", Data: map[string]any{
-		"uid": image.UID, "overview": kind == 0,
-		"total":         counts["1"] + counts["11"] + counts["12"],
+		"uid": image.UID, "overview": overview,
+		"total":         total,
 		"current_total": currentTotal,
 		"pity_role":     pity["11"][1], "pity_cone": pity["12"][1],
 		"hold": hold, "hold_rate": holdRate,
@@ -237,41 +248,19 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 	}, Resources: resources}, true
 }
 
-// holdingTotals counts the four- and five-star characters (without the
-// Trailblazer) and light cones in StarRail-plugin's base data, the totals its
-// holding rates divide by.
-func holdingTotals(context app.ImageContext) ([2]int, [2]int) {
-	count := func(name string, skip []string) [2]int {
-		var result [2]int
-		if context.Artwork == nil {
-			return result
+// holdingTotal counts the catalog's four- and five-star characters and light
+// cones, the total StarRail-plugin's holding rates divide by. As upstream it
+// leaves out the Trailblazer (IDs from 8000); an enhanced character, its ID
+// with 2 for the leading 1 (see build.go), is the same character.
+func holdingTotal(catalog app.Catalog) int {
+	total := 0
+	for _, entry := range catalog.Entries {
+		if entry.Rarity != 4 && entry.Rarity != 5 {
+			continue
 		}
-		raw, err := context.Artwork.Open("starrail-plugin", "resources/baseData/"+name+".json")
-		if err != nil {
-			return result
+		if entry.Kind == "weapon" || entry.Kind == "character" && !strings.HasPrefix(entry.ID, "2") && !strings.HasPrefix(entry.ID, "8") {
+			total++
 		}
-		var entries map[string]struct {
-			Rarity any `json:"rarity"`
-		}
-		if json.Unmarshal(raw, &entries) != nil {
-			return result
-		}
-		for id, entry := range entries {
-			skipped := false
-			for _, value := range skip {
-				skipped = skipped || id == value
-			}
-			if skipped {
-				continue
-			}
-			switch app.Text(entry.Rarity) {
-			case "4":
-				result[0]++
-			case "5":
-				result[1]++
-			}
-		}
-		return result
 	}
-	return count("characters", []string{"8001", "8002", "8003", "8004"}), count("light_cones", nil)
+	return total
 }

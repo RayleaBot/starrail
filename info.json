@@ -53,7 +53,6 @@
       "sr"
     ],
     "alias_permission": 0,
-    "panel_api": 1,
     "ark": {
       "panel_rank": true,
       "query_type": 3,
@@ -101,30 +100,19 @@
     {
       "id": "panel-refresh-account",
       "name": "米游社更新面板",
-      "description": "从已绑定账号的米游社数据更新全部角色面板并保存",
-      "usage": "#米游社更新面板",
+      "description": "从已绑定账号的米游社数据更新全部角色的面板与行迹并保存",
+      "usage": "#米游社更新面板 / #刷新行迹",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:(?:米游社|mys)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?)$"
-      }
-    },
-    {
-      "id": "talent-refresh",
-      "name": "刷新行迹",
-      "description": "从米游社重新读取全部角色的行迹，供练度统计使用",
-      "usage": "#刷新行迹",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?:强制)?(?:刷新|更新)(?:所有|角色)*(?:行迹|技能|天赋)$"
+        "pattern": "^(?:(?:米游社|mys)(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?|(?:强制)?(?:刷新|更新)(?:所有|角色)*(?:行迹|技能|天赋))$"
       }
     },
     {
       "id": "talent-wiki",
       "name": "角色天赋",
       "description": "角色的技能、行迹与星魂资料",
-      "usage": "#希儿天赋 / #希儿星魂",
+      "usage": "#<角色>天赋 / #<角色>星魂",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -135,7 +123,7 @@
       "id": "monthly-history",
       "name": "星琼统计",
       "description": "保存官方仍提供的月份后，统计最近十二个月或指定年份的星琼与专票、通票",
-      "usage": "#[去年|今年|2025年]星琼统计 [UID]",
+      "usage": "#[去年|今年|<年份>年]星琼统计 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -146,11 +134,11 @@
       "id": "ledger",
       "name": "星琼",
       "description": "本月或前两个月的星琼与专票、通票收入（开拓月历）",
-      "usage": "#星琼[月份] [UID]",
+      "usage": "#星琼[月份] [UID] / #月历",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^星琼(?P<month>(?:[0-9]|[一二两三四五六七八九十]+)*)月*$"
+        "pattern": "^(?:星琼(?P<month>(?:[0-9]|[一二两三四五六七八九十]+)*)月*|月历|星琼获取|月收入|收入|原石)$"
       }
     },
     {
@@ -168,36 +156,11 @@
       "id": "accounts",
       "name": "账号",
       "description": "查看已绑定的 UID（账号与无 CK 绑定），uid加序号切换",
-      "usage": "#uid / #uid2",
+      "usage": "#uid[序号]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:账号|(?i:(?:我的)?uid)[0-9]{0,2})$"
-      }
-    },
-    {
-      "id": "api-panel-refresh",
-      "name": "面板更新",
-      "description": "按 StarRail-plugin 从面板服务更新面板，列出本次更新的角色，随后同 miao 更新展柜面板",
-      "usage": "#面板更新 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^面板更新(?P<uid>[0-9]{9,10})?$"
-      }
-    },
-    {
-      "id": "api-panel-list",
-      "name": "面板",
-      "description": "按 StarRail-plugin 列出面板服务保存的角色",
-      "usage": "#面板列表",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "面板",
-          "面板列表"
-        ]
       }
     },
     {
@@ -208,14 +171,14 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板)(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:全部面板更新|更新全部面板|获取游戏角色详情|更新面板|面板更新)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
       "id": "panel-list",
       "name": "面板列表",
-      "description": "已保存面板的角色列表",
-      "usage": "#面板列表<UID>",
+      "description": "列出本人或所写 UID 已保存面板的角色",
+      "usage": "#面板列表 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -247,102 +210,51 @@
     {
       "id": "gacha-help",
       "name": "抽卡帮助",
-      "description": "跃迁记录的获取与查看方法",
-      "usage": "#抽卡帮助",
+      "description": "跃迁记录页链接的获取方法；私聊或群聊直接发送该链接即可读取全部跃迁记录",
+      "usage": "#抽卡帮助 / #抽卡链接",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
           "抽卡帮助",
           "记录帮助",
-          "跃迁帮助"
-        ]
-      }
-    },
-    {
-      "id": "gacha-link",
-      "name": "抽卡链接",
-      "description": "按 StarRail-plugin 提示发送抽卡链接，群聊中也可发送",
-      "usage": "#抽卡链接",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
+          "跃迁帮助",
           "抽卡链接",
           "抽卡链接绑定"
         ]
       }
     },
     {
-      "id": "gacha",
-      "name": "跃迁记录",
-      "description": "分析已导入的抽卡记录",
-      "usage": "#跃迁记录 [UID]",
+      "id": "pay-log",
+      "name": "资产记录",
+      "description": "按页查看星琼、古老梦华、开拓力、遗器与光锥的获取记录，写“消耗”或“全部”改看消耗或全部变动",
+      "usage": "#<星琼|古老梦华|体力|遗器>[消耗|全部]记录[页码] / #光锥<获取|消耗|全部>记录[页码]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:角色|光锥|武器|常驻|新手)?(?:跃迁|抽卡)?(?:记录|分析|统计)"
+        "pattern": "^(?:(?P<type>星琼|古老梦华|开拓力|体力|遗器|充值)(?P<direction>获取|消耗|全部)?|(?P<cone>光锥)(?P<cone_direction>获取|消耗|全部)|资产)记录(?P<page>[0-9]*)$"
       }
     },
     {
-      "id": "gacha-detail",
-      "name": "喵喵抽卡记录",
-      "description": "按 miao 列出所选跃迁每个五星的日期、是否 UP 与所用抽数",
-      "usage": "#喵喵抽卡记录 / #喵喵光锥记录 / #角色池记录 / #up记录 [UID]",
+      "id": "gacha",
+      "name": "跃迁记录",
+      "description": "分析已保存的跃迁记录：总览各跃迁的五星与持有率，写卡池时按期列出该跃迁的四星与五星",
+      "usage": "#跃迁记录 [UID] / #<角色|光锥|常驻|联动|新手>记录 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:喵喵)?(?:抽卡|抽奖|角色|武器|光锥|常驻|集录|up)+池?(?:记录|祈愿|分析)$"
+        "pattern": "^(?:喵喵)?(?:角色联动|光锥联动|武器联动|联动|角色|光锥|武器|常驻|新手|集录|up|全部|抽卡|抽奖|跃迁)*池*(?:记录|分析|祈愿)(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
       "id": "gacha-stat",
-      "name": "喵喵抽卡统计",
-      "description": "按 miao 逐期列出跃迁的 UP、抽数与所得四星、五星",
-      "usage": "#喵喵抽卡统计 / #喵喵角色统计 / #全部统计 / #up统计 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?:喵喵)?(?:全部|抽卡|抽奖|角色|武器|光锥|常驻|集录|up|版本)+池?统计$"
-      }
-    },
-    {
-      "id": "gacha-log",
-      "name": "抽卡记录",
-      "description": "按 Yunzai 统计所选跃迁的抽数、五星与出金抽数，全部记录列出各跃迁",
-      "usage": "#全部记录 / #角色联动记录 / #光锥联动记录 / #新手池记录 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?:全部)?(?:抽卡|抽奖|角色|角色联动|武器|武器联动|集录|常驻|up|新手|光锥|光锥联动|全部)池*(?:记录|祈愿|分析)$"
-      }
-    },
-    {
-      "id": "gacha-versions",
       "name": "抽卡统计",
-      "description": "按 Yunzai 逐期列出卡池的抽数与所得四星、五星及次数",
-      "usage": "#新手池统计 [UID]",
+      "description": "按版本逐期统计 UP、抽数与所得四星、五星；不写卡池时统计角色与光锥活动跃迁，常驻、联动、新手与全部各合为一栏",
+      "usage": "#抽卡统计 [UID] / #<角色|光锥|常驻|联动|新手|全部>统计 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:抽卡|抽奖|角色|武器|常驻|up|新手|光锥)池*统计$"
-      }
-    },
-    {
-      "id": "monthly",
-      "name": "月历",
-      "description": "本月或指定月份的星琼与票券收入（开拓月历）",
-      "usage": "#月历",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "月历",
-          "星琼获取",
-          "月收入",
-          "收入",
-          "原石"
-        ]
+        "pattern": "^(?:喵喵)?(?:角色联动|光锥联动|武器联动|联动|角色|光锥|武器|常驻|新手|集录|up|全部|抽卡|抽奖|跃迁|版本)*池*统计(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
@@ -427,8 +339,8 @@
     {
       "id": "group-settings",
       "name": "群设置",
-      "description": "调整当前群的游戏设置",
-      "usage": "#群设置 [开启|关闭|图片|文本|默认|别名|删除别名]",
+      "description": "查看或调整本群的游戏开关、图片或文字回复与本群别名，别名目标可写角色或光锥的名称、别名或资料 ID",
+      "usage": "#群设置 [开启|关闭|图片|文本|默认] / #群设置 别名 <名称> <角色或光锥> / #群设置 删除别名 <名称>",
       "permission": "group_admin",
       "trigger": {
         "type": "exact",
@@ -438,76 +350,43 @@
       }
     },
     {
-      "id": "alias-help",
-      "name": "别名帮助",
-      "description": "自定义别名命令的说明",
-      "usage": "#喵喵别名帮助",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^喵喵别名(?:帮助)?$"
-      }
-    },
-    {
-      "id": "alias-set",
-      "name": "设置别名",
-      "description": "给角色添加对所有群生效的自定义别名",
-      "usage": "#喵喵别名设置 角色名 别名",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^喵喵别名(?:[崩星]铁)?设置$"
-      }
-    },
-    {
       "id": "alias-remove",
       "name": "删除别名",
-      "description": "删除自定义别名，预设别名不能删除",
-      "usage": "#喵喵别名删除 别名 / #删除别名 别名",
+      "description": "删除对所有群生效的自定义别名，预设别名不能删除",
+      "usage": "#删除别名 <别名>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:喵喵别名(?:[崩星]铁)?删除|删除(?:别名|昵称)(?P<alias>.+))$"
-      }
-    },
-    {
-      "id": "alias-list",
-      "name": "别名列表",
-      "description": "查看星铁全部自定义别名",
-      "usage": "#喵喵别名列表",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^喵喵别名(?:[崩星]铁)?列表$"
+        "pattern": "^(?:喵喵别名(?:[崩星]铁)?删除|删除(?:别名|昵称)(?P<alias>.*))$"
       }
     },
     {
       "id": "alias-add",
       "name": "添加别名",
-      "description": "给角色添加别名，随后发送别名，多个用空格隔开",
-      "usage": "#设置希儿别名",
+      "description": "给角色添加对所有群生效的自定义别名，发送后按提示再发别名，多个用空格隔开",
+      "usage": "#设置<角色>别名",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:设置|配置|添加)(?P<character>.+)(?:别名|昵称)$"
+        "pattern": "^(?:喵喵别名(?:[崩星]铁)?设置|(?:设置|配置|添加)(?P<character>.+)(?:别名|昵称))$"
       }
     },
     {
       "id": "aliases",
       "name": "角色别名",
-      "description": "查看角色的全部别名",
-      "usage": "#希儿别名",
+      "description": "查看角色的全部别名；不写角色时列出全部自定义别名与别名命令",
+      "usage": "#<角色>别名 / #别名列表",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<character>.+?)(?:别名|昵称)$"
+        "pattern": "^(?:(?:喵喵)?别名(?:[崩星]铁)?(?:列表|帮助)?|(?P<character>.+?)(?:别名|昵称))$"
       }
     },
     {
       "id": "simulation-history",
       "name": "模拟记录",
       "description": "查看本人的模拟抽卡记录",
-      "usage": "#模拟记录 ",
+      "usage": "#模拟记录",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -561,7 +440,7 @@
       "id": "signin-task",
       "name": "自动签到",
       "description": "显式开启或停止每日自动签到",
-      "usage": "#自动签到 开启/关闭 [UID]",
+      "usage": "#自动签到 <开启|关闭> [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -573,8 +452,8 @@
     {
       "id": "public-profile",
       "name": "公开信息",
-      "description": "用本人主动共享的查询账号查看任意 UID 的公开资料",
-      "usage": "#公开信息 UID [区服]",
+      "description": "用本人主动共享的查询账号查看任意国服 UID 的公开资料，不写区服时按 UID 判断官服或B服",
+      "usage": "#公开信息 <UID> [官服|B服]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -613,7 +492,7 @@
       "id": "gacha-background",
       "name": "更新跃迁记录",
       "description": "按 StarRail-plugin 用最近发送的抽卡链接重新读取跃迁记录，同一 UID 一小时一次",
-      "usage": "*更新跃迁记录",
+      "usage": "#更新跃迁记录",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -651,7 +530,7 @@
       "id": "challenge-submit",
       "name": "提交挑战",
       "description": "主动向当前群公开本人成绩",
-      "usage": "#提交挑战 玩法 [本期/上期] [UID]",
+      "usage": "#提交挑战 <玩法> [本期|上期] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -663,8 +542,8 @@
     {
       "id": "challenge-rank",
       "name": "挑战排行",
-      "description": "分期查看群挑战榜",
-      "usage": "#挑战排行 玩法 [期次] [指标] [页码]",
+      "description": "分期查看群挑战榜；参数按顺序填写，翻页时期次与指标不能省略（可写全部、综合）",
+      "usage": "#挑战排行 <玩法> [本期|上期|全部] [指标] [页码]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -689,9 +568,9 @@
     {
       "id": "challenge-clear",
       "name": "清空挑战",
-      "description": "群管理员清空挑战群榜",
+      "description": "群管理员清空本群挑战群榜，可只清空一种玩法",
       "usage": "#清空挑战 [玩法]",
-      "permission": "everyone",
+      "permission": "group_admin",
       "trigger": {
         "type": "exact",
         "names": [
@@ -703,7 +582,7 @@
       "id": "challenge-remind",
       "name": "挑战提醒",
       "description": "显式开启本人挑战完成提醒",
-      "usage": "#挑战提醒 玩法 指标 阈值 [时间] [UID]",
+      "usage": "#挑战提醒 <玩法> <指标> <阈值> [时间] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -742,7 +621,7 @@
       "id": "monthly-task",
       "name": "星琼任务",
       "description": "为所有已绑定账号保存本月及官方仍提供月份的开拓月历",
-      "usage": "*星琼任务",
+      "usage": "#星琼任务",
       "permission": "super_admin",
       "trigger": {
         "type": "exact",
@@ -755,7 +634,7 @@
       "id": "community-status",
       "name": "米游币查询",
       "description": "查询社区米游币与任务",
-      "usage": "#米游币查询",
+      "usage": "#米游币查询 [账号序号]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -768,13 +647,17 @@
     },
     {
       "id": "community-sign",
-      "name": "米游社崩坏星穹铁道签到",
-      "description": "显式为所选账号在本游戏社区签到",
-      "usage": "#米游社崩坏星穹铁道签到",
+      "name": "米游社签到",
+      "description": "为所选账号在米游社星铁版块签到，不写账号序号时用第 1 个账号",
+      "usage": "#米游社签到 [账号序号]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
+          "米游社签到",
+          "mys签到",
+          "米游社星铁签到",
+          "mys星铁签到",
           "米游社崩坏星穹铁道签到",
           "社区崩坏星穹铁道签到",
           "mys崩坏星穹铁道签到",
@@ -786,7 +669,7 @@
       "id": "community-task",
       "name": "社区任务",
       "description": "开启米游社签到与米游币任务（一次或每天）",
-      "usage": "#社区任务 一次/每天 签到/全部 [账号序号]",
+      "usage": "#社区任务 <一次|每天> <签到|全部> [账号序号]",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -799,7 +682,7 @@
       "id": "community-stop",
       "name": "关闭社区任务",
       "description": "关闭本人的米游社任务",
-      "usage": "#关闭社区任务 ",
+      "usage": "#关闭社区任务",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
@@ -835,30 +718,6 @@
           "直播兑换码",
           "前瞻兑换码"
         ]
-      }
-    },
-    {
-      "id": "billing",
-      "name": "资产记录",
-      "description": "查询官方可用资产变动明细",
-      "usage": "#资产记录 类别 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "资产记录"
-        ]
-      }
-    },
-    {
-      "id": "pay-log",
-      "name": "星琼记录",
-      "description": "按页查看星琼、古老梦华、开拓力与遗器的获取记录",
-      "usage": "#星琼记录 / #古老梦华记录 / #体力记录 / #遗器记录 [页码]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?P<type>星琼|古老梦华|体力|遗器|充值)记录(?P<page>[0-9]*)$"
       }
     },
     {
@@ -934,7 +793,7 @@
     {
       "id": "original-image",
       "name": "原图",
-      "description": "发送本人最近十分钟查看的图库图片原图",
+      "description": "发送本人十分钟内在当前聊天查看的面板或伤害图立绘、角色卡片照片或图鉴图的原图",
       "usage": "#原图",
       "permission": "everyone",
       "trigger": {
@@ -1021,7 +880,7 @@
       "id": "uid-remove",
       "name": "删除uid",
       "description": "按序号删除无 CK 绑定的 UID",
-      "usage": "#删除uid1",
+      "usage": "#删除uid<序号>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1043,8 +902,8 @@
       "id": "subscribe",
       "name": "开启公告推送",
       "description": "群管理员为本群开启米游社公告、资讯推送或活动到期预警",
-      "usage": "*开启公告推送 / *开启资讯推送 / *开启到期活动推送",
-      "permission": "everyone",
+      "usage": "#开启<公告|资讯|到期活动>推送",
+      "permission": "group_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:星铁)?开启(?:(?P<kind>公告|资讯)推送|(?P<expiry>到期)活动(?:预警)?(?:推送)?)$"
@@ -1054,8 +913,8 @@
       "id": "unsubscribe",
       "name": "关闭公告推送",
       "description": "群管理员关闭本群的米游社公告、资讯推送或活动到期预警",
-      "usage": "*关闭公告推送 / *关闭资讯推送 / *关闭到期活动推送",
-      "permission": "everyone",
+      "usage": "#关闭<公告|资讯|到期活动>推送",
+      "permission": "group_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:星铁)?关闭(?:(?P<kind>公告|资讯)推送|(?P<expiry>到期)活动(?:预警)?(?:推送)?)$"
@@ -1065,7 +924,7 @@
       "id": "content-push",
       "name": "推送公告",
       "description": "立即为已开启推送的群检查并推送新公告、资讯与到期活动",
-      "usage": "*推送公告 / *推送资讯",
+      "usage": "#推送<公告|资讯>",
       "permission": "super_admin",
       "trigger": {
         "type": "pattern",
@@ -1076,7 +935,7 @@
       "id": "photo-upload",
       "name": "上传照片",
       "description": "把消息或所引用消息中的图片加入角色照片，供照片与角色卡片使用",
-      "usage": "#上传希儿照片",
+      "usage": "#上传<角色>照片",
       "permission": "super_admin",
       "trigger": {
         "type": "pattern",
@@ -1096,23 +955,25 @@
     },
     {
       "id": "pool-help",
-      "name": "卡池帮助",
-      "description": "卡池查询的写法",
-      "usage": "#卡池帮助",
+      "name": "当前卡池",
+      "description": "正在进行或下一期卡池所属版本的 UP 卡池（按随插件更新的卡池资料）",
+      "usage": "#卡池",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
-          "卡池帮助",
-          "卡池"
+          "卡池",
+          "当前卡池",
+          "本期卡池",
+          "卡池帮助"
         ]
       }
     },
     {
       "id": "calendar",
-      "name": "卡池",
-      "description": "当前或指定版本的 UP 卡池",
-      "usage": "#<版本>卡池",
+      "name": "版本卡池",
+      "description": "指定版本的 UP 卡池",
+      "usage": "#<版本>[上半|下半]卡池",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1123,7 +984,7 @@
       "id": "banner-history",
       "name": "卡池历史",
       "description": "角色或光锥历次 UP 的版本与日期",
-      "usage": "#<角色或武器>卡池",
+      "usage": "#<角色或光锥>卡池[详情]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1221,30 +1082,19 @@
     {
       "id": "divergent-week",
       "name": "周期演算",
-      "description": "差分宇宙周期演算本期或上期第一至三次的挑战记录",
-      "usage": "#[本期|上期]演算[一|二|三] [UID]",
+      "description": "差分宇宙周期演算本期或上期第一至三次的挑战记录（周期演算同本期）",
+      "usage": "#<本期|上期>演算[一|二|三] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:本期|上期|本周|上周)(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?(?P<uid>[0-9]{9,10})?$"
-      }
-    },
-    {
-      "id": "divergent-cycle",
-      "name": "周期演算说明",
-      "description": "提示按本期或上期查询周期演算",
-      "usage": "#周期演算",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^周期(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?$"
+        "pattern": "^(?:本期|上期|本周|上周|周期)(?:差分(?:宇宙)?|演算)(?:战绩|回顾|战报|记录)?(?:一|二|三)?(?P<uid>[0-9]{9,10})?$"
       }
     },
     {
       "id": "currency-wars-archive",
       "name": "货币战绩",
       "description": "货币战争最近第一至十次的战绩回顾",
-      "usage": "#货币战绩[一至十] [UID]",
+      "usage": "#货币战绩[一|二|三|四|五|六|七|八|九|十] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1252,21 +1102,10 @@
       }
     },
     {
-      "id": "score",
-      "name": "遗器",
-      "description": "按角色专属权重计算装备评分",
-      "usage": "#<角色>遗器 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?:评分|(?P<character>.+?)(?:遗器|圣遗物)(?P<uid>[0-9]{9,10})?)$"
-      }
-    },
-    {
       "id": "build",
       "name": "伤害",
       "description": "自动应用固定参考情境计算角色伤害",
-      "usage": "#希儿伤害[序号] [UID]",
+      "usage": "#<角色>伤害[序号] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1274,29 +1113,14 @@
       }
     },
     {
-      "id": "growth-help",
-      "name": "角色养成",
-      "description": "养成计算的写法与参数说明",
-      "usage": "#角色养成",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "角色养成",
-          "角色计算",
-          "角色养成计算"
-        ]
-      }
-    },
-    {
       "id": "growth",
       "name": "养成",
-      "description": "计算升到目标等级的材料，不写目标时算到上限",
+      "description": "计算升到目标等级的材料，不写目标时算到上限；目标依次为角色、光锥与各技能",
       "usage": "#<角色>养成[目标等级…] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<character>.*?)(?:养成|计算)(?P<levels>[0-9,，]*)$"
+        "pattern": "^(?:角色(?:养成|计算|养成计算)|(?P<character>.*?)(?:养成|计算)(?P<levels>[0-9,，]*))$"
       }
     },
     {
@@ -1311,17 +1135,6 @@
       }
     },
     {
-      "id": "cloud-character-rank",
-      "name": "角色排名",
-      "description": "ark 云端该角色在所写 UID 的全服伤害排名（先更新）",
-      "usage": "#角色排名希儿<UID>",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^角色排名(?P<text>.*)$"
-      }
-    },
-    {
       "id": "cloud-total-rank",
       "name": "总排名",
       "description": "ark 云端本地已保存角色的全服排名",
@@ -1333,31 +1146,20 @@
       }
     },
     {
-      "id": "cloud-rank-stats",
-      "name": "排名统计",
-      "description": "ark 云端该角色的伤害与遗器评分分布，按面板的排名统计样式出图",
-      "usage": "#希儿排名统计",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?P<character>.+?)排名统计$"
-      }
-    },
-    {
       "id": "panel-export",
-      "name": "导出面板",
-      "description": "把已保存的面板作为 miao 面板数据文件发送",
-      "usage": "#星铁导出面板",
+      "name": "导出面板文件",
+      "description": "把当前 UID 已保存的面板作为 miao 面板数据（JSON）文件发到聊天，不上传 ark",
+      "usage": "#导出面板文件",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:星铁)?导出面板$"
+        "pattern": "^(?:星铁)?导出面板(?:文件)?$"
       }
     },
     {
       "id": "cloud-export",
       "name": "导出面板数据",
-      "description": "把 UID 已保存的面板上传 ark，十分钟内可在另一个机器人导入",
+      "description": "把 UID 已保存的面板上传 ark，十分钟内可在另一个机器人用“导入面板数据”取回，不发送文件",
       "usage": "#导出面板数据",
       "permission": "everyone",
       "trigger": {
@@ -1369,7 +1171,7 @@
       "id": "cloud-import",
       "name": "导入面板数据",
       "description": "从 ark 下载该 UID 上传的面板，存入已保存的面板",
-      "usage": "#导入面板数据<UID>",
+      "usage": "#导入面板数据 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1391,7 +1193,7 @@
       "id": "cloud-custom-rank",
       "name": "ark自定义排行",
       "description": "ark 收录的该角色面板全服排行，可按星魂、部位主词条等筛选、指定条数，按 miao 排行图出图",
-      "usage": "#ark<角色>[伤害|遗器]排行 [筛选] [数量:N]",
+      "usage": "#ark<角色>[伤害|遗器]排行 [筛选…] [数量:<条数>]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1414,8 +1216,8 @@
     {
       "id": "cloud-custom-rank-panel",
       "name": "ark获取面板",
-      "description": "引用 ark 自定义排行的图片（或发起排行的命令），五分钟内查看其中第 N 名的面板",
-      "usage": "#ark获取面板N（1–20，引用排行图片发送）",
+      "description": "引用 ark 自定义排行的图片（或发起排行的命令）发送，五分钟内查看其中第 1–20 名的面板",
+      "usage": "#ark获取面板<名次>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1437,7 +1239,7 @@
       "id": "rank-top",
       "name": "最强",
       "description": "查看本群该角色伤害第一（最高分为评分第一）的面板",
-      "usage": "*最强<角色>",
+      "usage": "#最强<角色>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1448,8 +1250,8 @@
       "id": "rank-reset",
       "name": "重置排名",
       "description": "机器人超级管理员清空本群排名或某个角色的排名",
-      "usage": "*重置[角色]排名",
-      "permission": "everyone",
+      "usage": "#重置排名 / #重置<角色>排名",
+      "permission": "super_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:重置|重设).*(?:排名|排行)$"
@@ -1459,8 +1261,8 @@
       "id": "rank-refresh",
       "name": "刷新排名",
       "description": "群管理员按当前规则重新计算本群记录的面板",
-      "usage": "*刷新排名",
-      "permission": "everyone",
+      "usage": "#刷新排名",
+      "permission": "group_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:刷新|更新|重新加载)(?:群内|群|全部)*(?:排名|排行)$"
@@ -1470,8 +1272,8 @@
       "id": "rank-switch",
       "name": "开启排名",
       "description": "群管理员开启或关闭本群排名的查询",
-      "usage": "*开启排名 / *关闭排名",
-      "permission": "everyone",
+      "usage": "#<开启|关闭>排名",
+      "permission": "group_admin",
       "trigger": {
         "type": "pattern",
         "pattern": "^(?:开启|打开|启用|关闭|禁用)(?:群内|群|全部)*(?:排名|排行)$"
@@ -1481,7 +1283,7 @@
       "id": "rank",
       "name": "排名",
       "description": "本群在群内查看过的面板按伤害排行，带“遗器”“评分”按遗器评分；不写角色时列出各角色第一",
-      "usage": "*<角色>[遗器]排名",
+      "usage": "#<角色>[遗器]排名 / #群排名",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1513,14 +1315,15 @@
     {
       "id": "guide-help",
       "name": "攻略帮助",
-      "description": "攻略的用法与各来源序号",
+      "description": "攻略的写法、来源序号与当前默认来源",
       "usage": "#攻略帮助",
       "permission": "everyone",
       "trigger": {
         "type": "exact",
         "names": [
           "攻略帮助",
-          "攻略说明"
+          "攻略说明",
+          "攻略"
         ]
       }
     },
@@ -1538,7 +1341,7 @@
     {
       "id": "income-curve",
       "name": "收益曲线",
-      "description": "属性收益曲线图",
+      "description": "攻击、暴击、减防等属性的收益曲线图（理论计算，不随版本变化）",
       "usage": "#收益曲线",
       "permission": "everyone",
       "trigger": {
@@ -1549,64 +1352,10 @@
       }
     },
     {
-      "id": "tier-list",
-      "name": "强度榜",
-      "description": "1.0 版本的角色强度榜",
-      "usage": "#强度榜",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "强度榜",
-          "全角色强度榜"
-        ]
-      }
-    },
-    {
-      "id": "path-guides",
-      "name": "全角色攻略",
-      "description": "1.1 下半各命途的全角色攻略图",
-      "usage": "#攻略",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "攻略"
-        ]
-      }
-    },
-    {
-      "id": "abyss-guide",
-      "name": "深渊攻略",
-      "description": "忘却之庭的攻略图与推荐配队",
-      "usage": "#深渊攻略",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "深渊攻略",
-          "忘却之庭攻略"
-        ]
-      }
-    },
-    {
-      "id": "lc-recommend",
-      "name": "商店光锥推荐",
-      "description": "商店光锥的兑换推荐图",
-      "usage": "#商店光锥推荐",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "商店光锥推荐"
-        ]
-      }
-    },
-    {
       "id": "guides",
       "name": "攻略",
-      "description": "发送米游社攻略合集中该角色的攻略图，可接来源序号，all 为前几个来源",
-      "usage": "#[更新]<角色>攻略[来源序号]",
+      "description": "发送米游社攻略合集中该角色的攻略图；可接来源序号，all 依次发送各来源，“更新”重新查找",
+      "usage": "#[更新]<角色>攻略[来源序号|all]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1625,58 +1374,9 @@
       }
     },
     {
-      "id": "ref-panel-help",
-      "name": "参考面板帮助",
-      "description": "参考面板的说明图",
-      "usage": "#参考面板帮助",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "参考面板帮助"
-        ]
-      }
-    },
-    {
-      "id": "ref-panel",
-      "name": "参考面板",
-      "description": "角色的参考面板图",
-      "usage": "#<角色>参考面板",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?P<character>.+?)参考面板$"
-      }
-    },
-    {
-      "id": "api-switch",
-      "name": "切换面板API",
-      "description": "机器人超级管理员切换 StarRail-plugin 的面板服务",
-      "usage": "#切换面板API<序号>",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?:设置|切换)面板.*$"
-      }
-    },
-    {
-      "id": "api-list",
-      "name": "API列表",
-      "description": "机器人超级管理员查看 StarRail-plugin 的面板服务",
-      "usage": "#API列表",
-      "permission": "everyone",
-      "trigger": {
-        "type": "exact",
-        "names": [
-          "API列表",
-          "api列表"
-        ]
-      }
-    },
-    {
       "id": "panel-help",
       "name": "面板帮助",
-      "description": "面板、伤害与换装命令的说明图",
+      "description": "更新面板、查看面板与伤害、换装和排名的写法",
       "usage": "#面板帮助",
       "permission": "everyone",
       "trigger": {
@@ -1697,7 +1397,7 @@
       "id": "panel-image-upload",
       "name": "上传面板图",
       "description": "把消息或所引用消息中的图片加入角色面板图，面板随机使用",
-      "usage": "#上传希儿面板图",
+      "usage": "#上传<角色>面板图",
       "permission": "super_admin",
       "trigger": {
         "type": "pattern",
@@ -1708,7 +1408,7 @@
       "id": "panel-image-remove",
       "name": "删除面板图",
       "description": "按面板图列表的序号删除角色面板图",
-      "usage": "#删除希儿面板图1",
+      "usage": "#删除<角色>面板图<序号>",
       "permission": "super_admin",
       "trigger": {
         "type": "pattern",
@@ -1719,7 +1419,7 @@
       "id": "panel-image-list",
       "name": "面板图列表",
       "description": "查看角色的面板图及序号",
-      "usage": "#希儿面板图列表",
+      "usage": "#<角色>面板图列表",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1727,32 +1427,21 @@
       }
     },
     {
-      "id": "api-panel",
+      "id": "panel",
       "name": "面板",
-      "description": "查看角色面板；角色名后接面板与 UID 时按 StarRail-plugin 读取其面板服务",
-      "usage": "#<角色>面板 [UID]",
+      "description": "角色面板图：属性、光锥、遗器评分与参考伤害；角色名后写详情、详细、面版、圣遗物，或写“评分 角色”，结果相同",
+      "usage": "#<角色>面板 [UID] / #<角色>遗器 [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?P<character>.+?)面板(?P<uid>[0-9]{9,10})?$"
-      }
-    },
-    {
-      "id": "character",
-      "name": "详情",
-      "description": "查看角色面板",
-      "usage": "#<角色>详情 [UID]",
-      "permission": "everyone",
-      "trigger": {
-        "type": "pattern",
-        "pattern": "^(?P<character>.+?)(?:面版|详情|详细)(?P<uid>[0-9]{9,10})?$"
+        "pattern": "^(?:评分|(?P<character>.+?)(?:面板|面版|详情|详细|遗器|圣遗物)(?P<uid>[0-9]{9,10})?)$"
       }
     },
     {
       "id": "panel-change",
       "name": "面板换装",
-      "description": "按上游写法替换面板的武器、遗器、套装、命座、天赋或等级后重新计算；附带或引用遗器截图时换上 ark 识别的遗器",
-      "usage": "#希儿换满命换满行迹",
+      "description": "在角色名后写“换”与要换的光锥、遗器、套装、星魂、行迹或等级（如换满命换满行迹）后重新计算；附带或引用遗器截图时换上 ark 识别的遗器",
+      "usage": "#<角色>换<替换内容>",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1763,7 +1452,7 @@
       "id": "character-card",
       "name": "角色卡片",
       "description": "直接发送角色名（可带卡片、UID）出角色卡片：照片、等级、星魂、光锥、技能与遗器；其他命令都不匹配时才生效",
-      "usage": "#希儿 / #希儿卡片",
+      "usage": "#<角色>[卡片] [UID]",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
@@ -1788,6 +1477,7 @@
       "commands": [
         "profile",
         "note",
+        "online",
         "training",
         "public-profile"
       ]
@@ -1796,20 +1486,13 @@
       "id": "panel",
       "title": "角色面板",
       "commands": [
-        "api-panel",
-        "character",
+        "panel",
         "character-card",
         "panel-refresh",
         "panel-refresh-account",
-        "talent-refresh",
         "panel-list",
-        "api-panel-list",
-        "api-panel-refresh",
         "panel-delete",
         "original-image",
-        "panel-image-upload",
-        "panel-image-remove",
-        "panel-image-list",
         "panel-help"
       ]
     },
@@ -1818,7 +1501,6 @@
       "title": "伤害与遗器评分",
       "commands": [
         "build",
-        "score",
         "artifact-list",
         "panel-change"
       ]
@@ -1838,9 +1520,7 @@
       "id": "cloud",
       "title": "ark 云排名与面板",
       "commands": [
-        "cloud-character-rank",
         "cloud-total-rank",
-        "cloud-rank-stats",
         "cloud-custom-rank",
         "cloud-custom-rank-help",
         "cloud-custom-rank-panel",
@@ -1866,6 +1546,19 @@
       ]
     },
     {
+      "id": "challenge-rank",
+      "title": "挑战群榜与提醒",
+      "commands": [
+        "challenge-submit",
+        "challenge-rank",
+        "challenge-withdraw",
+        "challenge-clear",
+        "challenge-remind",
+        "challenge-stop",
+        "challenge-status"
+      ]
+    },
+    {
       "id": "universe",
       "title": "宇宙与活动玩法战绩",
       "commands": [
@@ -1873,22 +1566,11 @@
         "divergent",
         "divergent-normal",
         "divergent-week",
-        "divergent-cycle",
         "swarm",
         "gears",
         "unknowable",
         "currency_wars",
         "currency-wars-archive"
-      ]
-    },
-    {
-      "id": "challenge-rank",
-      "title": "挑战群榜",
-      "commands": [
-        "challenge-submit",
-        "challenge-rank",
-        "challenge-withdraw",
-        "challenge-clear"
       ]
     },
     {
@@ -1898,39 +1580,41 @@
         "catalog",
         "talent-wiki",
         "materials",
-        "growth-help",
         "growth",
         "guides",
         "guide-help",
         "guide-default",
-        "ref-panel-help",
-        "ref-panel",
-        "income-curve",
-        "tier-list",
-        "path-guides",
-        "abyss-guide",
-        "lc-recommend"
+        "income-curve"
+      ]
+    },
+    {
+      "id": "alias",
+      "title": "角色别名",
+      "commands": [
+        "aliases",
+        "alias-add",
+        "alias-remove"
       ]
     },
     {
       "id": "images",
-      "title": "图片与互动",
+      "title": "角色图片",
       "commands": [
         "photo",
-        "photo-upload"
+        "photo-upload",
+        "panel-image-list",
+        "panel-image-upload",
+        "panel-image-remove"
       ]
     },
     {
       "id": "monthly",
-      "title": "星琼收入",
+      "title": "星琼与资产记录",
       "commands": [
-        "monthly",
         "ledger",
         "monthly-history",
         "monthly-task",
-        "billing",
-        "pay-log",
-        "online"
+        "pay-log"
       ]
     },
     {
@@ -1938,28 +1622,24 @@
       "title": "跃迁记录",
       "commands": [
         "gacha",
-        "gacha-log",
         "gacha-summary",
         "gacha-background",
-        "gacha-versions",
-        "gacha-detail",
         "gacha-stat",
         "gacha-export",
         "gacha-import",
-        "gacha-help",
-        "gacha-link"
+        "gacha-help"
       ]
     },
     {
       "id": "banners",
       "title": "卡池与模拟跃迁",
       "commands": [
+        "pool-help",
         "calendar",
         "banner-history",
         "simulation",
         "simulation-history",
-        "simulation-reset",
-        "pool-help"
+        "simulation-reset"
       ]
     },
     {
@@ -2006,15 +1686,6 @@
       ]
     },
     {
-      "id": "remind",
-      "title": "体力与挑战提醒",
-      "commands": [
-        "challenge-remind",
-        "challenge-stop",
-        "challenge-status"
-      ]
-    },
-    {
       "id": "manage",
       "title": "帮助与管理",
       "commands": [
@@ -2022,15 +1693,7 @@
         "version",
         "group-settings",
         "artwork",
-        "artwork-status",
-        "api-switch",
-        "api-list",
-        "alias-help",
-        "alias-set",
-        "alias-remove",
-        "alias-list",
-        "alias-add",
-        "aliases"
+        "artwork-status"
       ]
     }
   ],

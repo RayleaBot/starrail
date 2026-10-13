@@ -76,6 +76,11 @@ func (a *App) newsCommand(ctx context.Context, event *rayleabot.EventContext, co
 		}
 		return a.sendNewsPost(ctx, event, asText(asObject(asObject(list[index-1])["post"])["post_id"]), game+kind.Name+"：")
 	case "search":
+		// As upstream's mysSearch, leave messages containing 签到 to the
+		// sign-in commands.
+		if strings.Contains(event.Event.Command()+word, "签到") {
+			return event.Result(map[string]any{"handled": false})
+		}
 		// A last digit picks that result, counting from 0, as upstream.
 		index := 0
 		if last := word[max(0, len(word)-1):]; last >= "0" && last <= "9" {
@@ -83,7 +88,7 @@ func (a *App) newsCommand(ctx context.Context, event *rayleabot.EventContext, co
 			word = strings.Trim(word, last)
 		}
 		if word == "" {
-			return event.SendText("请输入关键字，如" + a.Game.Prefix + "米游社七七")
+			return event.SendText("请输入关键字，如" + a.Game.Prefix + "米游社希儿")
 		}
 		data, err := a.Content.get(ctx, "https://bbs-api.miyoushe.com/post/wapi/searchPosts?"+url.Values{"gids": {gid}, "size": {"20"}, "keyword": {word}}.Encode(), nil)
 		if err != nil {

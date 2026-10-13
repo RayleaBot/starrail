@@ -10,7 +10,7 @@ import (
 	"github.com/RayleaBot/starrail/internal/images"
 )
 
-func TestMiaoGachaPagesFollowGachaData(t *testing.T) {
+func TestGachaStatFollowsGachaData(t *testing.T) {
 	application, err := app.New(assets.Load(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
@@ -29,6 +29,8 @@ func TestMiaoGachaPagesFollowGachaData(t *testing.T) {
 		record("4", "11", third.From[:10]+" 20:00:00", "桂乃芬", "角色", "4"),
 		record("5", "11", third.From[:10]+" 20:01:00", "桂乃芬", "角色", "4"),
 		record("6", "12", third.From[:10]+" 20:02:00", third.Weapons5[0], "光锥", "5"),
+		record("7", "2", first.From[:10]+" 21:00:00", "桂乃芬", "角色", "4"),
+		record("8", "21", third.From[:10]+" 21:00:00", "Saber", "角色", "5"),
 	}}
 	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog}
 	stats := func(data map[string]any) []any {
@@ -39,33 +41,7 @@ func TestMiaoGachaPagesFollowGachaData(t *testing.T) {
 		return values
 	}
 
-	// Two pulls since the newest five-star; 姬子 missed the rate-up and is
-	// left out of the pulls per rate-up.
-	detail, ok := images.GachaDetail(context, app.GachaImage{Word: "喵喵角色记录", Archive: archive})
-	if !ok {
-		t.Fatal("detail not drawn")
-	}
-	if got, want := stats(detail.Data), []any{5, 2, 1, 3, "1.50", "320"}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("detail stats = %v, want %v", got, want)
-	}
-	counts := []any{}
-	for _, item := range detail.Data["items"].([]any) {
-		entry := item.(map[string]any)
-		counts = append(counts, []any{entry["count"], entry["up"], entry["drawn"]})
-	}
-	if want := []any{[]any{2, true, true}, []any{1, false, false}, []any{2, true, false}}; !reflect.DeepEqual(counts, want) {
-		t.Fatalf("detail items = %v, want %v", counts, want)
-	}
-	// 喵喵光锥记录 reads the light cone warp, which pities at 80.
-	cones, ok := images.GachaDetail(context, app.GachaImage{Word: "喵喵光锥记录", Archive: archive})
-	if !ok || cones.Data["name_width"] != 120 || cones.Data["items"].([]any)[0].(map[string]any)["width"] != "1.25" {
-		t.Fatalf("光锥 detail = %v", cones.Data)
-	}
-	if _, ok := images.GachaDetail(context, app.GachaImage{Word: "喵喵常驻记录", Archive: archive}); ok {
-		t.Fatal("喵喵常驻记录 read the character warp")
-	}
-
-	stat, ok := images.GachaStat(context, app.GachaImage{Word: "喵喵角色统计", Archive: archive})
+	stat, ok := images.GachaStat(context, app.GachaImage{Word: "角色统计", Archive: archive})
 	if !ok {
 		t.Fatal("stat not drawn")
 	}
@@ -77,11 +53,22 @@ func TestMiaoGachaPagesFollowGachaData(t *testing.T) {
 	if len(versions) != 3 || newest["version"] != third.Version || stats(newest)[0] != 2 || unknown["version"] != "未知" || unknown["from"] != "" || oldest["version"] != first.Version {
 		t.Fatalf("stat versions = %v", versions)
 	}
-	// 喵喵抽卡统计 reads both limited warps, 喵喵全部统计 the standard one too
-	// in one block.
-	up, _ := images.GachaStat(context, app.GachaImage{Word: "喵喵抽卡统计", Archive: archive})
-	all, _ := images.GachaStat(context, app.GachaImage{Word: "喵喵全部统计", Archive: archive})
-	if stats(up.Data)[0] != 6 || len(all.Data["versions"].([]any)) != 1 || all.Data["versions"].([]any)[0].(map[string]any)["version"] != "全部统计" {
+	// 抽卡统计 reads both limited warps; 全部统计 includes collaboration
+	// and standard warps, but not departure, in one block.
+	up, _ := images.GachaStat(context, app.GachaImage{Word: "抽卡统计", Archive: archive})
+	all, _ := images.GachaStat(context, app.GachaImage{Word: "全部统计", Archive: archive})
+	if stats(up.Data)[0] != 6 || stats(all.Data)[0] != 7 || len(all.Data["versions"].([]any)) != 1 || all.Data["versions"].([]any)[0].(map[string]any)["version"] != "全部统计" {
 		t.Fatalf("up = %v, all = %v", up.Data["stats"], all.Data["versions"])
+	}
+
+	for word, label := range map[string]string{"新手统计": "新手池", "联动统计": "联动池"} {
+		page, ok := images.GachaStat(context, app.GachaImage{Word: word, Archive: archive})
+		if !ok {
+			t.Fatalf("%s not drawn", word)
+		}
+		versions := page.Data["versions"].([]any)
+		if stats(page.Data)[0] != 1 || len(versions) != 1 || versions[0].(map[string]any)["version"] != label {
+			t.Errorf("%s = %v", word, page.Data)
+		}
 	}
 }

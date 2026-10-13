@@ -7,6 +7,13 @@ import (
 	"github.com/RayleaBot/starrail/internal/pluginmeta"
 )
 
+func TestUsageWritesThePrefixBeforeEveryForm(t *testing.T) {
+	a := &App{Game: Game{Prefix: "*"}}
+	if got := a.usage("#公告[序号] / #公告列表"); got != "*公告[序号] / *公告列表" {
+		t.Fatal(got)
+	}
+}
+
 func TestCommandSetFollowsHostMatchingOrder(t *testing.T) {
 	manifest, err := pluginmeta.Read([]byte(`{"id":"raylea.test","version":"1.0.0","commands":[
 		{"id":"note","name":"体力","trigger":{"type":"exact","names":["体力","树脂"]}},

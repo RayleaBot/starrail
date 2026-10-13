@@ -405,7 +405,7 @@ func (a *App) customRankPanel(ctx context.Context, event *rayleabot.EventContext
 	remembered, err := event.Actions().KVGet(ctx, customRankKey(event, quoted))
 	cache := asObject(remembered["value"])
 	if err != nil || remembered["exists"] != true || asText(cache["query_id"]) == "" {
-		return event.SendText("未找到该排行图片的查询缓存，请重新发送 " + a.Game.Prefix + "ark自定义排行 后再获取面板")
+		return event.SendText("未找到该排行图片的查询缓存，请重新发送 " + a.Game.Prefix + "ark<角色>排行 后再获取面板")
 	}
 	decoded, err := a.arkRequest(ctx, event, "rank/custom/specific", map[string]any{"query_id": asText(cache["query_id"]), "index": index - 1})
 	if err != nil {

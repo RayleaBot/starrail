@@ -2,9 +2,80 @@ package app
 
 import (
 	"reflect"
+	"strings"
+	"sync"
 	"testing"
 	"time"
+
+	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
+
+func TestPayLogReadsCategoryDirectionAndPage(t *testing.T) {
+	var mu sync.Mutex
+	var inputs []map[string]any
+	role := map[string]any{"ref": "role", "game": "starrail", "uid": "100000001", "region": "prod_gf_cn", "nickname": "开拓者", "level": 70}
+	a := pluginApp(t)
+	host := newSDKHost(t, a, func(request rayleabot.ServiceCallRequest, _ bool) (map[string]any, string) {
+		switch request.Method {
+		case "list":
+			owner := map[string]any{"source_protocol": "onebot11", "bot_id": "bot", "actor_id": "u"}
+			return map[string]any{"items": []any{map[string]any{"ref": "account", "owner": owner, "account_label": "账号", "roles": []any{role}, "status": "valid"}}, "default_roles": map[string]any{}, "uid_bindings": map[string]any{}}, ""
+		case "execute":
+			input := asObject(request.Params["input"])
+			mu.Lock()
+			inputs = append(inputs, input)
+			mu.Unlock()
+			return map[string]any{"operation": "starrail.billing", "role": role, "data": map[string]any{
+				"items": []any{
+					map[string]any{"add_num": "60", "action": "活动奖励"},
+					map[string]any{"add_num": "-160", "action": "兑换"},
+					map[string]any{"add_num": "1", "action": "随时间回复开拓力"},
+				},
+				"has_more": false,
+			}}, ""
+		}
+		return nil, "plugin.method_not_found"
+	})
+	for _, tc := range []struct {
+		message, word  string
+		args           []string
+		category, page string
+		contains       []string
+		excludes       string
+	}{
+		{"*光锥消耗记录2", "光锥消耗记录2", nil, "cone", "2", []string{"160 · 兑换"}, "活动奖励"},
+		{"*资产记录 体力 全部", "资产记录", []string{"体力", "全部"}, "power", "1", []string{"-160", "60 · 活动奖励"}, "随时间回复开拓力"},
+		{"*资产记录", "资产记录", nil, "", "", []string{"星琼、古老梦华、开拓力（体力）、遗器、光锥"}, ""},
+	} {
+		mu.Lock()
+		before := len(inputs)
+		mu.Unlock()
+		end, _ := host.groupMessage(tc.message, tc.word, tc.args...)
+		text := terminalText(end)
+		mu.Lock()
+		after := len(inputs)
+		var input map[string]any
+		if after > before {
+			input = inputs[after-1]
+		}
+		mu.Unlock()
+		if tc.category == "" {
+			if after != before {
+				t.Fatalf("%s executed: %v", tc.message, input)
+			}
+		} else if after != before+1 || asText(input["category"]) != tc.category || asText(input["page"]) != tc.page || len(input) != 2 {
+			t.Fatalf("%s input = %v", tc.message, input)
+		}
+		for _, want := range tc.contains {
+			if !strings.Contains(text, want) {
+				t.Errorf("%s lacks %q: %s", tc.message, want, text)
+			}
+		}
+		if tc.excludes != "" && strings.Contains(text, tc.excludes) {
+			t.Errorf("%s includes %q: %s", tc.message, tc.excludes, text)
+		}
+	}
+}
 
 func TestOnlineTimeFollowsStarRailPlugin(t *testing.T) {
 	today := time.Date(2026, 9, 22, 21, 0, 0, 0, chinaZone)

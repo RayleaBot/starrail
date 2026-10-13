@@ -82,6 +82,6 @@ func Training(context app.ImageContext, result app.QueryResult) (app.Image, bool
 		rows = append(rows, row)
 	}
 	return app.Image{Template: "training", Data: map[string]any{
-		"uid": result.Role.UID, "count": len(rows), "rows": rows, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"),
+		"mark": context.Game.Prefix, "uid": result.Role.UID, "count": len(rows), "rows": rows, "updated": context.Now.In(chinaTime).Format("2006-01-02 15:04"),
 	}, Resources: resources.List}, true
 }

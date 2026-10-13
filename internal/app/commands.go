@@ -89,10 +89,13 @@ func (s commandSet) match(word string, args []string, fallback bool) (string, []
 }
 
 // usage writes a declared usage with the prefix replies use. Manifests start
-// usages with the placeholder "#", which the host help menu also replaces.
+// each written form, separated by " / ", with the placeholder "#".
 func (a *App) usage(text string) string {
-	if strings.HasPrefix(text, "#") {
-		return a.Game.Prefix + text[1:]
+	forms := strings.Split(text, " / ")
+	for i, form := range forms {
+		if rest, ok := strings.CutPrefix(form, "#"); ok {
+			forms[i] = a.Game.Prefix + rest
+		}
 	}
-	return text
+	return strings.Join(forms, " / ")
 }

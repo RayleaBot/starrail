@@ -1,7 +1,6 @@
 package images
 
 import (
-	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -12,8 +11,8 @@ import (
 	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
-// miaoGachaArtwork are the fonts and backgrounds of miao's gacha-detail and
-// gacha-stat pages.
+// miaoGachaArtwork are the fonts and backgrounds of miao's gacha-stat page,
+// 抽卡统计.
 var miaoGachaArtwork = [][2]string{
 	{"Number", "resources/common/font/tttgbnumber.woff"},
 	{"NZBZ", "resources/common/font/NZBZ.woff"},
@@ -27,14 +26,6 @@ var miaoGachaArtwork = [][2]string{
 	{"common-item-bg5", "resources/common/item/bg5.png"},
 	{"gacha-imgs-date-icon", "resources/gacha/imgs/date-icon.webp"},
 }
-
-// miaoDetailWords and miaoStatWords are what Gacha.detail and Gacha.stat
-// strip before reading the pool; detail keeps 喵喵 there, which sends every
-// 喵喵 word to the character warp, so it is stripped here too.
-var (
-	miaoDetailWords = regexp.MustCompile(`#|抽卡|记录|祈愿|分析|池|喵喵`)
-	miaoStatWords   = regexp.MustCompile(`#|统计|分析|池`)
-)
 
 // miaoVersion is a period of miao's GachaData: a warp half with its rate-up
 // five-stars. The 新版本 after the last known period has no end.
@@ -172,156 +163,35 @@ func miaoStat(stats []any, value any, title string) []any {
 	return append(stats, map[string]any{"value": value, "title": title})
 }
 
-// GachaDetail draws 喵喵抽卡记录 the way miao's GachaData.analyse and
-// gacha/gacha-detail do for Star Rail: the pulls, five-stars, the rate-ups
-// missed, average pulls per five-star and the stellar jade per rate-up, then
-// every five-star, newest first, with its date, whether it was the rate-up
-// and the pulls it took, after the pulls made since the last one.
-func GachaDetail(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
-	pool := "11"
-	switch miaoDetailWords.ReplaceAllString(image.Word, "") {
-	case "常驻":
-		pool = "1"
-	case "武器", "光锥":
-		pool = "12"
-	}
-	resources := &app.ImageResources{Context: context}
-	for _, item := range miaoGachaArtwork {
-		resources.Artwork(item[0], "miao-plugin", item[1])
-	}
-	pulls := miaoPulls(context, resources, image.Archive, pool)
-	if len(pulls) == 0 {
-		return app.Image{}, false
-	}
-	periods := miaoPeriods(context)
-	type five struct {
-		up, drawn       bool
-		date, name, img string
-		count           int
-	}
-	fives := []five{}
-	var current miaoVersion
-	all, fiveNum, fourNum, sinceFive, noFive, missed := 0, 0, 0, 0, 0, 0
-	for index, pull := range pulls {
-		if index == 0 || current.before(pull.at) {
-			current = miaoPeriod(periods, pull.at, true)
-		}
-		all++
-		if pull.item.star == 4 {
-			fourNum++
-		}
-		if pull.item.star == 5 {
-			fiveNum++
-			if len(fives) > 0 {
-				fives[len(fives)-1].count = sinceFive
-			} else {
-				noFive = sinceFive
-			}
-			sinceFive = 0
-			up := slices.Contains(current.char5, pull.item.name)
-			if pull.item.weapon {
-				up = slices.Contains(current.weapon5, pull.item.name)
-			}
-			if !up {
-				missed++
-			}
-			fives = append(fives, five{up: up, date: pull.at[5:10], name: pull.item.abbr, img: pull.item.img})
-		}
-		sinceFive++
-	}
-	if len(fives) > 0 {
-		fives[len(fives)-1].count = sinceFive
-	} else {
-		noFive = all
-	}
-	stats := miaoStat(nil, all, "抽卡总数")
-	if fiveNum > 0 {
-		stats = miaoStat(stats, fiveNum, "金卡数")
-	}
-	if missed > 0 {
-		stats = miaoStat(stats, missed, "歪 T.T")
-	}
-	if fourNum > 0 {
-		stats = miaoStat(stats, fourNum, "紫卡数")
-	}
-	if fiveNum > 0 {
-		stats = miaoStat(stats, app.JSFixed(float64(all-noFive)/float64(fiveNum), 2), "平均出金")
-	}
-	// Pulls per rate-up, leaving out the newest five-star when it missed, in
-	// stellar jade.
-	valid := 0.0
-	if fiveNum > 0 && fiveNum > missed {
-		pulled := all - noFive
-		if !fives[0].up {
-			pulled -= fives[0].count
-		}
-		valid, _ = strconv.ParseFloat(app.JSFixed(float64(pulled)/float64(fiveNum-missed), 2), 64)
-	}
-	jade := app.JSFixed(valid*160, 0)
-	if valid*160 >= 10000 {
-		jade = app.JSFixed(valid*160/10000, 2) + "w"
-	}
-	stats = miaoStat(stats, jade, "UP星琼")
-	if noFive > 0 {
-		fives = append([]five{{up: true, date: context.Now.In(chinaTime).Format("01-02"), count: noFive, drawn: true, name: "已抽",
-			img: resources.Artwork("gacha-imgs-no-avatar", "miao-plugin", "resources/gacha/imgs/no-avatar.webp")}}, fives...)
-	}
-	// Light cones reach their five-star by 80 pulls and need a wider name.
-	limit, nameWidth := 90.0, 90
-	if pool == "12" {
-		limit, nameWidth = 80, 120
-	}
-	items := []any{}
-	for index, entry := range fives {
-		bar := "bad"
-		switch count := float64(entry.count); {
-		case count <= 10:
-			bar = "gold"
-		case count < limit*0.5:
-			bar = "good"
-		case count < limit*0.83:
-			bar = "normal"
-		}
-		items = append(items, map[string]any{"has_date": index == 0 || fives[index-1].date != entry.date, "first": index == 0, "up": entry.up, "drawn": entry.drawn,
-			"date": entry.date, "name": entry.name, "star": 5, "img": entry.img, "count": entry.count, "bar": bar,
-			"width": strconv.FormatFloat(float64(entry.count)/limit*100, 'f', -1, 64)})
-	}
-	data := miaoPlayer(context, resources, image)
-	data["stats"], data["name_width"], data["items"] = stats, nameWidth, items
-	return app.Image{Template: "gacha-detail", Data: data, Resources: resources.List}, true
-}
+// statLabels are the warps that do not split by period: standard and
+// departure have no periods, and the banner data has no collaboration warps.
+var statLabels = map[string]string{"1": "常驻池", "2": "新手池", "21": "角色联动池", "22": "光锥联动池", "21,22": "联动池"}
 
-// miaoStatPools are the warps each kind of 喵喵抽卡统计 reads; Star Rail has no
-// chronicled warp for miao's mix.
-var miaoStatPools = map[string][]string{"up": {"11", "12"}, "char": {"11"}, "weapon": {"12"}, "normal": {"1"}, "all": {"11", "12", "1"}}
-
-// GachaStat draws 喵喵抽卡统计 the way miao's GachaData.stat and gacha/gacha-stat
+// GachaStat draws 抽卡统计 the way miao's GachaData.stat and gacha/gacha-stat
 // do for Star Rail: the totals over the warps the word names, then each
 // period, newest first, with its rate-ups, dates and counts and every four-
-// and five-star it gave, rate-ups marked; the standard warp and 全部 are one
-// block.
+// and five-star it gave, rate-ups marked; standard, departure, collaboration
+// warps and 全部 each form one block.
 func GachaStat(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
-	word := miaoStatWords.ReplaceAllString(image.Word, "")
-	kind := "up"
+	pools, all := gachaSelection(image.Word)
+	label := statLabels[strings.Join(pools, ",")]
 	switch {
-	case strings.Contains(word, "武器") || strings.Contains(word, "光锥"):
-		kind = "weapon"
-	case strings.Contains(word, "角色"):
-		kind = "char"
-	case strings.Contains(word, "常驻"):
-		kind = "normal"
-	case strings.Contains(word, "全部"):
-		kind = "all"
+	case all:
+		// 全部 is every warp but the departure warp, in one block.
+		pools, label = []string{"11", "12", "21", "22", "1"}, "全部统计"
+	case pools == nil:
+		// As miao, no warp named is both limited warps by period.
+		pools = []string{"11", "12"}
 	}
 	resources := &app.ImageResources{Context: context}
 	for _, item := range miaoGachaArtwork {
 		resources.Artwork(item[0], "miao-plugin", item[1])
 	}
-	pulls := miaoPulls(context, resources, image.Archive, miaoStatPools[kind]...)
+	pulls := miaoPulls(context, resources, image.Archive, pools...)
 	if len(pulls) == 0 {
 		return app.Image{}, false
 	}
-	versioned := kind != "normal" && kind != "all"
+	versioned := label == ""
 	periods := miaoPeriods(context)
 	type block struct {
 		version miaoVersion
@@ -332,7 +202,7 @@ func GachaStat(context app.ImageContext, image app.GachaImage) (app.Image, bool)
 		if len(blocks) == 0 || versioned && blocks[len(blocks)-1].version.before(pull.at) {
 			version := miaoPeriod(periods, pull.at, versioned)
 			if !versioned {
-				version.version = map[bool]string{true: "全部统计", false: "常驻池"}[kind == "all"]
+				version.version = label
 			}
 			// A pull in no period stays with the unknown block before it.
 			if len(blocks) == 0 || !(version.from == "" && blocks[len(blocks)-1].version.version == version.version) {

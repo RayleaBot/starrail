@@ -28,7 +28,7 @@ func (a *App) accountTaskCommand(ctx context.Context, event *rayleabot.EventCont
 		}
 		return event.SendText(fmt.Sprintf("已停止你的 %d 个账号任务。", count))
 	}
-	usage := a.Game.Prefix + "社区任务 一次/每天 签到/全部 [账号序号]。全部包含浏览、点赞和分享，不自动取消点赞；每日默认北京时间 08:00，有效 30 天。"
+	usage := a.Game.Prefix + "社区任务 <一次|每天> <签到|全部> [账号序号]。全部包含浏览、点赞和分享，不自动取消点赞；每日默认北京时间 08:00，有效 30 天。"
 	want := 2
 	if len(args) < want || len(args) > want+1 || (args[0] != "一次" && args[0] != "每天") || (args[1] != "签到" && args[1] != "全部") {
 		return event.SendText("格式：" + usage)

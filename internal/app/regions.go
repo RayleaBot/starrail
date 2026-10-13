@@ -1,6 +1,9 @@
 package app
 
-import "slices"
+import (
+	"slices"
+	"strings"
+)
 
 func overseasGameRegion(region string) bool {
 	return slices.Contains([]string{"prod_official_usa", "prod_official_eur", "prod_official_asia", "prod_official_cht"}, region)
@@ -26,6 +29,18 @@ func uidRegion(uid string) string {
 		}
 	}
 	return "prod_gf_cn"
+}
+
+// publicRegions are the region names 公开信息 takes besides the codes.
+var publicRegions = map[string]string{"官服": "prod_gf_cn", "国服": "prod_gf_cn", "b服": "prod_qd_cn", "渠道服": "prod_qd_cn", "prod_gf_cn": "prod_gf_cn", "prod_qd_cn": "prod_qd_cn"}
+
+// publicRegion uses the named region, or the one the UID's first digits name.
+func publicRegion(uid, name string) (string, bool) {
+	if name == "" {
+		return uidRegion(uid), true
+	}
+	region, ok := publicRegions[strings.ToLower(name)]
+	return region, ok
 }
 
 // regionTimezone is the UTC offset a region's records are written in.

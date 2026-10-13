@@ -26,9 +26,10 @@ BUNDLES = {
         "resources/common/bg/talent-*.webp",
         "resources/common/cont/card-bg.png",
         "resources/common/item/*",
-        "resources/character/imgs/*",
+        # Every image but help.jpg, miao's Genshin panel help no command sends.
+        "resources/character/imgs/[!h]*",
         "resources/wiki/imgs/*",
-        "resources/gacha/imgs/*",
+        "resources/gacha/imgs/date-icon.webp",
         "resources/meta-sr/public/icons/*",
         # Panels, rankings, the roster and the wiki draw every character's
         # splash, face, trace and eidolon icons.
@@ -63,38 +64,20 @@ BUNDLES = {
         "resources/images/rank4bg.webp",
         "resources/images/rank5bg.webp",
         "resources/help/theme/default/main.png",
-        "resources/month/*",
         "resources/charge/*",
         "resources/online/jeremy-thomas-E0AHdsENmDg-unsplash.jpg",
         "resources/note/resources/background.png",
         "resources/gachasimulation/resources/images/*",
         "resources/gatcha/images/char/*",
         "resources/panel/resources/weapon/*",
-        # The panel service's character list and panel: the pictures, skill,
-        # relic and stat icons, the skill tree backgrounds and the data
-        # naming the paths, relic icons and tree layouts.
-        "resources/panel/resources/avatar/*.png",
-        "resources/panel/resources/char_image/*",
-        "resources/profile/normal-character/*",
-        "resources/panel/resources/dividing-line.png",
-        "resources/panel/resources/icon/value/*",
-        "resources/panel/resources/star/*",
-        "resources/panel/resources/skill/*",
-        "resources/panel/resources/relic/*",
-        "resources/panel/resources/skill_tree/*",
-        "resources/panel/data/*.json",
-        "resources/baseData/characters.json",
-        "resources/baseData/light_cones.json",
-        # Strategy pictures sent by the static picture commands.
-        "resources/srsr/*",
+        # The 收益曲线 pictures, the one static picture command left.
+        "resources/srsr/sy/*",
     ]),
-    # The ledger pages, 抽卡记录, 抽卡统计, the UID list and the news pages.
+    # The ledger pages, the UID list, the atlas index and the news pages.
     "yunzai-genshin": ("Yunzai-genshin", [
         "resources/StarRail/img/note/*",
         "resources/StarRail/img/other/*",
         "resources/img/icon/check.webp",
-        "resources/img/other/bg4.png",
-        "resources/img/other/bg5.png",
         "resources/html/mysNews/iconfont.fb3712d.woff2",
         "resources/html/mysNews/mys.png",
         "resources/html/mysNews-list/蒙德.png",

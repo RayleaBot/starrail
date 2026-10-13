@@ -300,6 +300,7 @@ var ledgerMonths = []string{"一", "二", "三", "四", "五", "六", "七", "�
 // month <= 9 + month, which always holds, and it would have dated the month
 // this year.
 func ledgerMonth(word string, now time.Time) (int, error) {
+	word = strings.TrimSuffix(word, "月")
 	current := int(now.Month())
 	month, err := strconv.Atoi(word)
 	if err != nil {

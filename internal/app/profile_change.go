@@ -62,6 +62,18 @@ var (
 	changeLevel   = regexp.MustCompile(`等级(?:^|[^0-9])(100|95|[1-9]|[1-8][0-9]|90)(?:[^0-9]|$)|(?:^|[^0-9])(100|95|[1-9]|[1-8][0-9]|90)级`)
 )
 
+// changeHandoff reports whether a word another command took is a 面板换装:
+// miao reads 希儿换银狼遗器 or 希儿换满命伤害 as a change although they end with
+// a panel, 遗器 or 伤害 word, so a word with 换, 变 or 改 whose character part
+// names no character goes to panelChangeCommand.
+func (a *App) changeHandoff(event *rayleabot.EventContext, character string) bool {
+	if !changeWord.MatchString(event.Event.Command()) {
+		return false
+	}
+	_, ok := a.Catalog.Resolve(character, "character", a.aliasMap(event))
+	return !ok
+}
+
 // changeKeys are miao's words for the parts of a panel, by part.
 var changeKeys = [][2]string{{"artis", "圣遗物,遗器"}, {"arti1", "头,帽子,头部"}, {"arti2", "手,手套,手部"}, {"arti3", "衣,衣服,甲,躯干"}, {"arti4", "鞋,靴,鞋子,靴子,脚,脚部"},
 	{"arti5", "球,位面球"}, {"arti6", "绳,线,链接绳,连接绳"}, {"weapon", "武器,光锥"}}

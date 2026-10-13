@@ -265,7 +265,7 @@ func (a *App) gachaLinkMessage(ctx context.Context, event *rayleabot.EventContex
 		return true, event.SendText(friendlyError(err))
 	}
 	notice(ctx, event, gachaLinkSummary(a.Game.Prefix, before, gachaPoolCounts(archive)))
-	page := a.gachaLogPage(ctx, event, archive)
+	page := a.gachaOverviewPage(ctx, event, archive)
 	if !group {
 		return true, event.Send(event.Event.Target.Type, event.Event.Target.ID, page...)
 	}
@@ -321,12 +321,12 @@ func (a *App) readLink(ctx context.Context, link gachaLink, uid string) (*gacha.
 	}
 }
 
-// gachaLogPage is Yunzai's gacha-log page of the archive's character event
-// warp, or its text when it cannot be drawn.
-func (a *App) gachaLogPage(ctx context.Context, event *rayleabot.EventContext, archive gacha.Archive) []rayleabot.Segment {
+// gachaOverviewPage is the record page's overview of the archive, or its text
+// when it cannot be drawn.
+func (a *App) gachaOverviewPage(ctx context.Context, event *rayleabot.EventContext, archive gacha.Archive) []rayleabot.Segment {
 	view := GachaView(a.Game, archive)
 	if a.gacha != nil {
-		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: archive.UID, Role: Role{Game: a.Game.ID, UID: archive.UID, Region: archive.Region}, Command: "gacha-log", Archive: archive}); ok {
+		if drawn, ok := a.gacha(a.imageContext(ctx), GachaImage{UID: archive.UID, Role: Role{Game: a.Game.ID, UID: archive.UID, Region: archive.Region}, Command: "gacha", Archive: archive}); ok {
 			view.Image = &drawn
 		}
 	}
@@ -345,19 +345,8 @@ func gachaLinkSummary(prefix string, before, after map[string]int) string {
 			lines = append(lines, "["+pool[1]+"]记录获取成功，更新"+strconv.Itoa(after[pool[0]]-before[pool[0]])+"条")
 		}
 	}
-	lines = append(lines, "", "抽卡记录更新完成，您还可回复", "【"+prefix+"全部记录】统计全部抽卡数据", "【"+prefix+"光锥记录】统计星铁光锥池数据", "【"+prefix+"角色统计】按卡池统计数据", "【"+prefix+"导出记录】导出记录数据")
+	lines = append(lines, "", "抽卡记录更新完成，您还可回复", "【"+prefix+"角色记录】按期查看角色跃迁", "【"+prefix+"光锥记录】按期查看光锥跃迁", "【"+prefix+"抽卡统计】按版本统计抽数与出货", "【"+prefix+"导出记录】导出记录数据")
 	return strings.Join(lines, "\n")
-}
-
-// gachaLinkCommand is StarRail-plugin's 抽卡链接 with its default
-// gatchaUrlGroup, which takes links in groups too: it asks for the link,
-// mentioning the sender in a group, and the link is read wherever it is
-// pasted.
-func (a *App) gachaLinkCommand(event *rayleabot.EventContext) error {
-	if event.Event.Target.Type == "group" {
-		return event.Send(event.Event.Target.Type, event.Event.Target.ID, atSender(event, "请发送抽卡链接")...)
-	}
-	return event.SendText("请发送抽卡链接")
 }
 
 // gachaPoolCounts counts an archive's records by pool.

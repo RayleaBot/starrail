@@ -7,7 +7,7 @@ import (
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
-// panelExportCommand is ark-plugin's 导出面板: the saved panels of the UID in
+// panelExportCommand is 导出面板文件 (ark-plugin's 导出面板): the saved panels of the UID in
 // use, or of a mentioned player, sent as a miao player data file, which
 // upstream sends with every character miao keeps, whichever service it came
 // from. A panel that cannot be written out is left out, and without any the

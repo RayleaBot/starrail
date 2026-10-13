@@ -16,7 +16,7 @@ var chargeArtwork = [][2]string{
 
 // PayLog draws 星琼记录 and the like the way StarRail-plugin's charge page
 // does: the UID, the record's name and English subtitle over the background,
-// and the page's gains with their time and reason.
+// and the page's 获取、消耗或全部变动 with their time and reason.
 func PayLog(context app.ImageContext, log app.PayLogImage) (app.Image, bool) {
 	resources := &app.ImageResources{Context: context}
 	for _, item := range chargeArtwork {
@@ -26,7 +26,7 @@ func PayLog(context app.ImageContext, log app.PayLogImage) (app.Image, bool) {
 	for _, record := range log.Records {
 		list = append(list, map[string]any{"time": record.Time, "add_num": record.Count, "action": record.Action})
 	}
-	return app.Image{Template: "charge", Data: map[string]any{"uid": log.UID, "type": log.Type, "typeen": log.TypeEN, "page": strconv.Itoa(log.Page), "list": list}, Resources: resources.List}, true
+	return app.Image{Template: "charge", Data: map[string]any{"uid": log.UID, "type": log.Type, "typeen": log.TypeEN, "count_title": log.CountTitle, "page": strconv.Itoa(log.Page), "list": list}, Resources: resources.List}, true
 }
 
 // onlineArtwork maps the images and fonts StarRail-plugin's online page

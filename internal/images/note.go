@@ -18,7 +18,7 @@ func Builders() map[string]app.ImageBuilder {
 	return map[string]app.ImageBuilder{"starrail.note": Note, "starrail.profile": Card, "starrail.challenge": challengeImage(memoryOfChaos),
 		"starrail.story": challengeImage(pureFiction), "starrail.boss": challengeImage(apocalypticShadow), "starrail.peak": Peak,
 		"starrail.abyss": allChallengesImage, "starrail.abyss_latest": latestChallengeImage,
-		"starrail.training": Training, "starrail.monthly": Month, "starrail.ledger": Ledger, "starrail.rogue": Rogue, "starrail.swarm": Swarm,
+		"starrail.training": Training, "starrail.ledger": Ledger, "starrail.rogue": Rogue, "starrail.swarm": Swarm,
 		"starrail.divergent": Divergent, "starrail.divergent_normal": DivergentNormal, "starrail.divergent_week": DivergentWeek,
 		"starrail.currency_wars": CurrencyWars, "starrail.currency_wars_archive": CurrencyWarsArchive}
 }

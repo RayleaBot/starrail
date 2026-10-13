@@ -49,15 +49,16 @@ var calendarArtwork = [][2]string{
 	{"calendar-icon", "resources/wiki/imgs/calendar-icon.png"},
 }
 
-// calendarRotations are the three challenge modes' 42-day rotations, from
-// the start miao counts each from, with the bar type that styles it.
+// calendarRotations count the three modes' 42-day rotations after each had
+// a five-week period in 2026 (ending on 10-05, 10-19 and 11-02). Miao's
+// earlier bases no longer line up; count from the following periods.
 var calendarRotations = []struct {
 	title, kind string
 	base        time.Time
 }{
-	{"「混沌回忆」", "abyss-1", time.Date(2026, 4, 13, 4, 0, 0, 0, chinaTime)},
-	{"「虚构叙事」", "abyss-2", time.Date(2026, 3, 30, 4, 0, 0, 0, chinaTime)},
-	{"「末日幻影」", "abyss-3", time.Date(2026, 3, 16, 4, 0, 0, 0, chinaTime)},
+	{"「混沌回忆」", "abyss-1", time.Date(2026, 11, 2, 4, 0, 0, 0, chinaTime)},
+	{"「虚构叙事」", "abyss-2", time.Date(2026, 10, 19, 4, 0, 0, 0, chinaTime)},
+	{"「末日幻影」", "abyss-3", time.Date(2026, 10, 5, 4, 0, 0, 0, chinaTime)},
 }
 
 var calendarWeekdays = []string{"一", "二", "三", "四", "五", "六", "日"}
@@ -413,14 +414,11 @@ func calendarAbyss(now, last time.Time, version [2]string) []calendarPeriod {
 	monday := time.Date(now.Year(), now.Month(), now.Day()+1-int(now.Weekday()), 4, 0, 0, 0, chinaTime)
 	periods := []calendarPeriod{}
 	for _, rotation := range calendarRotations {
-		start := monday
-		days := int(rotation.base.Sub(monday).Hours() / 24)
-		if offset := days % 42; offset != 0 {
-			if offset < 0 {
-				offset = -offset
-			}
-			start = time.Date(monday.Year(), monday.Month(), monday.Day()-offset, 4, 0, 0, 0, chinaTime)
-		}
+		// Days from the base to this Monday, floored to the rotation;
+		// unlike miao's absolute remainder, also right for a later base.
+		days := int(monday.Sub(rotation.base).Hours() / 24)
+		offset := (days%42 + 42) % 42
+		start := time.Date(monday.Year(), monday.Month(), monday.Day()-offset, 4, 0, 0, 0, chinaTime)
 		periods = append(periods, calendarPeriod{start, start.AddDate(0, 0, 42), rotation.title, rotation.kind})
 	}
 	if start, end := calendarDate(version[0], ""), calendarDate(version[1], ""); !start.IsZero() && !end.IsZero() {

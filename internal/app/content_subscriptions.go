@@ -326,7 +326,8 @@ func (a *App) subscriptionManage(ctx context.Context, event *rayleabot.EventCont
 }
 
 // subscriptionCommand is Yunzai's setPush and setActivityPush: a group
-// administrator turns a push on or off for the group.
+// administrator turns a push on or off for the group. The host checks the
+// declared permission before delivering the command.
 func (a *App) subscriptionCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	if command == "content-push" {
 		// Every group's check can take longer than an event. As upstream,
@@ -341,9 +342,6 @@ func (a *App) subscriptionCommand(ctx context.Context, event *rayleabot.EventCon
 	}
 	if event.Event.EventType != "message.group" {
 		return event.SendText("推送请在群聊中设置")
-	}
-	if !groupAdministrator(event) {
-		return event.SendText("暂无权限，只有管理员才能操作")
 	}
 	kind := pushKinds[2]
 	if len(args) > 0 && args[0] == "资讯" {

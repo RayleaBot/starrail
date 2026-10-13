@@ -90,7 +90,6 @@ func TestOperationInputFollowsUpstreamRules(t *testing.T) {
 		// Rules that end with the word take nothing after it.
 		{"note", "体力", nil, "", true},
 		{"note", "体力", []string{"100000001"}, "", false},
-		{"monthly", "月历", []string{"202609"}, "", false},
 		{"currency_wars", "货币战争", []string{"一"}, "", false},
 		{"training", "练度统计", []string{"100000001"}, "", false},
 		{"abyss", "深渊", []string{"往期"}, "", true},

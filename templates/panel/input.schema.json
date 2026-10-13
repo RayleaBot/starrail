@@ -16,7 +16,6 @@
     "data_source": { "type": "string" },
     "update_time": { "type": "string" },
     "change": { "type": "string" },
-    "artifact_hint": { "type": "string" },
     "damage_hint": { "type": "string" },
     "rating": { "type": "object" },
     "artifacts": { "type": "array" },

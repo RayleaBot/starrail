@@ -55,10 +55,15 @@ func challengeQueries() map[string]func(time.Time) string {
 
 // latestChallenge follows upstream's getCurrentChallengeType: the three
 // records open in turn every 14 days, counted from Apocalyptic Shadow on
-// 2024-06-24 04:00.
+// 2024-06-24 04:00. One period of each ran five weeks in 2026, so from
+// 2026-10-05 04:00 the turns come seven days earlier (upstream 56fdfd34).
 func latestChallenge(now time.Time) challengeKind {
 	first := time.Date(2024, 6, 24, 4, 0, 0, 0, chinaTime)
-	periods := int(now.Sub(first) / (14 * 24 * time.Hour))
+	elapsed := now.Sub(first)
+	if !now.Before(time.Date(2026, 10, 5, 4, 0, 0, 0, chinaTime)) {
+		elapsed += 7 * 24 * time.Hour
+	}
+	periods := int(elapsed / (14 * 24 * time.Hour))
 	return challengeKinds[(periods%3+3)%3]
 }
 

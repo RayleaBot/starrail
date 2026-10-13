@@ -1,7 +1,7 @@
 {
   "id": "gacha-stat",
-  "name": "星铁喵喵抽卡统计",
-  "description": "喵喵抽卡统计命令的图片，布局参照 miao-plugin gacha/gacha-stat",
+  "name": "星铁抽卡统计",
+  "description": "抽卡统计命令的图片，布局参照 miao-plugin gacha/gacha-stat",
   "version": "1",
   "entry_html": "template.html",
   "stylesheet": "styles.css",

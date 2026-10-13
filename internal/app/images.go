@@ -80,14 +80,10 @@ type GachaImage struct {
 	Role    Role
 	Word    string
 	Archive gacha.Archive
-	// Command is the declared command whose page is drawn: gacha-detail and
-	// gacha-stat for miao's 抽卡记录 and 抽卡统计, gacha-log for Yunzai's 抽卡
-	// 记录 and 全部记录, gacha-versions for its 抽卡统计, else
-	// StarRail-plugin's warp analysis.
+	// Command is the declared command whose page is drawn: gacha-stat for
+	// the per-version statistics, else the record analysis.
 	Command string
-	// Group is a group chat, where 抽卡统计 shows fewer pools.
-	Group bool
-	// Nickname is the player's kept name, which miao's pages show.
+	// Nickname is the player's kept name, which the statistics page shows.
 	Nickname string
 }
 

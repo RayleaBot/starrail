@@ -6,7 +6,8 @@
     "type",
     "typeen",
     "page",
-    "list"
+    "list",
+    "count_title"
   ],
   "properties": {
     "uid": {
@@ -45,6 +46,9 @@
       }
     },
     "render_footer": {
+      "type": "string"
+    },
+    "count_title": {
       "type": "string"
     }
   },

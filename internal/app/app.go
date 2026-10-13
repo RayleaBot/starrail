@@ -32,14 +32,11 @@ type Game struct {
 	Prefix     string      `json:"prefix"`
 	Region     string      `json:"region"`
 	Operations []Operation `json:"operations"`
-	// Hints are the replies of commands that upstream answers only by naming
-	// the commands that query, by command ID; {prefix} is the reply prefix.
+	// Hints are fixed text replies by command ID, such as the panel help;
+	// {prefix} is the reply prefix.
 	Hints map[string]string `json:"hints"`
 	// Panels are the 更新面板 rules and replies.
 	Panels PanelSettings `json:"panels"`
-	// PanelAPIs are the services StarRail-plugin's own panel commands read,
-	// as its defSet/panelApi.yaml lists them.
-	PanelAPIs []string `json:"panel_apis"`
 	// Artwork lists the upstream image repositories an administrator can
 	// download into the data directory.
 	Artwork []artwork.Source `json:"artwork"`
@@ -86,22 +83,16 @@ type Assets struct {
 	PanelList PanelListImageBuilder
 	// ArtifactList draws 遗器列表.
 	ArtifactList ArtifactListImageBuilder
-	// UIDList draws 我的uid; RankStats draws 排名统计.
-	UIDList   UIDListImageBuilder
-	PayLog    PayLogImageBuilder
-	Online    OnlineImageBuilder
-	RankStats RankStatsImageBuilder
+	// UIDList draws 我的uid.
+	UIDList UIDListImageBuilder
+	PayLog  PayLogImageBuilder
+	Online  OnlineImageBuilder
 	// CharacterCard draws miao's card for a bare character name.
 	CharacterCard CharacterCardImageBuilder
 	// Pools draws 卡池.
 	Pools PoolImageBuilder
 	// AtlasIndex draws Atlas's numbered lists that cannot be forwarded.
 	AtlasIndex AtlasIndexImageBuilder
-	// PanelAPI runs StarRail-plugin's panel service scripts; APICard draws
-	// its 面板列表 and APIPanel its character panel.
-	PanelAPI PanelAPIScripts
-	APICard  APICardImageBuilder
-	APIPanel APIPanelImageBuilder
 	// Queries picks the official query, by operation name, for commands that
 	// draw on another operation's data, as 最新深渊 runs whichever record
 	// opened last.
@@ -115,9 +106,6 @@ type Settings struct {
 	// abbrSetAuth: 0 group members, 1 group administrators, 2 super
 	// administrators.
 	AliasPermission int `json:"alias_permission"`
-	// PanelAPI picks StarRail-plugin's panel service among the game's
-	// PanelAPIs, counted from 1 as its panelApi.yaml default.
-	PanelAPI int `json:"panel_api"`
 	// Ark holds the ark-plugin settings (config/system/cfg_system.js) that
 	// apply here.
 	Ark ArkSettings `json:"ark"`
@@ -154,7 +142,7 @@ type ArkSettings struct {
 	// 3 no one.
 	ExportPanelData int `json:"export_panel_data"`
 	ImportPanelData int `json:"import_panel_data"`
-	// ExportPanelRequire is exportPanelRequire, who may 导出面板: 0 anyone,
+	// ExportPanelRequire is exportPanelRequire, who may 导出面板文件: 0 anyone,
 	// 1 users with an account or whose UID ark verified for their QQ, 2 users
 	// with an account, 3 no one.
 	ExportPanelRequire int `json:"export_panel_require"`
@@ -207,10 +195,6 @@ type App struct {
 	Simulation      *SimulationStore
 	Cloud           CloudClient
 	BuildPresets    *BuildPresetStore
-	// APIService is StarRail-plugin's panel service; APIPanels keeps the
-	// characters it returned for each UID.
-	APIService PanelAPIClient
-	APIPanels  *PanelAPIStore
 
 	commands           commandSet
 	images             map[string]ImageBuilder
@@ -230,13 +214,9 @@ type App struct {
 	uidListImage       UIDListImageBuilder
 	payLogImage        PayLogImageBuilder
 	onlineImage        OnlineImageBuilder
-	rankStatsImage     RankStatsImageBuilder
 	poolImage          PoolImageBuilder
 	characterCardImage CharacterCardImageBuilder
 	atlasIndexImage    AtlasIndexImageBuilder
-	panelAPIScripts    PanelAPIScripts
-	apiCardImage       APICardImageBuilder
-	apiPanelImage      APIPanelImageBuilder
 	atlases            atlasLibraries
 	atlasMenus         atlasMenus
 	guides             guideCache
@@ -276,13 +256,13 @@ func New(assets Assets, directory string) (*App, error) {
 	if directory == "" {
 		return nil, fmt.Errorf("plugin data directory is required")
 	}
-	a := &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, uidListImage: assets.UIDList, payLogImage: assets.PayLog, onlineImage: assets.Online, rankStatsImage: assets.RankStats, poolImage: assets.Pools, characterCardImage: assets.CharacterCard, atlasIndexImage: assets.AtlasIndex, panelAPIScripts: assets.PanelAPI, apiCardImage: assets.APICard, apiPanelImage: assets.APIPanel, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, APIPanels: &PanelAPIStore{Directory: filepath.Join(directory, "panel-api")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}
+	a := &App{commands: commands, images: assets.Images, queries: assets.Queries, panel: assets.Panel, gacha: assets.Gacha, helpImage: assets.Help, monthlyStats: assets.MonthlyStats, calendarImage: assets.Calendar, entryPage: assets.Entry, simulationImage: assets.SimulationImage, rankImage: assets.Rank, cloudRankImage: assets.CloudRank, showcase: assets.Showcase, panelList: assets.PanelList, artifactListImage: assets.ArtifactList, uidListImage: assets.UIDList, payLogImage: assets.PayLog, onlineImage: assets.Online, poolImage: assets.Pools, characterCardImage: assets.CharacterCard, atlasIndexImage: assets.AtlasIndex, Profiles: &PanelStore{Directory: filepath.Join(directory, "profiles")}, Manifest: manifest, Media: &MediaStore{Directory: filepath.Join(directory, "media")}, PanelPictures: &PanelPictureStore{Directory: filepath.Join(directory, "panel-images")}, Artwork: &artwork.Store{Root: filepath.Join(directory, "assets"), Sources: game.Artwork}, Interactions: &InteractionStore{Path: filepath.Join(directory, "interactions.json")}, GuideSettings: &GuideSettings{Path: filepath.Join(directory, "guides.json")}, Subscriptions: &ContentSubscriptions{Path: filepath.Join(directory, "content-subscriptions.json")}, Billing: &BillingStore{Directory: filepath.Join(directory, "billing")}, CloudArchive: &CloudArchiveStore{Directory: filepath.Join(directory, "cloud-archive")}, Monthly: &MonthlyStore{Directory: filepath.Join(directory, "monthly")}, Game: game, Catalog: catalog, BuildPresets: &BuildPresetStore{Path: buildPresetPath(directory)}, Gacha: &gacha.Store{Directory: filepath.Join(directory, "gacha"), Game: game.ID}, SyncTasks: syncTaskStore(directory), Reminders: reminderStore(directory), PanelHistory: &PanelHistoryStore{Directory: filepath.Join(directory, "panels")}, Groups: &GroupStore{Directory: filepath.Join(directory, "groups")}, Simulation: &SimulationStore{Game: game.ID, Deck: game.Data.Simulation, Directory: filepath.Join(directory, "simulation")}}
 	// Relics are restored with the game's fixed data and calculation engine.
 	a.Profiles.Relics = func(panel CharacterPanel) *MiaoRelics { return restoreRelics(context.Background(), a.Game, panel) }
 	return a, nil
 }
 func settings(event *rayleabot.EventContext) Settings {
-	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{}, PanelAPI: 1,
+	value := Settings{AccountProvider: "raylea.mihoyo-accounts", ImageReplies: true, CustomAliases: map[string]string{},
 		Ark: ArkSettings{PanelRank: true, QueryType: 3, RankType: 2, LocalPanelRank: true, ProfileChangeDiff: true, DealLongDmgTitle: 1, ProfileChangeOCR: true, ExportPanelData: 1, ImportPanelData: 2, ExportPanelRequire: 1, GroupRank: true, LocalGroupRank: true}}
 	_ = decodeObject(event.Config, &value)
 	return value
@@ -342,8 +322,11 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		}
 		return event.Result(result)
 	}
-	if event.Event.EventType == "config.changed" {
+	switch event.Event.EventType {
+	case "config.changed":
 		a.aliases.observe(settings(event).CustomAliases)
+	case "message.private", "message.group":
+		a.aliases.seed(settings(event).CustomAliases)
 	}
 	if event.Event.EventType != "message.private" && event.Event.EventType != "message.group" {
 		return event.Result(map[string]any{"handled": false})
@@ -381,7 +364,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return event.SendText(strings.ReplaceAll(hint, "{prefix}", prefix))
 	}
 	if static, ok := a.Game.Pictures.Static[command]; ok {
-		return a.staticCommand(ctx, event, static, args)
+		return a.staticCommand(ctx, event, static)
 	}
 	var view View
 	var err error
@@ -417,17 +400,15 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return event.Result(map[string]any{"handled": len(reply) > 0})
 	case "guide-help", "guide-default":
 		return a.guideCommand(event, command, args)
-	case "api-panel-list", "api-panel-refresh", "api-switch", "api-list":
-		return a.apiCommand(ctx, event, command, args)
 	case "subscribe", "unsubscribe", "content-push":
 		return a.subscriptionCommand(ctx, event, command, args)
 	case "news", "info", "events", "search", "estimate":
 		return a.newsCommand(ctx, event, command, args)
 	case "live-calendar":
 		return a.calendarCommand(ctx, event)
-	case "alias-set", "alias-add", "alias-remove", "alias-list", "aliases":
+	case "alias-add", "alias-remove", "aliases":
 		return a.aliasCommand(ctx, event, command, args)
-	case "codes", "redeem", "billing":
+	case "codes", "redeem":
 		return a.assetCommand(ctx, event, command, args)
 	case "monthly-history":
 		return a.monthlyCommand(ctx, event, command, args)
@@ -441,8 +422,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.challengeReminderCommand(ctx, event, command, args)
 	case "challenge-submit", "challenge-withdraw", "challenge-clear", "challenge-rank":
 		return a.challengeCommand(ctx, event, command, args)
-	case "gacha-link":
-		return a.gachaLinkCommand(event)
 	case "gacha-background":
 		// StarRail-plugin's 更新跃迁记录 reads the link the sender bound.
 		if owned, ok := a.Links.owner(sender(event)); ok && (len(args) == 0 || args[len(args)-1] == owned.uid) {
@@ -459,11 +438,15 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.arkVerifyCommand(ctx, event, command, args)
 	case "public-profile":
 		if len(args) < 1 || len(args) > 2 {
-			return event.SendText("使用“" + prefix + "公开信息 UID [区服]”查询官方公开资料；需要有本人主动加入的公共查询账号。")
+			return event.SendText("使用“" + prefix + "公开信息 <UID> [官服|B服]”查询官方公开资料；需要有本人主动加入的公共查询账号。")
 		}
-		region := a.Game.Region
+		name := ""
 		if len(args) == 2 {
-			region = args[1]
+			name = args[1]
+		}
+		region, ok := publicRegion(args[0], name)
+		if !ok {
+			return event.SendText("区服写官服或B服（渠道服），不写时按 UID 判断。")
 		}
 		result, queryErr := a.accountClient(event).PublicProfile(ctx, args[0], region)
 		if queryErr != nil {
@@ -482,8 +465,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.rankCommand(ctx, event, command, args)
 	case "panel-refresh", "panel-refresh-account", "panel-list", "panel-delete":
 		return a.panelCommand(ctx, event, command, args)
-	case "talent-refresh":
-		return a.talentRefresh(ctx, event)
 	case "artifact-list":
 		return a.artifactList(ctx, event, args)
 	case "panel-change":
@@ -494,12 +475,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.pictureCommand(ctx, event, command, args)
 	case "cloud-reforge":
 		return a.reforgeCommand(ctx, event)
-	case "cloud-character-rank":
-		return a.characterRankCommand(ctx, event, args)
 	case "cloud-total-rank":
 		return a.totalRankCommand(ctx, event, args)
-	case "cloud-rank-stats":
-		return a.rankStatsCommand(ctx, event, args)
 	case "cloud-custom-rank":
 		return a.customRankCommand(ctx, event)
 	case "cloud-custom-rank-help":
@@ -510,11 +487,11 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.cloudUsage(ctx, event)
 	case "cloud-export", "cloud-import":
 		return a.cloudExchangeCommand(ctx, event, command, args)
-	case "calendar", "banner-history":
+	case "calendar", "banner-history", "pool-help":
 		return a.poolCommand(ctx, event, command, args)
 	case "materials":
 		if len(args) == 0 {
-			return event.SendText("使用“" + prefix + "材料 名称”查询固定参考资料。")
+			return event.SendText("使用“" + prefix + "<名称>材料”查询角色或光锥的养成材料。")
 		}
 		if answered, err := a.materialCommand(ctx, event, args); answered {
 			return err
@@ -545,7 +522,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			}
 		}
 		if len(args) < 1 || bad {
-			return event.SendText("使用“" + prefix + "角色名养成[目标等级…] [UID]”（如“" + prefix + "刻晴养成”或“" + prefix + "刻晴养成81 90 9 9 9”）计算升到目标等级的材料，不写目标时算到上限。")
+			return event.SendText("使用“" + prefix + "<角色>养成[目标等级…] [UID]”（如“" + prefix + "希儿养成”或“" + prefix + "希儿养成80 80 6 10 10 10”）计算升到目标等级的材料，不写目标时算到上限；目标等级依次为角色、光锥、普攻、战技、终结技、天赋。")
 		}
 		input, _, parseErr := a.commandInput(Operation{Input: "characters"}, args[:1], a.aliasMap(event))
 		if parseErr != nil {
@@ -605,8 +582,11 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			}
 			rest = append(rest, arg)
 		}
+		if len(rest) > 0 && a.changeHandoff(event, rest[0]) {
+			return a.panelChangeCommand(ctx, event)
+		}
 		if len(rest) < 1 || len(rest) > 2 {
-			return event.SendText("使用“" + prefix + "角色名伤害 [UID]”（如“" + prefix + "希儿伤害”）查看固定参考情境下的角色伤害。")
+			return event.SendText("使用“" + prefix + "<角色>伤害[序号] [UID]”（如“" + prefix + "希儿伤害”）查看固定参考情境下的角色伤害。")
 		}
 		panel, uid, panelErr := a.commandPanel(ctx, event, rest)
 		if panelErr != nil {
@@ -619,26 +599,11 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			break
 		}
 		view = a.panelView(ctx, event, panel, uid, true, "", &built)
-	case "score":
-		if len(args) < 1 || len(args) > 2 {
-			return event.SendText("使用“" + prefix + "评分 角色 [UID]”，或按上游写法在角色名后接遗器。")
-		}
-		panel, uid, panelErr := a.commandPanel(ctx, event, args)
-		if panelErr != nil {
-			err = panelErr
-			break
-		}
-		panel, err = a.scorePanel(ctx, panel)
-		if err == nil {
-			view = PanelView(a.Game, []CharacterPanel{panel}, uid)
-		}
 	case "talent-wiki":
-		entry, ok := a.Catalog.Resolve(strings.Join(args, " "), "character", a.aliasMap(event))
-		if !ok && changeWord.MatchString(event.Event.Command()) {
-			// As in miao, a word the wiki cannot read may be a 面板换装, such as
-			// 希儿换满行迹.
+		if a.changeHandoff(event, strings.Join(args, " ")) {
 			return a.panelChangeCommand(ctx, event)
 		}
+		entry, ok := a.Catalog.Resolve(strings.Join(args, " "), "character", a.aliasMap(event))
 		if !ok {
 			return event.SendText("未找到该角色，请使用角色全名或别名。")
 		}
@@ -664,14 +629,18 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 				view.Note = "未找到匹配资料，请尝试角色、装备全名或 ID。"
 			}
 		}
-	case "api-panel", "character":
-		// MiaoOrStarrail answers the words ending in 面板 with miao's page;
-		// panel.js's rule answers those with a UID after 面板, glued or not.
-		if command == "api-panel" && len(args) == 2 && apiUID.MatchString(args[1]) {
-			return a.apiPanel(ctx, event, args[0], args[1])
+	case "panel":
+		// miao's profileDetail: 面板, 面版, 详情 and 详细 after the character,
+		// and its 遗器 words (遗器, 圣遗物, 评分 before the character), all
+		// answer with the same panel.
+		if len(args) == 0 {
+			return event.SendText("使用“" + prefix + "希儿面板 [UID]”或“" + prefix + "评分 希儿 [UID]”查看角色面板。")
 		}
-		if len(args) < 1 || len(args) > 2 {
+		if len(args) > 2 {
 			return event.Result(map[string]any{"handled": false})
+		}
+		if a.changeHandoff(event, args[0]) {
+			return a.panelChangeCommand(ctx, event)
 		}
 		panel, uid, panelErr := a.commandPanel(ctx, event, args)
 		if panelErr != nil {
@@ -681,46 +650,28 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		view = a.fullPanelView(ctx, event, panel, uid, true, "")
 	case "accounts", "select", "uid-remove":
 		return a.uidCommand(ctx, event, command, args)
-	case "gacha", "gacha-detail", "gacha-stat", "gacha-log", "gacha-versions":
-		// The manifest orders the warp words as Miao-Yunzai runs them:
-		// StarRail-plugin's rule, miao's, whose gachaStat switch Miao-Yunzai
-		// forces on, then Yunzai's gcLog.
-		word := event.Event.Command()
-		miao := command == "gacha-detail" || command == "gacha-stat"
+	case "gacha", "gacha-stat":
+		// The two record pages share the warp words: gacha-stat takes those
+		// ending in 统计, gacha the others; the word picks the warps.
 		uid := ""
 		if len(args) > 0 {
 			uid = args[0]
 		}
 		archive, role, readErr := a.chatArchive(ctx, event, uid)
-		missing := "UID:" + role.UID + " 本地暂无抽卡信息，请通过【" + prefix + "抽卡帮助】获得绑定帮助..."
 		if readErr != nil {
-			if miao && PublicError(readErr).Code == "archive_missing" {
-				return event.SendText(missing)
-			}
 			err = readErr
 			break
 		}
-		game := a.Game
-		view = GachaView(game, archive)
-		if command == "gacha-versions" {
-			view = versionDrawView(game, versionDraws(game, archive))
+		view = GachaView(a.Game, archive)
+		image := GachaImage{UID: role.UID, Role: role, Word: event.Event.Command(), Archive: archive, Command: command}
+		if command == "gacha-stat" {
+			view = versionDrawView(a.Game, versionDraws(a.Game, archive))
+			saved, _ := a.Profiles.Read(role.UID)
+			image.Nickname = saved.Nickname
 		}
 		if a.gacha != nil {
-			image := GachaImage{UID: role.UID, Role: role, Word: word, Archive: archive, Command: command, Group: event.Event.Target.Type == "group"}
-			if miao {
-				saved, _ := a.Profiles.Read(role.UID)
-				image.Nickname = saved.Nickname
-			}
-			drawn, ok := a.gacha(a.imageContext(ctx), image)
-			switch {
-			case ok:
+			if drawn, ok := a.gacha(a.imageContext(ctx), image); ok {
 				view.Image = &drawn
-			case miao:
-				return event.SendText(missing)
-			case command == "gacha-log":
-				// Yunzai answers 全部记录 without any pool's records as it
-				// answers a UID without records.
-				err = a.noGachaRecords()
 			}
 		}
 	default:
@@ -762,11 +713,6 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		if queryErr != nil {
 			err = queryErr
 			break
-		}
-		if query == a.Game.ID+".monthly" {
-			// Upstream keeps every month it reads; a month that cannot be kept
-			// still answers.
-			_ = a.Monthly.Keep(a.accountClient(event).Provider, choice, result.Data, time.Now())
 		}
 		view = BusinessView(a.Game, textOperation, result, a.Catalog)
 		// Upstream's pages read their words from the whole message.

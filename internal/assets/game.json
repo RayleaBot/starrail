@@ -142,21 +142,12 @@
       "delete_owner": "为确保数据安全，目前仅允许绑定CK用户删除自己UID的面板数据，请联系Bot主人删除...",
       "delete_confirm": "你确认要删除面板数据吗？ 请回复 {prefix}删除面板{uid} 以删除面板数据",
       "delete_denied": "仅允许删除自己的UID数据[{uids}]",
-      "deleted": "UID{uid}的本地数据已删除，排名数据已清除...",
-      "talent_refreshed": "角色行迹更新成功，共{count}个角色\n你现在可以通过【{prefix}练度统计】来查看角色信息了..."
+      "deleted": "UID{uid}的本地数据已删除，排名数据已清除..."
     }
   },
-  "panel_apis": [
-    "https://avocado.wiki/v1/info/",
-    "https://lulu.roki.best/v1/info/",
-    "https://sr.roki.best/v1/info/"
-  ],
   "hints": {
-    "divergent-cycle": "请查询【本期】或【上期】的【差分宇宙·周期演算】，如发送命令【{prefix}本期演算】",
-    "growth-help": "角色养成计算\n指令：{prefix}克拉拉养成\n示例：{prefix}克拉拉养成75 80 6 9 9 9\n参数为角色、武器、普攻、战技、终结技、天赋",
-    "gacha-help": "StarRail-Plugin 抽卡链接绑定方法：\n1. 输入【{prefix}抽卡链接】，等待 bot 回复【请发送抽卡链接】\n2. 获取抽卡链接\n3. 将获取到的抽卡链接发送给 bot\n抽卡链接获取教程：https://mp.weixin.qq.com/s/FFHTor5DiG3W_rfQVs3KJQ",
-    "pool-help": "【卡池查询命令帮助】\n\n📖 历史卡池查询\n✅ #x.x卡池  查原神历史卡池\n    #6.0卡池\n    #6.7上半卡池\n\n✅ *x.x卡池  查星铁历史卡池\n    *3.0卡池\n    *4.1下半卡池\n\n🔍 原神/星铁角色/武器穿透查询\nℹ️ #角色/武器名卡池\n    #白厄卡池\n    #舞舞舞卡池\n\nℹ️ #角色/武器名卡池详情|详细\n    #火神卡池详情",
-    "alias-help": "【喵喵自定义别名命令】\n✅{prefix}喵喵别名设置 角色名 别名 - 添加自定义别名\n✅{prefix}喵喵别名删除 别名 - 删除自定义别名\n✅{prefix}喵喵别名列表 - 查看自定义别名\n\nℹ️ 角色名可输入标准名或已有别名，写入时自动转换为标准角色名\nℹ️ 自定义别名对所有群生效，保存在插件设置中，也可在插件管理页修改；预设别名不受影响\nℹ️ 只在本群生效的别名使用“{prefix}群设置 别名 名称 角色或装备ID”"
+    "gacha-help": "跃迁记录获取方法：\n1. 在游戏中打开跃迁页面，点开【跃迁记录】，等记录加载出来\n2. 复制这个页面的链接（电脑、安卓与 iOS 的取得方法见下方教程）\n3. 把完整链接直接发给我即可，私聊或群聊都可以，不需要先发命令；链接一天内有效，群聊中收到后请撤回\n教程：https://mp.weixin.qq.com/s/FFHTor5DiG3W_rfQVs3KJQ\n读取完成后发送【{prefix}跃迁记录】查看分析、【{prefix}抽卡统计】按版本统计；一天内可发送【{prefix}更新跃迁记录】重新读取；也可发送【{prefix}导入记录】导入 UIGF 或 SRGF 文件",
+    "panel-help": "【星铁面板帮助】\n获取面板\n{prefix}更新面板 [UID]：读取游戏内角色展柜（需打开“显示详情”）\n{prefix}米游社更新面板：从已绑定的米游社账号读取全部角色\n\n查看面板\n{prefix}希儿面板 [UID]：面板、遗器评分与伤害表\n{prefix}希儿伤害[序号] [UID]：伤害计算，写序号看该项明细\n{prefix}面板列表 [UID]：已保存面板的角色\n{prefix}遗器列表 [UID]：已保存面板中评分最高的遗器\n{prefix}删除面板<UID>：删除本人 UID 的面板\n{prefix}原图：刚看过的面板立绘原图\n\n换装计算\n{prefix}希儿换满命换满行迹\n{prefix}希儿换银狼遗器\n\n排名\n{prefix}希儿排名 / {prefix}最强希儿：本群排名\n{prefix}ark希儿排行：ark 全服排行\n\n完整命令见“{prefix}帮助”"
   },
   "artwork": [
     {
@@ -168,11 +159,20 @@
       "include": [
         "resources/meta-sr/",
         "resources/common/",
-        "resources/character/",
+        "resources/character/imgs/bg-",
+        "resources/character/imgs/chest.webp",
+        "resources/character/imgs/crown",
+        "resources/character/imgs/dmg-rank-bg.png",
+        "resources/character/imgs/exploration.webp",
+        "resources/character/imgs/icon",
+        "resources/character/imgs/main-",
+        "resources/character/imgs/mark-",
+        "resources/character/imgs/star.png",
+        "resources/character/imgs/up-num-icon",
         "resources/profile/",
         "resources/help/",
         "resources/wiki/",
-        "resources/gacha/"
+        "resources/gacha/imgs/date-icon.webp"
       ],
       "extensions": [
         ".webp",
@@ -194,7 +194,23 @@
         "https://codeload.github.com/TsukinaKasumi/StarRail-plugin/tar.gz/HEAD"
       ],
       "include": [
-        "resources/"
+        "resources/common/font/",
+        "resources/common/cont/",
+        "resources/common/element/",
+        "resources/common/rogue/",
+        "resources/challenge/images/",
+        "resources/rogue/",
+        "resources/gridFight/",
+        "resources/card/images/",
+        "resources/images/",
+        "resources/help/theme/default/",
+        "resources/charge/",
+        "resources/online/",
+        "resources/note/resources/",
+        "resources/gachasimulation/resources/images/",
+        "resources/gatcha/images/char/",
+        "resources/panel/resources/weapon/",
+        "resources/srsr/sy/"
       ],
       "extensions": [
         ".webp",
@@ -206,8 +222,7 @@
         ".otf",
         ".woff",
         ".woff2",
-        ".json",
-        ".svg"
+        ".json"
       ]
     },
     {
@@ -238,8 +253,6 @@
         "resources/StarRail/img/note/",
         "resources/StarRail/img/other/",
         "resources/img/icon/",
-        "resources/img/other/bg4.png",
-        "resources/img/other/bg5.png",
         "resources/html/mysNews/",
         "resources/html/mysNews-list/",
         "resources/font/tttgbnumber.ttf",
@@ -255,13 +268,6 @@
     {
       "id": "mihoyo",
       "name": "官方图片缓存",
-      "mirrors": [
-        "https://"
-      ]
-    },
-    {
-      "id": "panel-api",
-      "name": "面板服务图标缓存",
       "mirrors": [
         "https://"
       ]
@@ -307,32 +313,6 @@
       }
     ],
     "static": {
-      "panel-help": {
-        "source": "miao-plugin",
-        "parts": [
-          {
-            "path": "resources/character/imgs/help.jpg"
-          }
-        ]
-      },
-      "ref-panel": {
-        "source": "starrail-plugin",
-        "character": true,
-        "missing": "暂无[{name}]参考面板",
-        "parts": [
-          {
-            "path": "resources/srsr/{name}.jpg"
-          }
-        ]
-      },
-      "ref-panel-help": {
-        "source": "starrail-plugin",
-        "parts": [
-          {
-            "path": "resources/srsr/help.jpg"
-          }
-        ]
-      },
       "income-curve": {
         "source": "starrail-plugin",
         "forward": "星穹铁道收益曲线",
@@ -356,204 +336,6 @@
           {
             "text": "减抗收益曲线",
             "path": "resources/srsr/sy/减抗收益曲线.jpg"
-          }
-        ]
-      },
-      "tier-list": {
-        "source": "starrail-plugin",
-        "forward": "星穹铁道角色强度排行榜",
-        "parts": [
-          {
-            "text": "1.0版本角色强度排行榜\n     注意仅供参考!!!",
-            "path": "resources/srsr/qd/角色强度榜.jpg"
-          },
-          {
-            "text": "输出T0-T1",
-            "path": "resources/srsr/qd/输出榜T0-1.jpg"
-          },
-          {
-            "text": "输出T2",
-            "path": "resources/srsr/qd/输出榜T2.jpg"
-          },
-          {
-            "text": "输出T3",
-            "path": "resources/srsr/qd/输出榜T3.jpg"
-          },
-          {
-            "text": "辅助榜",
-            "path": "resources/srsr/qd/辅助榜.jpg"
-          },
-          {
-            "text": "生存榜",
-            "path": "resources/srsr/qd/生存榜.jpg"
-          },
-          {
-            "text": "注意,仅供参考!!!",
-            "path": "resources/srsr/qd/备注.jpg"
-          }
-        ]
-      },
-      "path-guides": {
-        "source": "starrail-plugin",
-        "forward": "星穹铁道1.1下半全角色攻略",
-        "parts": [
-          {
-            "text": "「虚无」篇",
-            "path": "resources/srsr/gl/虚无.jpg"
-          },
-          {
-            "text": "「丰饶」篇",
-            "path": "resources/srsr/gl/丰饶.jpg"
-          },
-          {
-            "text": "「巡猎」篇",
-            "path": "resources/srsr/gl/巡猎.jpg"
-          },
-          {
-            "text": "「毁灭」篇",
-            "path": "resources/srsr/gl/毁灭.jpg"
-          },
-          {
-            "text": "「同谐」篇",
-            "path": "resources/srsr/gl/同谐.jpg"
-          },
-          {
-            "text": "「存护」篇",
-            "path": "resources/srsr/gl/存护.jpg"
-          },
-          {
-            "text": "「智识」篇",
-            "path": "resources/srsr/gl/智识.jpg"
-          },
-          {
-            "text": "注意,仅供参考!!!"
-          }
-        ]
-      },
-      "abyss-guide": {
-        "source": "starrail-plugin",
-        "forward": "忘却之庭攻略",
-        "parts": [
-          {
-            "path": "resources/srsr/wq/忘却之庭.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/1.jpg"
-          },
-          {
-            "text": "------------其一上半推荐配队------------\n推荐输出位:丹恒、希儿、青雀\n推荐功能位:银狼、布洛妮娅、艾丝妲、停云\n推荐生存位:白露、娜塔莎、火主、杰帕德\n",
-            "path": "resources/srsr/wq/2.jpg"
-          },
-          {
-            "text": "------------其一下半推荐配队------------\n推荐输出位：景元、阿兰、希露瓦、素裳、物主\n推荐功能位：银狼、佩拉、停云、瓦尔特\n推荐生存位：杰帕德、火主、三月七、娜塔莎、白露\n",
-            "path": "resources/srsr/wq/3.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/4.jpg"
-          },
-          {
-            "text": "------------其二上半推荐配队------------\n推荐输出位：彦卿、虎克、希儿\n推荐功能位：银狼、艾丝妲、停云\n推荐生存位：娜塔莎、火主、杰帕德、白露\n",
-            "path": "resources/srsr/wq/5.jpg"
-          },
-          {
-            "text": "------------其二下半推荐配队------------\n推荐输出位：景元、彦卿、阿兰、希露瓦\n推荐功能位：银狼、佩拉、停云、瓦尔特\n推荐生存位：杰帕德、白露、火主、娜塔莎\n",
-            "path": "resources/srsr/wq/6.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/7.jpg"
-          },
-          {
-            "text": "------------其三上半推荐配队------------\n推荐输出位：彦卿、景元、阿兰\n推荐功能位：银狼、佩拉、停云、瓦尔特\n推荐生存位：杰帕德、娜塔莎、白露、三月七\n",
-            "path": "resources/srsr/wq/8.jpg"
-          },
-          {
-            "text": "------------其三下半推荐配队------------\n推荐输出位：景元、彦卿、阿兰、希露瓦\n推荐功能位：银狼、佩拉、停云、瓦尔特\n推荐生存位：杰帕德、娜塔莎、白露、三月七\n",
-            "path": "resources/srsr/wq/9.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/10.jpg"
-          },
-          {
-            "text": "------------其四上半推荐配队------------\n推荐输出位：彦卿、景元、阿兰\n推荐功能位：银狼、佩拉、停云、瓦尔特\n推荐生存位：杰帕德、娜塔莎、白露、三月七\n",
-            "path": "resources/srsr/wq/11.jpg"
-          },
-          {
-            "text": "--------------其四下半推荐配队--------------\n推荐输出位：丹恒、彦卿、希儿、景元\n推荐功能位：银狼、艾丝妲、布洛妮娅、瓦尔特、停云\n推荐生存位：娜塔莎、火主、杰帕德、白露\n",
-            "path": "resources/srsr/wq/12.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/13.jpg"
-          },
-          {
-            "text": "--------------其五上半推荐配队--------------\n推荐输出位：希儿、丹恒、青雀\n推荐功能位：银狼、艾丝妲、布洛妮娅、瓦尔特、停云推荐生存位：娜塔莎、火主、杰帕德、白露\n",
-            "path": "resources/srsr/wq/14.jpg"
-          },
-          {
-            "text": "------------其五下半推荐配队------------\n推荐输出位：景元、姬子、虎克、阿兰、希露瓦\n推荐功能位：艾丝妲、停云、银狼\n推荐生存位：白露、火主、娜塔莎、杰帕德\n",
-            "path": "resources/srsr/wq/15.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/16.jpg"
-          },
-          {
-            "text": "------------其六上半推荐配队------------\n推荐输出位：素裳、物主、希儿、彦卿\n推荐功能位：艾丝妲、银狼、瓦尔特、佩拉\n推荐生存位：娜塔莎、火主、杰帕德、白露\n",
-            "path": "resources/srsr/wq/17.jpg"
-          },
-          {
-            "text": "-----------其六下半推荐配队-----------\n推荐输出位：景元、彦卿、阿兰、希露瓦\n推荐功能位：停云、银狼、瓦尔特、佩拉\n推荐生存位：白露、杰帕德、娜塔莎\n",
-            "path": "resources/srsr/wq/18.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/19.jpg"
-          },
-          {
-            "text": "------------其七上半推荐配队------------\n推荐输出位：希儿、虎克、青雀\n推荐功能位：艾丝妲、银狼、布洛妮娅、停云\n推荐生存位：娜塔莎、火主、白露、杰帕德\n",
-            "path": "resources/srsr/wq/20.jpg"
-          },
-          {
-            "text": "-----------其七下半推荐配队-----------\n推荐输出位：景元、彦卿、阿兰、希露瓦\n推荐功能位：停云、银狼、佩拉、瓦尔特\n推荐生存位：杰帕德、白露、娜塔莎、火主\n",
-            "path": "resources/srsr/wq/21.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/22.jpg"
-          },
-          {
-            "text": "------------其八上半推荐配队------------\n推荐输出位：希儿、青雀、丹恒\n推荐功能位：艾丝妲、银狼、布洛妮娅、停云\n推荐生存位：娜塔莎、白露、杰帕德、火主\n",
-            "path": "resources/srsr/wq/23.jpg"
-          },
-          {
-            "text": "----------其八下半推荐配队----------\n推荐输出位：丹恒、素裳\n推荐功能位：银狼、瓦尔特、布洛妮娅\n推荐生存位：火主、杰帕德、娜塔莎、白露\n",
-            "path": "resources/srsr/wq/24.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/25.jpg"
-          },
-          {
-            "text": "-----------其九上半推荐配队-----------\n推荐输出位：彦卿、虎克、希儿\n推荐功能位：银狼、艾丝妲、瓦尔特、停云\n推荐生存位：杰帕德、白露、娜塔莎、三月七\n",
-            "path": "resources/srsr/wq/26.jpg"
-          },
-          {
-            "text": "--------------其九下半推荐配队--------------\n推荐输出位：景元、阿兰、希露瓦\n推荐功能位：停云、银狼、艾丝妲、布洛妮娅、瓦尔特\n推荐生存位：火主、白露、杰帕德、娜塔莎\n",
-            "path": "resources/srsr/wq/27.jpg"
-          },
-          {
-            "path": "resources/srsr/wq/28.jpg"
-          },
-          {
-            "text": "------------其十上半推荐配队------------\n推荐输出位：彦卿、希儿、黑塔、素裳\n推荐功能位：佩拉、银狼、瓦尔特、停云\n推荐生存位：杰帕德、娜塔莎、三月七、白露\n",
-            "path": "resources/srsr/wq/29.jpg"
-          },
-          {
-            "text": "---------其十下半推荐配队---------\n推荐输出位：希儿、青雀、景元、虎克\n推荐功能位：艾丝妲、银狼、停云\n推荐生存位：火主、娜塔莎、白露\n",
-            "path": "resources/srsr/wq/30.jpg"
-          }
-        ]
-      },
-      "lc-recommend": {
-        "source": "starrail-plugin",
-        "parts": [
-          {
-            "path": "resources/srsr/gz/商店光锥推荐.jpg"
           }
         ]
       }

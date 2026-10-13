@@ -1,6 +1,7 @@
 package images
 
 import (
+	"slices"
 	"strconv"
 	"testing"
 	"time"
@@ -8,6 +9,81 @@ import (
 	"github.com/RayleaBot/starrail/internal/app"
 	"github.com/RayleaBot/starrail/internal/gacha"
 )
+
+func TestGachaSelectionReadsTheWord(t *testing.T) {
+	for _, tc := range []struct {
+		words []string
+		pools []string
+		all   bool
+	}{
+		{[]string{"跃迁记录", "up统计", "up记录", "喵喵抽卡记录", "集录池池统计", "版本统计"}, nil, false},
+		{[]string{"全部记录", "全部光锥联动记录", "up全部统计"}, nil, true},
+		{[]string{"角色联动池祈愿"}, []string{"21"}, false},
+		{[]string{"武器联动分析"}, []string{"22"}, false},
+		{[]string{"联动统计"}, []string{"21", "22"}, false},
+		{[]string{"新手池统计"}, []string{"2"}, false},
+		{[]string{"常驻池记录"}, []string{"1"}, false},
+		{[]string{"角色记录100000001", "up角色祈愿", "角色光锥记录"}, []string{"11"}, false},
+		{[]string{"光锥抽卡统计", "武器分析"}, []string{"12"}, false},
+	} {
+		for _, word := range tc.words {
+			pools, all := gachaSelection(word)
+			if !slices.Equal(pools, tc.pools) || all != tc.all {
+				t.Errorf("%s = %v, %v; want %v, %v", word, pools, all, tc.pools, tc.all)
+			}
+		}
+	}
+}
+
+func TestGachaHoldingRateCountsTheCatalog(t *testing.T) {
+	context := app.ImageContext{Catalog: app.Catalog{Entries: []app.Entry{
+		{ID: "1102", Kind: "character", Rarity: 5},
+		{ID: "1001", Kind: "character", Rarity: 4},
+		{ID: "2102", Kind: "character", Rarity: 5},
+		{ID: "8001", Kind: "character", Rarity: 5},
+		{ID: "23000", Kind: "weapon", Rarity: 5},
+		{ID: "21000", Kind: "weapon", Rarity: 4},
+		{ID: "20000", Kind: "weapon", Rarity: 3},
+	}}}
+	archive := gacha.Archive{Records: []gacha.Record{
+		{ID: "1", GachaType: "11", Rank: "5"},
+		{ID: "2", GachaType: "11", Rank: "5"},
+	}}
+	image, ok := Gacha(context, app.GachaImage{Word: "跃迁记录", Archive: archive})
+	if !ok || image.Data["hold_rate"] != [2]int{0, 25} {
+		t.Fatalf("holding rates = %v", image.Data)
+	}
+}
+
+func TestGachaOverviewAndCollaborationPages(t *testing.T) {
+	archive := gacha.Archive{Records: []gacha.Record{
+		{ID: "1", GachaType: "21", Name: "Saber", ItemType: "角色", Rank: "5"},
+		{ID: "2", GachaType: "22", Name: "没有回报的加冕", ItemType: "光锥", Rank: "5"},
+		{ID: "3", GachaType: "2", Name: "桂乃芬", ItemType: "角色", Rank: "4"},
+	}}
+	for _, tc := range []struct {
+		word     string
+		overview bool
+		pools    []string
+		total    int
+	}{
+		{"全部记录", true, []string{"21", "22"}, 2},
+		{"联动记录", false, []string{"21", "22"}, 2},
+		{"新手记录", false, []string{"2"}, 1},
+	} {
+		image, ok := Gacha(app.ImageContext{}, app.GachaImage{Word: tc.word, Archive: archive})
+		if !ok || image.Data["overview"] != tc.overview || image.Data["total"] != tc.total {
+			t.Fatalf("%s = %v", tc.word, image.Data)
+		}
+		pools := []string{}
+		for _, list := range image.Data["lists"].([]any) {
+			pools = append(pools, list.(map[string]any)["type"].(string))
+		}
+		if !slices.Equal(pools, tc.pools) {
+			t.Errorf("%s pools = %v, want %v", tc.word, pools, tc.pools)
+		}
+	}
+}
 
 func TestGachaFollowsStarRailPlugin(t *testing.T) {
 	banner := app.PoolInfo{Version: "2.0", Half: "上半", From: "2024-02-06 12:00:00", To: "2024-02-26 14:59:59", Characters5: []string{"花火"}}

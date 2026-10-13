@@ -282,13 +282,13 @@ func (a *App) challengeReminderCommand(ctx context.Context, event *rayleabot.Eve
 
 // challengeUsage lists the reminder's form with every kind and its metrics.
 func (a *App) challengeUsage() string {
-	lines := []string{"格式：" + a.Game.Prefix + "挑战提醒 玩法 指标 阈值 [时间] [UID]", "时间写作 HH:MM、每日20时30分或每周一20时，默认每日 20:00；有效 30 天。", "可选玩法与指标："}
+	lines := []string{"格式：" + a.Game.Prefix + "挑战提醒 <玩法> <指标> <阈值> [时间] [UID]", "时间写作 HH:MM、每日20时30分或每周一20时，默认每日 20:00；有效 30 天。", "可选玩法与指标："}
 	for _, kind := range challengeKinds() {
 		names := []string{}
 		for _, metric := range kind.Metrics {
 			names = append(names, metric.Label)
 		}
-		lines = append(lines, kind.Label+"："+strings.Join(names, "、"))
+		lines = append(lines, challengeKindNames[kind.ID][0]+"（"+kind.Label+"）："+strings.Join(names, "、"))
 	}
 	return strings.Join(lines, "\n")
 }

@@ -185,6 +185,8 @@ func (h *sdkHost) await(id string) (map[string]any, []hostAction) {
 // answer carries out an action as the host would.
 func (h *sdkHost) answer(action string, data map[string]any, scheduled bool) (map[string]any, string) {
 	switch action {
+	case "config.write":
+		return map[string]any{}, ""
 	case "plugin.call":
 		var request rayleabot.ServiceCallRequest
 		if decodeObject(data, &request) != nil {

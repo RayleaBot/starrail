@@ -130,8 +130,7 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 		"memosprite": len(talentKeys) > 4, "talents": talents, "trees": traces(panel, record, images, add),
 		"attrs": attributes(panel, record), "cons_icons": cons,
 		"data_source": cmp.Or(panelSources[panel.Source], panel.Source), "update_time": updated.In(chinaTime).Format("2006-01-02 15:04:05"),
-		"artifact_hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "圣遗物",
-		"damage_hint":   context.Game.Prefix + abbreviation(context.Catalog, record) + "伤害",
+		"damage_hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "伤害",
 	}
 	if weapon := panel.Weapon; weapon != nil {
 		data["weapon"] = lightCone(context, weapon, add)
@@ -149,7 +148,7 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 			}
 			table["rows"] = rows
 			if chart := rank.Chart; chart != nil {
-				data["rank_chart"] = map[string]any{"hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "排名统计", "places": chart.Places,
+				data["rank_chart"] = map[string]any{"places": chart.Places,
 					"charts": rankCharts(chart.Damage, chart.Artis)}
 			}
 		}

@@ -4,25 +4,27 @@ import (
 	"context"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
-// 星琼记录 and 在线时长 follow StarRail-plugin's hkrpg: a page of an asset's
-// gains from the official self-service records, and the time online
+// 资产记录 and 在线时长 follow StarRail-plugin's hkrpg: a page of an asset's
+// changes from the official self-service records, and the time online
 // estimated from the Trailblaze Power recovered over time.
 
-// payLogTypes are StarRail-plugin's record words with the category they read
-// and the English subtitle its page shows. 充值 reads 古老梦华. Its 光锥 and
-// 武器 records never answer, as upstream's 跃迁记录 rule takes those words
-// first; so here 跃迁记录 does.
-var payLogTypes = map[string][3]string{"星琼": {"星琼", "stellar", "Stellar"}, "古老梦华": {"古老梦华", "dreams", "Dreams"}, "充值": {"古老梦华", "dreams", "Dreams"}, "体力": {"体力", "power", "Power"}, "遗器": {"遗器", "relic", "Relic"}}
+// payLogCategories are the record words with the category they read and the
+// English subtitle. 充值 reads 古老梦华; 体力 is 开拓力. 光锥 needs a direction:
+// 光锥记录 and 武器记录 belong to the warp records.
+var payLogCategories = map[string][3]string{"星琼": {"星琼", "stellar", "Stellar"}, "古老梦华": {"古老梦华", "dreams", "Dreams"}, "充值": {"古老梦华", "dreams", "Dreams"}, "体力": {"体力", "power", "Power"}, "开拓力": {"开拓力", "power", "Power"}, "遗器": {"遗器", "relic", "Relic"}, "光锥": {"光锥", "cone", "Cone"}}
+var payLogDirections = map[string]string{"获取": "获取数量", "消耗": "消耗数量", "全部": "变化数量"}
 
 // PayLogImage is a page of 星琼记录 and the like, as StarRail-plugin's
 // charge page shows it.
 type PayLogImage struct {
 	UID, Type, TypeEN string
+	CountTitle        string
 	Page              int
 	Records           []PayLogRecord
 }
@@ -47,19 +49,22 @@ type OnlineBlock struct {
 }
 type OnlineImageBuilder func(ImageContext, OnlineImage) (Image, bool)
 
-// ownRole is the account role of the UID in use, which the self-service
+// ownRole is the account role of the requested or current UID, which the self-service
 // records need; missing is upstream's reply when there is none, noKey when
 // the UID has no account to read the records with.
-func (a *App) ownRole(ctx context.Context, event *rayleabot.EventContext, noKey string) (AccountsClient, Selection, Role, string) {
+func (a *App) ownRole(ctx context.Context, event *rayleabot.EventContext, uid, noKey string) (AccountsClient, Selection, Role, string) {
 	client := a.accountClient(event)
 	listed, err := client.List(ctx, 0)
 	if err != nil {
 		return client, Selection{}, Role{}, friendlyError(err)
 	}
-	uid := listed.UIDBindings[a.Game.ID].Current
+	bound := listed.UIDBindings[a.Game.ID].Current
+	if uid == "" {
+		uid = bound
+	}
 	choice, role, err := Choose(listed, a.Game.ID, uid)
 	if err != nil {
-		if uid == "" && len(listed.Items) == 0 {
+		if bound == "" && len(listed.Items) == 0 {
 			return client, Selection{}, Role{}, "尚未绑定uid,请发送" + a.Game.Prefix + "绑定uid进行绑定"
 		}
 		return client, Selection{}, Role{}, noKey
@@ -68,17 +73,35 @@ func (a *App) ownRole(ctx context.Context, event *rayleabot.EventContext, noKey 
 }
 
 func (a *App) payLogCommand(ctx context.Context, event *rayleabot.EventContext, args []string) error {
-	kind, ok := payLogTypes[args[0]]
-	if !ok {
-		return event.Result(map[string]any{"handled": false})
-	}
+	category, direction, uid := "", "", ""
 	page := 1
-	if len(args) > 1 {
-		if n, err := strconv.Atoi(args[1]); err == nil && n > 0 {
-			page = n
+	for _, arg := range args {
+		switch {
+		case payLogDirections[arg] != "":
+			direction = arg
+		case arg != "" && strings.Trim(arg, "0123456789") == "":
+			if len(arg) >= 9 {
+				uid = arg
+			} else if n, err := strconv.Atoi(arg); err == nil && n > 0 {
+				page = n
+			}
+		case category == "":
+			category = arg
 		}
 	}
-	client, choice, role, missing := a.ownRole(ctx, event, "authkey获取失败，请使用扫码登录重新绑定stoken后再进行查看~")
+	kind, ok := payLogCategories[category]
+	if !ok {
+		for _, entry := range billingCategories() {
+			if category == entry["id"] {
+				kind, ok = payLogCategories[entry["label"]]
+				break
+			}
+		}
+	}
+	if !ok {
+		return event.SendText("资产记录的类别可用：星琼、古老梦华、开拓力（体力）、遗器、光锥，如“" + a.Game.Prefix + "资产记录 遗器”或“" + a.Game.Prefix + "遗器消耗记录”。")
+	}
+	client, choice, role, missing := a.ownRole(ctx, event, uid, "authkey获取失败，请使用扫码登录重新绑定stoken后再进行查看~")
 	if missing != "" {
 		return event.SendText(missing)
 	}
@@ -86,20 +109,39 @@ func (a *App) payLogCommand(ctx context.Context, event *rayleabot.EventContext, 
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	image := PayLogImage{UID: role.UID, Type: kind[0], TypeEN: kind[2], Page: page}
+	countTitle := payLogDirections[direction]
+	if direction == "" {
+		countTitle = payLogDirections["获取"]
+	}
+	image := PayLogImage{UID: role.UID, Type: kind[0] + direction, TypeEN: kind[2], Page: page, CountTitle: countTitle}
 	for _, raw := range asList(result.Data["items"]) {
 		item := asObject(raw)
 		count, _ := strconv.Atoi(asText(item["add_num"]))
-		// Upstream keeps the gains, and of Trailblaze Power more than one.
-		if count <= 0 || kind[1] == "power" && count <= 1 {
-			continue
+		// Filter this official page locally; the request keeps its page size.
+		switch direction {
+		case "消耗":
+			if count >= 0 {
+				continue
+			}
+			count = -count
+		case "全部":
+			if count == 0 || kind[1] == "power" && count == 1 {
+				continue
+			}
+		default:
+			if count <= 0 || kind[1] == "power" && count <= 1 {
+				continue
+			}
 		}
 		image.Records = append(image.Records, PayLogRecord{Time: asText(item["time"]), Count: strconv.Itoa(count), Action: plainGameText(asText(item["action"]))})
 	}
 	if len(image.Records) == 0 {
+		if result.Data["has_more"] == true {
+			return event.SendText("第" + strconv.Itoa(page) + "页暂无" + image.Type + "记录，后面还有记录，可在命令后写页码翻页")
+		}
 		return event.SendText("暂无记录")
 	}
-	view := View{Title: kind[0] + "记录", Subtitle: "UID " + role.UID + " · 第" + strconv.Itoa(page) + "页", Rows: []Row{}}
+	view := View{Title: image.Type + "记录", Subtitle: "UID " + role.UID + " · 第" + strconv.Itoa(page) + "页", Rows: []Row{}}
 	for _, record := range image.Records {
 		view.Rows = append(view.Rows, Row{Label: record.Time, Value: record.Count + " · " + record.Action})
 	}
@@ -120,7 +162,7 @@ type onlineRecord struct {
 }
 
 func (a *App) onlineCommand(ctx context.Context, event *rayleabot.EventContext) error {
-	client, choice, role, missing := a.ownRole(ctx, event, "请先使用cookie帮助绑定cookie和星铁绑定uid后再进行查看噢")
+	client, choice, role, missing := a.ownRole(ctx, event, "", "请先使用cookie帮助绑定cookie和星铁绑定uid后再进行查看噢")
 	if missing != "" {
 		return event.SendText(missing)
 	}

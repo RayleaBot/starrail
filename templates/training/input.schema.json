@@ -1,8 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["uid", "count", "rows", "updated"],
+  "required": ["mark", "uid", "count", "rows", "updated"],
   "properties": {
+    "mark": { "type": "string" },
     "uid": { "type": "string" },
     "count": { "type": "integer" },
     "rows": { "type": "array" },

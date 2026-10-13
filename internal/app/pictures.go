@@ -68,24 +68,25 @@ func (a *App) characterPhotos(entry Entry) []artworkFile {
 // they follow StarRail-plugin rules, which Miao-Yunzai runs ahead of Atlas's
 // (priority 10) and which end the messages they answer. Its strategy answers
 // a character's 攻略 and passes the message on, so guides hands the message
-// to Atlas after answering. Its 绑定uid, 收益曲线, 强度榜, 攻略 and 深渊攻略
-// pass the message on too, but Atlas finds nothing for them, so Atlas sees
-// them first here.
+// to Atlas after answering. Its 绑定uid and 收益曲线 pass the message on
+// too, but Atlas finds nothing for them, so Atlas sees them first here.
 var aheadOfAtlas = []string{
-	// MiaoOrStarrail (priority -1000) and panel (1).
-	"api-panel", "character", "panel-list", "panel-refresh", "api-panel-list", "api-panel-refresh", "api-switch", "api-list",
+	// MiaoOrStarrail (priority -1000) and miao's panel words.
+	"panel", "panel-list", "panel-refresh",
 	// alias, gachasimulation, gatcha, hkrpg and srxx (-114514).
+	// 抽卡统计 also takes the 统计 words StarRail-plugin's gatcha rule
+	// took, so it answers ahead of Atlas too.
 	"alias-add", "alias-remove", "aliases", "simulation",
-	"gacha-link", "gacha", "gacha-help", "gacha-background",
+	"gacha", "gacha-stat", "gacha-help", "gacha-background",
 	"profile", "pay-log", "online",
-	"ref-panel", "ref-panel-help", "estimate", "lc-recommend",
+	"estimate",
 	// strategy (1).
 	"guides", "guide-help", "guide-default",
-	// challenge, gridFight, month, note and rogue (5 while its noteFlag is
+	// challenge, gridFight, note and rogue (5 while its noteFlag is
 	// on, as by default).
 	"abyss", "abyss-latest", "challenge", "story", "boss", "peak",
-	"currency_wars", "currency-wars-archive", "monthly", "note",
-	"rogue", "swarm", "gears", "unknowable", "divergent", "divergent-normal", "divergent-week", "divergent-cycle",
+	"currency_wars", "currency-wars-archive", "note",
+	"rogue", "swarm", "gears", "unknowable", "divergent", "divergent-normal", "divergent-week",
 }
 
 // pictureMessage answers the messages Atlas takes: on Miao-Yunzai its rule

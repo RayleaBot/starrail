@@ -1,6 +1,8 @@
 package app
 
 import (
+	"maps"
+	"strings"
 	"testing"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
@@ -33,6 +35,26 @@ func TestGroupSettingsDoNotChangeGlobalOrOtherBots(t *testing.T) {
 	settings := settings(event)
 	if settings.ImageReplies || settings.CustomAliases["global"] != "1002" || settings.CustomAliases["name"] != "1001" {
 		t.Fatal(settings)
+	}
+}
+
+func TestGroupAliasTargetResolvesByName(t *testing.T) {
+	a := pluginApp(t)
+	host := newSDKHost(t, a, nil)
+	for _, tc := range []struct{ alias, target, reply string }{
+		{"老婆", "希儿", "已指向希儿"},
+		{"老婆", "蝴蝶", "已指向希儿"},
+		{"夜色", "于夜色中", "已指向于夜色中"},
+		{"甲", "不存在的名字", "未找到角色或光锥"},
+	} {
+		end, _ := host.groupMessage("*群设置 别名 "+tc.alias+" "+tc.target, "群设置", "别名", tc.alias, tc.target)
+		if !strings.Contains(terminalText(end), tc.reply) {
+			t.Fatalf("%+v: %+v", tc, end)
+		}
+	}
+	data, err := a.Groups.Read(GroupScope{"onebot11", "bot", "g"})
+	if err != nil || !maps.Equal(data.Config.Aliases, map[string]string{"老婆": "1102", "夜色": "23001"}) {
+		t.Fatal(data.Config.Aliases, err)
 	}
 }
 func TestGroupAdministratorMatchesHostRoles(t *testing.T) {
