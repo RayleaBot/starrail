@@ -1,10 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["title", "subtitle", "groups"],
+  "required": ["title", "legend", "groups"],
   "properties": {
     "title": { "type": "string" },
-    "subtitle": { "type": "string" },
+    "legend": { "type": "string" },
+    "note": { "type": "string" },
     "groups": { "type": "array" },
     "render_footer": { "type": "string" }
   },

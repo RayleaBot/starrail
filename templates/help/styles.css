@@ -1,199 +1,274 @@
-/* Converted from StarRail-plugin common/common.css and help/index.css, with
-   the default theme's style as its HelpTheme writes it for three columns of
-   275px; icons are positioned per entry. */
-/* resources/common/common.css */
-@charset "UTF-8";
+/* The help menu in the plugin's "星穹列车" language (ui/DESIGN.md): a deep
+   ultramarine canvas with faint stars that holds however many groups the
+   manifest declares, StarRail-plugin's default-theme artwork fading into it
+   at the top, and translucent panels framed by 1px lines with a gilded
+   chamfer. All text is set upright in YS, the game's UI face. */
 * {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
+}
+
+:root {
+  --space-950: #0b0f1a;
+  --space-900: #111729;
+  --line: #2a3350;
+  --line-strong: #3d4a70;
+  --ivory: #f1ede3;
+  --ivory-muted: #a8b0c3;
+  --ivory-faint: #7f889f;
+  --gold-300: #f2d48c;
+  --gold-400: #e5c479;
+  --gold-700: #7d6a3c;
+  --warning: #f0bb5a;
+  /* Text, the group frames and the header all start on this line. */
+  --edge: 36px;
 }
 
 body {
-  font-family: "SR", sans-serif;
+  width: 855px;
   zoom: 1.6;
-  font-size: 18px;
-  width: 600px;
-}
-
-.container {
-  width: 600px;
-  padding: 20px 15px 10px 15px;
-  background-size: contain;
-}
-
-.head-box {
-  border-radius: 15px;
-  padding: 10px 20px;
-  position: relative;
-  color: #fff;
-  margin-top: 30px;
-}
-
-.head-box .title {
-  font-family: "tttgbnumber", "印品南征北战NZBZ体", NZBZ, "汉仪文黑-65W", YS, PingFangSC-Medium, "PingFang SC", sans-serif;
-  font-size: 36px;
-  text-shadow: 0 0 1px #000, 1px 1px 3px rgba(0, 0, 0, 0.9);
-}
-
-.head-box .title .label {
-  display: inline-block;
-  margin-left: 10px;
-}
-
-.head-box .genshin_logo {
-  position: absolute;
-  top: 1px;
-  right: 15px;
-  width: 97px;
-}
-
-.head-box .label {
-  font-size: 16px;
-  text-shadow: 0 0 1px #000, 1px 1px 3px rgba(0, 0, 0, 0.9);
-}
-
-.head-box .label span {
-  color: #d3bc8e;
-  padding: 0 2px;
-}
-
-.copyright {
+  font-family: "YS", "Microsoft YaHei UI", "PingFang SC", sans-serif;
   font-size: 14px;
-  text-align: center;
-  color: #fff;
+  color: var(--ivory);
+  background-color: var(--space-950);
+  /* Sparse stars on two tiles of different sizes so the pattern does not
+     visibly repeat, a faint sky glow every 1400px, and a canvas that is a
+     little lighter at the top and the bottom. */
+  background-image:
+    radial-gradient(1px 1px at 23px 41px, rgba(241, 237, 227, 0.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 151px 113px, rgba(241, 237, 227, 0.35) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 262px 19px, rgba(124, 178, 230, 0.6) 50%, transparent 51%),
+    radial-gradient(1px 1px at 317px 167px, rgba(241, 237, 227, 0.3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 61px 389px, rgba(241, 237, 227, 0.4) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 409px 311px, rgba(241, 237, 227, 0.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 233px 433px, rgba(124, 178, 230, 0.45) 50%, transparent 51%),
+    radial-gradient(520px 420px at 92% 520px, rgba(124, 178, 230, 0.07), transparent 70%),
+    linear-gradient(180deg, var(--space-900) 0, var(--space-950) 900px, var(--space-950) 60%, var(--space-900) 100%);
+  background-size:
+    340px 240px, 340px 240px, 340px 240px, 340px 240px,
+    470px 460px, 470px 460px, 470px 460px,
+    855px 1400px,
+    100% 100%;
+  background-repeat:
+    repeat, repeat, repeat, repeat,
+    repeat, repeat, repeat,
+    repeat-y,
+    no-repeat;
+}
+
+.page {
   position: relative;
-  padding-left: 10px;
-  text-shadow: 1px 1px 1px #000;
-  margin: 10px 0;
+  width: 855px;
+  padding: 0 20px 18px;
 }
 
-.copyright .version {
-  color: #d3bc8e;
+/* The artwork shows from the top down to the character's chin and fades
+   into the canvas; the first panel rises out of the fade. */
+.hero {
+  position: relative;
+  height: 480px;
+  margin: 0 -20px;
+}
+
+.hero-art {
+  position: absolute;
+  inset: 0 0 -160px;
+  background: var(--render-resource-help-theme-main, none) center top / 100% auto no-repeat;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 58%, rgba(0, 0, 0, 0.35) 75%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 58%, rgba(0, 0, 0, 0.35) 75%, transparent 100%);
+}
+
+.hero-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, rgba(11, 15, 26, 0.78) 0, rgba(11, 15, 26, 0.35) 42%, transparent 64%);
+}
+
+.hero-text {
+  position: absolute;
+  left: var(--edge);
+  top: 64px;
+}
+
+.title {
+  font-size: 46px;
+  font-weight: normal;
+  line-height: 1.15;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 10px rgba(11, 15, 26, 0.85);
+}
+
+/* A gold rule with a cut end ties the legend to the title, as the in-game
+   archive headers do. */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 15px;
+  color: var(--ivory-muted);
+  text-shadow: 0 1px 6px rgba(11, 15, 26, 0.9);
+}
+
+.legend::before {
+  content: "";
+  width: 56px;
+  height: 2px;
+  background: var(--gold-400);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 2px) 100%, 0 100%);
+}
+
+.note {
+  margin-bottom: 14px;
+  padding: 12px 18px 12px 16px;
+  font-size: 17px;
+  line-height: 26px;
+  color: var(--ivory);
+  background: linear-gradient(90deg, rgba(240, 187, 90, 0.16), rgba(240, 187, 90, 0.04) 60%), var(--space-900);
+  box-shadow: inset 0 0 0 1px rgba(240, 187, 90, 0.35), inset 3px 0 0 var(--warning);
+}
+
+.group {
+  position: relative;
+  margin-bottom: 14px;
+  background: rgba(22, 29, 49, 0.82);
+  clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px);
+}
+
+/* The frame paints above the header band, and the clip cuts it along the
+   chamfer, whose edge and the 12px beside it are gilded. */
+.group::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  pointer-events: none;
+}
+
+.group::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  background:
+    linear-gradient(135deg, transparent 0 calc(50% - 1.2px), var(--gold-400) calc(50% - 1.2px) calc(50% + 1.2px), transparent calc(50% + 1.2px)) 0 0 / 14px 14px no-repeat,
+    linear-gradient(90deg, var(--gold-400), transparent) 14px 0 / 12px 1px no-repeat,
+    linear-gradient(180deg, var(--gold-400), transparent) 0 14px / 1px 12px no-repeat;
+}
+
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 18px 11px calc(var(--edge) - 20px);
+  font-size: 22px;
+  font-weight: normal;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, rgba(37, 48, 79, 0.95), rgba(28, 37, 64, 0.8));
+  box-shadow: inset 0 -1px 0 var(--line-strong);
+}
+
+/* A hollow rhombus marks each group, as in the game's archive lists. */
+.group-title::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-left: 1.5px;
+  transform: rotate(45deg);
+  border: 1.5px solid var(--gold-400);
+}
+
+/* Commands are split by short row rules; columns by whitespace. */
+.commands {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding-bottom: 2px;
+}
+
+.command {
+  position: relative;
+  padding: 9px 12px 9px calc(var(--edge) - 20px);
+}
+
+.command::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--edge) - 20px);
+  right: 12px;
+  bottom: 0;
+  height: 1px;
+  background: var(--line);
+}
+
+/* The last row has no rule under it. */
+.command:nth-last-child(-n + 3):nth-child(3n + 1)::after,
+.command:nth-last-child(-n + 3):nth-child(3n + 1) ~ .command::after {
+  display: none;
+}
+
+.usage {
+  font-size: 15.5px;
+  line-height: 23px;
+  color: var(--gold-300);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* Each written form stays on one line when it fits; the rhombus that
+   separates it from the previous one moves with it. */
+.usage .form {
   display: inline-block;
-  padding: 0 3px;
+  max-width: 100%;
+  margin-right: 2px;
 }
 
-.const-rank-0 {
-  background: #606060;
+.usage .sep {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin: 0 9px 0 5px;
+  vertical-align: 0.25em;
+  transform: rotate(45deg);
+  background: var(--gold-700);
 }
 
-.const-rank-1 {
-  background: #89cb26;
+.usage .arg {
+  color: var(--ivory-muted);
+  font-size: 14px;
 }
 
-.const-rank-2 {
-  background: #d1949e;
+.desc {
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--ivory-muted);
+  text-wrap: pretty;
 }
 
-.const-rank-3 {
-  background: #1aa1d7;
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--ivory-faint);
 }
 
-.const-rank-4 {
-  background: #F08080;
+.footer::before,
+.footer::after {
+  content: "";
+  width: 48px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-700));
 }
 
-.const-rank-5 {
-  background: #7B68EE;
+.footer::after {
+  transform: scaleX(-1);
 }
-
-.const-rank-6 {
-  background: #ff5222;
-}
-
-/* resources/help/index.css */
-body {
-    width: 830px;
-    background: var(--render-resource-common-theme-bg-01, none);
-    font-family: "tttgbnumber", "YS";
-  }
-  .container {
-    background: var(--render-resource-common-theme-main-01, none) top left no-repeat;
-    background-size: 100% auto;
-    width: 830px;
-  }
-  .head-box {
-    margin: 60px 0 0 0;
-    padding-bottom: 0;
-  }
-  .head-box .title {
-    font-size: 50px;
-  }
-  .cont-box {
-    border-radius: 15px;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.15);
-    position: relative;
-  }
-  .help-group {
-    font-size: 18px;
-    font-weight: bold;
-    padding: 15px 15px 10px 20px;
-  }
-  .help-table {
-    text-align: center;
-    border-collapse: collapse;
-    margin: 0;
-    border-radius: 0 0 10px 10px;
-    display: table;
-    overflow: hidden;
-    width: 100%;
-    color: #fff;
-  }
-  .help-table .tr {
-    display: table-row;
-  }
-  .help-table .td,
-  .help-table .th {
-    font-size: 14px;
-    display: table-cell;
-    box-shadow: 0 0 1px 0 #888 inset;
-    padding: 12px 0 12px 50px;
-    line-height: 24px;
-    position: relative;
-    text-align: left;
-  }
-  .help-table .tr:last-child .td {
-    padding-bottom: 12px;
-  }
-  .help-table .th {
-    background: rgba(34, 41, 51, 0.5);
-  }
-  .help-icon {
-    width: 40px;
-    height: 40px;
-    display: block;
-    position: absolute;
-    background: var(--render-resource-help-icon, none) 0 0 no-repeat;
-    background-size: 500px auto;
-    border-radius: 5px;
-    left: 6px;
-    top: 12px;
-    transform: scale(0.85);
-  }
-  .help-title {
-    display: block;
-    color: #d3bc8e;
-    font-size: 16px;
-    line-height: 24px;
-  }
-  .help-desc {
-    display: block;
-    font-size: 13px;
-    line-height: 18px;
-  }
-
-/* HelpTheme (default theme) */
-body { background-image: var(--render-resource-help-theme-bg, none); width: 855px; }
-.container { background-image: var(--render-resource-help-theme-main, none); width: 855px; }
-.help-table .td, .help-table .th { width: 33.333333%; }
-.help-title, .help-group { color: #ffffff; text-shadow: none; }
-.help-desc { color: #e7e7e7; }
-.cont-box { background: rgba(43, 52, 61, 0.6); backdrop-filter: blur(2px); }
-.help-group { background: rgba(34, 41, 51, .4); }
-.help-table .tr:nth-child(odd) { background: rgba(25, 28, 31, 0.1); }
-.help-table .tr:nth-child(even) { background: rgba(25, 28, 31, 0.1); }
-.help-icon.none { display: none; }

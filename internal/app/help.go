@@ -50,7 +50,7 @@ func (a *App) help(event *rayleabot.EventContext, query string) (map[string]any,
 		visible[c.ID] = c
 	}
 	placed := map[string]bool{}
-	image := HelpImage{Title: view.Title, Subtitle: view.Subtitle, Note: view.Note}
+	image := HelpImage{Title: view.Title, Note: view.Note}
 	add := func(id, title string, list []pluginmeta.Command) {
 		section, group := Section{Title: title, Rows: []Row{}}, HelpGroup{ID: id, Title: title}
 		for _, c := range list {
@@ -104,10 +104,10 @@ func (a *App) helpCommand(ctx context.Context, event *rayleabot.EventContext, co
 }
 
 // HelpImage is the help menu the requester may use, grouped as the manifest
-// declares, for plugins that draw it the way their upstream help page does.
+// declares, for the plugin's help image.
 type HelpImage struct {
-	Title, Subtitle, Note string
-	Groups                []HelpGroup
+	Title, Note string
+	Groups      []HelpGroup
 }
 
 // HelpGroup is one declared command group; ID is the manifest's group id, or

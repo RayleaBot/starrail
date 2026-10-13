@@ -1,40 +1,29 @@
 package images
 
 import (
-	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/RayleaBot/starrail/internal/app"
 )
 
-// helpIcons gives each command the icon of the StarRail-plugin help entry
-// that lists it (config/system/help_system.js); commands upstream does not
-// list show none, as upstream hides an entry's missing icon.
-var helpIcons = map[string]int{
-	"select": 78, "panel-refresh": 63, "api-panel": 66, "character": 66, "monthly": 98, "monthly-history": 98, "note": 95, "profile": 75,
-	"gacha": 97, "gacha-summary": 97, "gacha-background": 97,
-	"rogue": 107, "divergent": 107, "divergent-normal": 107, "divergent-week": 107, "divergent-cycle": 107, "currency_wars": 107, "currency-wars-archive": 107, "swarm": 107,
-	"challenge": 110, "story": 110, "boss": 110, "peak": 110, "abyss": 110, "abyss-latest": 110,
-	"guides": 106, "simulation": 100, "codes": 96, "artwork": 85, "api-switch": 85,
-}
-
-// helpColumns is StarRail-plugin's column count.
-const helpColumns = 3
-
-// helpArtwork maps the images named in the converted stylesheets
-// (StarRail-plugin's common and help/index, with the default theme) and its
-// fonts to their paths.
+// helpArtwork maps the font and the default theme's artwork the help
+// stylesheet names to their StarRail-plugin paths.
 var helpArtwork = [][2]string{
-	{"SR", "resources/common/font/SR.ttf"},
-	{"tttgbnumber", "resources/common/font/tttgbnumber.ttf"},
 	{"YS", "resources/common/font/YS.ttf"},
-	{"help-icon", "resources/help/icon.png"},
-	{"help-theme-bg", "resources/help/theme/default/bg.jpg"},
 	{"help-theme-main", "resources/help/theme/default/main.png"},
 }
 
-// Help draws the help menu the way StarRail-plugin's help/index does: the
-// title bar, then each group as a table of three columns, each command with
-// its icon, usage and description, on its default theme.
+// helpLegend explains the notation every written form uses.
+const helpLegend = "< > 换成实际内容 · [ ] 可省略 · | 任选其一"
+
+// helpArgument matches a written form's placeholders: <...> for what to fill
+// in, [...] for what may be left out.
+var helpArgument = regexp.MustCompile(`<[^<>]*>|\[[^\[\]]*\]`)
+
+// Help draws the help menu: StarRail-plugin's default-theme artwork as the
+// header, then each group's commands with their written forms, placeholders
+// set apart from the words to type, and description.
 func Help(context app.ImageContext, help app.HelpImage) (app.Image, bool) {
 	if len(help.Groups) == 0 {
 		return app.Image{}, false
@@ -45,26 +34,36 @@ func Help(context app.ImageContext, help app.HelpImage) (app.Image, bool) {
 	}
 	groups := []any{}
 	for _, group := range help.Groups {
-		rows, row := []any{}, []any{}
+		commands := []any{}
 		for _, command := range group.Commands {
-			cell := map[string]any{"title": command.Usage, "desc": command.Description}
-			// The sprite has ten 50px icons a row.
-			if icon := helpIcons[command.ID]; icon > 0 {
-				x, y := (icon-1)%10, (icon-1)/10
-				cell["position"] = fmt.Sprintf("-%dpx -%dpx", x*50, y*50)
-			}
-			row = append(row, cell)
-			if len(row) == helpColumns {
-				rows, row = append(rows, row), []any{}
-			}
+			commands = append(commands, map[string]any{"forms": helpForms(command.Usage), "desc": command.Description})
 		}
-		if len(row) > 0 {
-			for len(row) < helpColumns {
-				row = append(row, nil)
-			}
-			rows = append(rows, row)
-		}
-		groups = append(groups, map[string]any{"title": group.Title, "rows": rows})
+		groups = append(groups, map[string]any{"title": group.Title, "commands": commands})
 	}
-	return app.Image{Template: "help", Data: map[string]any{"title": help.Title, "subtitle": help.Subtitle, "groups": groups}, Resources: resources.List}, true
+	data := map[string]any{"title": help.Title, "legend": helpLegend, "groups": groups}
+	if help.Note != "" {
+		data["note"] = help.Note
+	}
+	return app.Image{Template: "help", Data: data, Resources: resources.List}, true
+}
+
+// helpForms splits a usage into its written forms, each a run of text and
+// placeholder parts.
+func helpForms(usage string) []any {
+	forms := []any{}
+	for _, form := range strings.Split(usage, " / ") {
+		parts, last := []any{}, 0
+		for _, match := range helpArgument.FindAllStringIndex(form, -1) {
+			if match[0] > last {
+				parts = append(parts, map[string]any{"text": form[last:match[0]]})
+			}
+			parts = append(parts, map[string]any{"text": form[match[0]:match[1]], "arg": true})
+			last = match[1]
+		}
+		if last < len(form) {
+			parts = append(parts, map[string]any{"text": form[last:]})
+		}
+		forms = append(forms, parts)
+	}
+	return forms
 }

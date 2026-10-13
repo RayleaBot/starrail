@@ -2,26 +2,26 @@
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
 <body>
-<div class="container" id="container">
-  <div class="info-box">
-    <div class="head-box type">
-      <div class="title">{{ .title }}</div>
-      <div class="label">{{ .subtitle }}</div>
+<div class="page" id="container">
+  <header class="hero">
+    <div class="hero-art"></div>
+    <div class="hero-text">
+      <h1 class="title">{{ .title }}</h1>
+      <div class="legend">{{ .legend }}</div>
     </div>
-  </div>
-  {{ range .groups }}
-  <div class="cont-box">
-    <div class="help-group">{{ .title }}</div>
-    <div class="help-table">
-      {{ range .rows }}
-      <div class="tr">
-        {{ range . }}{{ if . }}<div class="td">{{ with .position }}<span class="help-icon" style="background-position:{{ . }}"></span>{{ else }}<span class="help-icon none"></span>{{ end }}<strong class="help-title">{{ .title }}</strong><span class="help-desc">{{ .desc }}</span></div>{{ else }}<div class="td"></div>{{ end }}{{ end }}
+  </header>
+  {{ with .note }}<div class="note">{{ . }}</div>{{ end }}
+  <main>
+    {{ range .groups }}
+    <section class="group">
+      <h2 class="group-title">{{ .title }}</h2>
+      <div class="commands">
+        {{ range .commands }}<div class="command"><div class="usage">{{ range $i, $form := .forms }}<span class="form">{{ if $i }}<span class="sep"></span>{{ end }}{{ range $form }}{{ if .arg }}<span class="arg">{{ .text }}</span>{{ else }}{{ .text }}{{ end }}{{ end }}</span>{{ end }}</div><div class="desc">{{ .desc }}</div></div>{{ end }}
       </div>
-      {{ end }}
-    </div>
-  </div>
-  {{ end }}
-  {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+    </section>
+    {{ end }}
+  </main>
+  {{ with .render_footer }}<footer class="footer">{{ . }}</footer>{{ end }}
 </div>
 </body>
 </html>

@@ -1,22 +1,22 @@
-package images_test
+package images
 
 import (
+	"encoding/json"
 	"testing"
-
-	"github.com/RayleaBot/starrail/internal/app"
-	"github.com/RayleaBot/starrail/internal/images"
 )
 
-func TestHelpFollowsStarRailPlugin(t *testing.T) {
-	help := app.HelpImage{Title: "星铁帮助", Groups: []app.HelpGroup{{Title: "战绩", Commands: []app.HelpCommand{{ID: "challenge", Usage: "*忘却之庭"}, {ID: "gears", Usage: "*黄金"}}}}}
-	image, ok := images.Help(app.ImageContext{}, help)
-	if !ok {
-		t.Fatal("help")
-	}
-	row := image.Data["groups"].([]any)[0].(map[string]any)["rows"].([]any)[0].([]any)
-	// Icon 110 is the last of row 11 in upstream's sprite; commands upstream
-	// does not list have none.
-	if row[0].(map[string]any)["position"] != "-450px -500px" || row[1].(map[string]any)["position"] != nil || row[2] != nil {
-		t.Errorf("row = %v", row)
+// Each written form is drawn on its own, with its placeholders set apart
+// from the words to type.
+func TestHelpFormsSetPlaceholdersApart(t *testing.T) {
+	text := func(s string) map[string]any { return map[string]any{"text": s} }
+	arg := func(s string) map[string]any { return map[string]any{"text": s, "arg": true} }
+	want, _ := json.Marshal([]any{
+		[]any{text("*"), arg("<角色>"), text("面板 "), arg("[UID]")},
+		[]any{text("#面板列表")},
+		[]any{text("*十连"), arg("[角色|光锥|常驻]")},
+	})
+	got, _ := json.Marshal(helpForms("*<角色>面板 [UID] / #面板列表 / *十连[角色|光锥|常驻]"))
+	if string(got) != string(want) {
+		t.Errorf("forms = %s", got)
 	}
 }

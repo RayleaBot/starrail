@@ -1,7 +1,7 @@
 {
   "id": "help",
   "name": "星铁帮助",
-  "description": "帮助命令的图片，布局参照 StarRail-plugin help",
+  "description": "帮助命令的图片：群青星空底与金色切角面板，页头为 StarRail-plugin 帮助默认主题的插画",
   "version": "1",
   "entry_html": "template.html",
   "stylesheet": "styles.css",
