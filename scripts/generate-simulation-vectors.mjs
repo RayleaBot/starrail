@@ -1,7 +1,7 @@
 // Records the StarRail-plugin 模拟抽卡 five-star probability for every pull
 // count, by running its probability method on each case.
 //
-// Usage: node scripts/generate-simulation-vectors.mjs <参考项目/2026-09-15>
+// Usage: node scripts/generate-simulation-vectors.mjs <参考项目/2026-10-13>
 // Writes internal/app/testdata/simulation-probability-vectors.json.
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -29,8 +29,8 @@ if (!body) {
 const probability = new vm.Script(`(function()${body})`).runInNewContext(Object.create(null), { timeout: 1000 })
 
 const vectors = []
-const types = { character: 'up-char', weapon: 'up-weapon', standard: 'normal' }
-for (const kind of ['character', 'weapon', 'standard']) {
+const types = { character: 'up-char', weapon: 'up-weapon', standard: 'normal', collab_character: 'collab-char', collab_weapon: 'collab-weapon' }
+for (const kind of Object.keys(types)) {
   for (let five = 0; five <= 95; five++) {
     for (const weekly of [0, 1, 2]) {
       const type = types[kind]

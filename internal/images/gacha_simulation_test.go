@@ -13,7 +13,7 @@ func TestGachaSimulationKeepsDrawOrderAndFallsBackToMiao(t *testing.T) {
 	root := t.TempDir()
 	for _, name := range []string{
 		"starrail-plugin/" + simulationImages + "char_image/1005.png",
-		"starrail-plugin/" + simulationImages + "weaponlife/BgPathsMemory.png",
+		"starrail-plugin/" + simulationImages + "weaponlife/记忆.png",
 		"miao-plugin/resources/meta-sr/character/遐蝶/imgs/splash.webp",
 		"miao-plugin/resources/meta-sr/weapon/记忆/新光锥/icon.webp",
 	} {
@@ -64,7 +64,7 @@ func TestGachaSimulationKeepsDrawOrderAndFallsBackToMiao(t *testing.T) {
 	if paths[first["image"].(string)] != "assets/starrail-plugin/"+simulationImages+"char_image/1005.png" ||
 		paths[last["image"].(string)] != "assets/miao-plugin/resources/meta-sr/character/遐蝶/imgs/splash.webp" ||
 		paths[cone["image"].(string)] != "assets/miao-plugin/resources/meta-sr/weapon/记忆/新光锥/icon.webp" ||
-		paths[cone["path"].(string)] != "assets/starrail-plugin/"+simulationImages+"weaponlife/BgPathsMemory.png" {
+		paths[cone["path"].(string)] != "assets/starrail-plugin/"+simulationImages+"weaponlife/记忆.png" {
 		t.Errorf("resources = %v", paths)
 	}
 }

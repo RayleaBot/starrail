@@ -50,6 +50,8 @@ func resourceView(game Game, action string, result map[string]any) View {
 }
 
 type PoolInfo struct {
+	Name           string   `json:"name,omitempty"`
+	GachaType      string   `json:"gacha_type,omitempty"`
 	EstimatedStart bool     `json:"estimated_start,omitempty"`
 	Version        string   `json:"version"`
 	Half           string   `json:"half"`
@@ -62,9 +64,10 @@ type PoolInfo struct {
 	Weapons4       []string `json:"weapons4"`
 }
 type GameResources struct {
-	Version   string         `json:"version,omitempty"`
-	Materials []MaterialInfo `json:"materials"`
-	Pools     []PoolInfo     `json:"pools"`
+	CollabPools []PoolInfo     `json:"collab_pools"`
+	Version     string         `json:"version,omitempty"`
+	Materials   []MaterialInfo `json:"materials"`
+	Pools       []PoolInfo     `json:"pools"`
 }
 
 func (a *App) resourceQuery(action string, input map[string]any) (map[string]any, error) {

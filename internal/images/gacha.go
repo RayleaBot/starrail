@@ -12,8 +12,7 @@ import (
 	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
-// gachaPools are the warp pools upstream reports, in its order, followed by
-// the two collaboration warps upstream does not read.
+// gachaPools are the six warp pools upstream reports, in its order.
 var gachaPools = []struct{ id, name string }{{"1", "群星跃迁"}, {"2", "新手跃迁"}, {"11", "限定跃迁"}, {"12", "光锥跃迁"}, {"21", "角色联动跃迁"}, {"22", "光锥联动跃迁"}}
 
 // gachaSelection reads the warps a record word names: nil when it names
@@ -66,11 +65,19 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 		return GachaStat(context, image)
 	}
 	pools, _ := gachaSelection(image.Word)
+	// StarRail-plugin uses 联动 for the character collaboration warp.
+	if slices.Equal(pools, []string{"21", "22"}) {
+		pools = []string{"21"}
+		if strings.Contains(image.Word, "光锥") || strings.Contains(image.Word, "武器") {
+			pools = []string{"22"}
+		}
+	}
 	overview := pools == nil
 	now := context.Now.In(chinaTime)
-	var banners []app.PoolInfo
+	var banners, collabs []app.PoolInfo
 	if context.Game.Data != nil {
 		banners = context.Game.Data.Resources.Pools
+		collabs = context.Game.Data.Resources.CollabPools
 	}
 	within := func(banner app.PoolInfo, at time.Time) bool {
 		from, errFrom := time.ParseInLocation(timeLayout, banner.From, chinaTime)
@@ -90,7 +97,7 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 	allTotal := holdingTotal(context.Catalog)
 	hold := [2]int{}
 	holdRate := [2]int{}
-	pity := map[string][2]int{"1": {}, "2": {}, "11": {}, "12": {}}
+	pity := map[string][2]int{"1": {}, "2": {}, "11": {}, "12": {}, "21": {}, "22": {}}
 	currentTotal := 0
 	resources := []rayleabot.RenderImageResource{}
 	icons := map[string]string{}
@@ -178,13 +185,34 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 			}
 			up := false
 			group, label := "", map[string]any{}
-			for _, banner := range banners {
-				if !within(banner, at) {
-					continue
+			matched := []app.PoolInfo{}
+			if pool.id == "21" || pool.id == "22" {
+				for _, banner := range collabs {
+					if banner.GachaType == pool.id && within(banner, at) && (len(matched) == 0 || banner.From > matched[0].From) {
+						matched = []app.PoolInfo{banner}
+					}
 				}
+			} else {
+				var latest *app.PoolInfo
+				for _, banner := range banners {
+					if within(banner, at) {
+						matched = append(matched, banner)
+					}
+					if banner.From < record.Time && (latest == nil || banner.From > latest.From) {
+						latest = &banner
+					}
+				}
+				if len(matched) == 0 && latest != nil {
+					to, err := time.ParseInLocation(timeLayout, latest.To, chinaTime)
+					if err == nil && at.Sub(to) <= 24*time.Hour {
+						matched = append(matched, *latest)
+					}
+				}
+			}
+			for _, banner := range matched {
 				if group == "" {
-					group = banner.Version + banner.Half
-					label = map[string]any{"version": banner.Version, "half": banner.Half, "from": banner.From, "to": banner.To}
+					group = banner.Version + banner.Half + banner.Name
+					label = map[string]any{"version": banner.Version, "half": banner.Half, "name": banner.Name, "from": banner.From, "to": banner.To}
 				}
 				for _, name := range append(append([]string{}, banner.Characters5...), banner.Weapons5...) {
 					up = up || rank == 5 && name == record.Name
@@ -237,12 +265,19 @@ func Gacha(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
 	for _, count := range counts {
 		total += count
 	}
+	pities := []any{map[string]any{"count": pity["11"][1], "label": "角色未出五星"}, map[string]any{"count": pity["12"][1], "label": "光锥未出五星"}}
+	if slices.Equal(pools, []string{"21"}) {
+		pities = []any{map[string]any{"count": pity["21"][1], "label": "联动角色未出五星"}}
+	}
+	if slices.Equal(pools, []string{"22"}) {
+		pities = []any{map[string]any{"count": pity["22"][1], "label": "联动光锥未出五星"}}
+	}
 	return app.Image{Template: "gacha", Data: map[string]any{
 		"uid": image.UID, "overview": overview,
 		"total":         total,
 		"current_total": currentTotal,
-		"pity_role":     pity["11"][1], "pity_cone": pity["12"][1],
-		"hold": hold, "hold_rate": holdRate,
+		"pities":        pities,
+		"hold":          hold, "hold_rate": holdRate,
 		"first_time": firstTime, "last_time": lastTime,
 		"lists": lists,
 	}, Resources: resources}, true

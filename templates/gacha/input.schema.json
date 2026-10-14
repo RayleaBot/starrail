@@ -1,14 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["uid", "overview", "total", "current_total", "pity_role", "pity_cone", "hold", "hold_rate", "first_time", "last_time", "lists"],
+  "required": ["uid", "overview", "total", "current_total", "pities", "hold", "hold_rate", "first_time", "last_time", "lists"],
   "properties": {
     "uid": { "type": "string" },
     "overview": { "type": "boolean" },
     "total": { "type": "integer" },
     "current_total": { "type": "integer" },
-    "pity_role": { "type": "integer" },
-    "pity_cone": { "type": "integer" },
+    "pities": { "type": "array" },
     "hold": { "type": "array" },
     "hold_rate": { "type": "array" },
     "first_time": { "type": "string" },

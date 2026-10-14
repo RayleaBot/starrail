@@ -19,6 +19,8 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 		args     []string
 	}{
 		"starrail": {
+			{"十连联动", "simulation", nil},
+			{"抽卡联动光锥", "simulation", nil},
 			{"希儿面板", "panel", []string{"希儿"}},
 			{"希儿面版", "panel", []string{"希儿"}},
 			{"希儿详细", "panel", []string{"希儿"}},

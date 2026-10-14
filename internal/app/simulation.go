@@ -21,18 +21,22 @@ import (
 	"github.com/RayleaBot/starrail/internal/localdata"
 )
 
+var simulationKinds = []string{"character", "weapon", "standard", "collab_character", "collab_weapon"}
+
 type SimulationBanner struct {
 	ID string `json:"id"`
 	PoolInfo
 }
 type SimulationDeck struct {
-	Version        string             `json:"version"`
-	FiveCharacters []string           `json:"five_characters"`
-	FiveWeapons    []string           `json:"five_weapons"`
-	FourCharacters []string           `json:"four_characters"`
-	FourWeapons    []string           `json:"four_weapons"`
-	ThreeWeapons   []string           `json:"three_weapons"`
-	Banners        []SimulationBanner `json:"banners"`
+	CollabCharacters []string           `json:"collab_characters"`
+	CollabWeapons    []string           `json:"collab_weapons"`
+	Version          string             `json:"version"`
+	FiveCharacters   []string           `json:"five_characters"`
+	FiveWeapons      []string           `json:"five_weapons"`
+	FourCharacters   []string           `json:"four_characters"`
+	FourWeapons      []string           `json:"four_weapons"`
+	ThreeWeapons     []string           `json:"three_weapons"`
+	Banners          []SimulationBanner `json:"banners"`
 }
 
 type SimulationSelection struct {
@@ -90,9 +94,9 @@ type SimulationStore struct {
 
 func newSimulationState(deck SimulationDeck) SimulationState {
 	s := SimulationState{Version: 1, Active: "character", Selections: map[string]SimulationSelection{}, Pools: map[string]*SimulationPity{}, Owned: map[string]int64{}, History: []SimulationDraw{}, Requests: []SimulationBatch{}}
-	for _, kind := range []string{"character", "weapon", "standard"} {
+	for _, kind := range simulationKinds {
 		selection := SimulationSelection{Kind: kind}
-		if kind != "standard" && len(deck.Banners) > 0 {
+		if (kind == "character" || kind == "weapon") && len(deck.Banners) > 0 {
 			b := deck.Banners[0]
 			selection.BannerID = b.ID
 			if kind == "character" {
@@ -121,7 +125,7 @@ func (s *SimulationStore) read(scope string, now time.Time) (SimulationState, er
 	if state.Version != 1 || state.Owned == nil || state.Selections == nil || state.Pools == nil {
 		return state, gameError("simulation_invalid", "模拟档案格式不兼容。")
 	}
-	for _, kind := range []string{"character", "weapon", "standard"} {
+	for _, kind := range simulationKinds {
 		if state.Pools[kind] == nil {
 			return state, gameError("simulation_invalid", "模拟档案缺少卡池状态。")
 		}
@@ -160,10 +164,10 @@ func (s *SimulationStore) limit() (int, error) {
 }
 func simulationProbability(kind string, five int) int {
 	base := 60
-	if kind == "weapon" {
+	if kind == "weapon" || kind == "collab_weapon" {
 		base = 80
 	}
-	if kind != "weapon" {
+	if kind != "weapon" && kind != "collab_weapon" {
 		if five >= 90 {
 			return 10000
 		}
@@ -171,7 +175,7 @@ func simulationProbability(kind string, five int) int {
 			return min(10000, 590+(five-74)*530)
 		}
 		if five >= 60 {
-			return min(10000, 60+(five-50)*40)
+			return min(10000, 60+(five-60)*40)
 		}
 		return base
 	}
@@ -204,10 +208,10 @@ func simulationFourProbability(kind string, four int) int {
 	return base
 }
 func simulationBanner(deck SimulationDeck, selection SimulationSelection) (SimulationBanner, error) {
-	if !slices.Contains([]string{"character", "weapon", "standard"}, selection.Kind) {
+	if !slices.Contains(simulationKinds, selection.Kind) {
 		return SimulationBanner{}, gameError("input_invalid", "模拟卡池种类无效。")
 	}
-	if selection.Kind == "standard" {
+	if selection.Kind == "standard" || selection.Kind == "collab_character" || selection.Kind == "collab_weapon" {
 		return SimulationBanner{}, nil
 	}
 	for _, b := range deck.Banners {
@@ -218,6 +222,9 @@ func simulationBanner(deck SimulationDeck, selection SimulationSelection) (Simul
 	return SimulationBanner{}, gameError("input_invalid", "请选择已收录的参考卡池。")
 }
 func (s *SimulationStore) selectPool(state *SimulationState, selection SimulationSelection) error {
+	if selection.Kind == "standard" || selection.Kind == "collab_character" || selection.Kind == "collab_weapon" {
+		selection.BannerID, selection.Featured = "", ""
+	}
 	banner, err := simulationBanner(*s.Deck, selection)
 	if err != nil {
 		return err
@@ -225,11 +232,24 @@ func (s *SimulationStore) selectPool(state *SimulationState, selection Simulatio
 	if selection.Kind == "character" && len(banner.Characters4) == 0 || selection.Kind == "weapon" && len(banner.Weapons4) == 0 {
 		return gameError("simulation_data_missing", "此参考期缺少四星池资料，请选择其他期次。")
 	}
-	if selection.Kind == "character" && !slices.Contains(banner.Characters5, selection.Featured) || selection.Kind == "weapon" && !slices.Contains(banner.Weapons5, selection.Featured) {
+	if selection.Featured != "" && !slices.Contains(simulationUps(*s.Deck, banner, selection.Kind), selection.Featured) {
 		return gameError("input_invalid", "所选目标不在参考卡池内。")
 	}
 	state.Active = selection.Kind
 	state.Selections[selection.Kind] = selection
+	return nil
+}
+func simulationUps(deck SimulationDeck, banner SimulationBanner, kind string) []string {
+	switch kind {
+	case "character":
+		return banner.Characters5
+	case "weapon":
+		return banner.Weapons5
+	case "collab_character":
+		return deck.CollabCharacters
+	case "collab_weapon":
+		return deck.CollabWeapons
+	}
 	return nil
 }
 func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSelection, now time.Time) SimulationDraw {
@@ -254,7 +274,7 @@ func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSe
 		pity.Four++
 		state.WeeklyTop++
 		up := 5000
-		if selection.Kind == "weapon" {
+		if selection.Kind == "weapon" || selection.Kind == "collab_weapon" {
 			up = 7500
 		}
 		if pity.UpFive {
@@ -268,7 +288,10 @@ func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSe
 			out.Guaranteed = pity.UpFive
 			pity.UpFive = false
 			out.Name = selection.Featured
-			if selection.Kind == "character" {
+			if out.Name == "" {
+				out.Name = pick(simulationUps(deck, banner, selection.Kind))
+			}
+			if selection.Kind == "character" || selection.Kind == "collab_character" {
 				out.Item = "character"
 			}
 
@@ -276,7 +299,7 @@ func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSe
 			if selection.Kind != "standard" {
 				pity.UpFive = true
 			}
-			if selection.Kind == "weapon" || selection.Kind == "standard" && random(2) == 1 {
+			if selection.Kind == "weapon" || selection.Kind == "collab_weapon" || selection.Kind == "standard" && random(2) == 1 {
 				out.Name = pick(deck.FiveWeapons)
 			} else {
 				out.Name = pick(deck.FiveCharacters)
@@ -293,7 +316,7 @@ func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSe
 			if pity.UpFour {
 				up = 10000
 			}
-			if selection.Kind == "standard" {
+			if selection.Kind != "character" && selection.Kind != "weapon" {
 				up = 0
 			}
 			if chance(up) {
@@ -307,8 +330,8 @@ func (s *SimulationStore) drawOne(state *SimulationState, selection SimulationSe
 					out.Name = pick(banner.Weapons4)
 				}
 			} else {
-				pity.UpFour = selection.Kind != "standard"
-				if (selection.Kind == "character") && random(2) == 0 {
+				pity.UpFour = selection.Kind == "character" || selection.Kind == "weapon"
+				if (selection.Kind == "character" || selection.Kind == "collab_character") && random(2) == 0 {
 					out.Name = pick(deck.FourCharacters)
 					out.Item = "character"
 				} else {
@@ -368,7 +391,10 @@ func (s *SimulationStore) Action(scope, action string, input map[string]any, now
 		if input["confirm"] != true {
 			return nil, gameError("input_invalid", "重置模拟需要明确确认。")
 		}
-		state.Pools = map[string]*SimulationPity{"character": {}, "weapon": {}, "standard": {}}
+		state.Pools = map[string]*SimulationPity{}
+		for _, kind := range simulationKinds {
+			state.Pools[kind] = &SimulationPity{}
+		}
 		state.Owned = map[string]int64{}
 		state.History = []SimulationDraw{}
 		state.Total = 0
@@ -451,14 +477,57 @@ func simulationView(game Game, result map[string]any) View {
 		}
 	} else {
 		pools := result["pools"].(map[string]*SimulationPity)
-		for _, kind := range []string{"character", "weapon", "standard"} {
+		for _, kind := range simulationKinds {
 			p := pools[kind]
-			v.Rows = append(v.Rows, Row{Label: map[string]string{"character": "角色", "weapon": "武器/光锥", "standard": "常驻"}[kind], Value: fmt.Sprintf("连续 %d 抽未出五星 · 连续 %d 抽未出四星 · 下次五星目标池保证 %t", p.Five, p.Four, p.UpFive)})
+			v.Rows = append(v.Rows, Row{Label: map[string]string{"character": "角色", "weapon": "武器/光锥", "standard": "常驻", "collab_character": "联动角色", "collab_weapon": "联动光锥"}[kind], Value: fmt.Sprintf("连续 %d 抽未出五星 · 连续 %d 抽未出四星 · 下次五星目标池保证 %t", p.Five, p.Four, p.UpFive)})
 		}
 	}
 	v.Rows = append(v.Rows, Row{Label: "今日剩余模拟次数", Value: asText(result["daily_remaining"])})
 	return v
 }
+func simulationKind(word string) string {
+	if strings.Contains(word, "联动") {
+		if strings.Contains(word, "光锥") {
+			return "collab_weapon"
+		}
+		return "collab_character"
+	}
+	if strings.Contains(word, "角色") {
+		return "character"
+	}
+	if strings.Contains(word, "光锥") {
+		return "weapon"
+	}
+	if strings.Contains(word, "常驻") {
+		return "standard"
+	}
+	return "character"
+}
+
+// Chat follows the current started reference banner on every draw, including
+// after a deck update. Management selections remain explicit.
+func simulationChatSelection(deck SimulationDeck, kind string, now time.Time) SimulationSelection {
+	selection := SimulationSelection{Kind: kind}
+	if kind != "character" && kind != "weapon" {
+		return selection
+	}
+	stamp := now.In(chinaZone).Format(time.DateTime)
+	pools := []PoolInfo{}
+	for _, banner := range deck.Banners {
+		if banner.From <= stamp {
+			pools = append(pools, banner.PoolInfo)
+		}
+	}
+	pool, _ := currentPool(pools, now)
+	for _, banner := range deck.Banners {
+		if banner.From == pool.From && banner.Version == pool.Version && banner.Half == pool.Half {
+			selection.BannerID = banner.ID
+			break
+		}
+	}
+	return selection
+}
+
 func (a *App) simulationCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
 	status, err := a.simulationAction(event, "simulation.status", nil)
 	if err != nil {
@@ -475,16 +544,9 @@ func (a *App) simulationCommand(ctx context.Context, event *rayleabot.EventConte
 		return event.SendText("模拟历史与保底已重置，当天已用次数保留。")
 	}
 	if command == "simulation" {
-		// As upstream, the word picks the pool: the character pool unless it
-		// names 光锥 or 常驻.
 		word := event.Event.Command()
-		kind := "character"
-		if strings.Contains(word, "光锥") {
-			kind = "weapon"
-		} else if strings.Contains(word, "常驻") {
-			kind = "standard"
-		}
-		selection := status["selections"].(map[string]SimulationSelection)[kind]
+		kind := simulationKind(word)
+		selection := simulationChatSelection(*a.Simulation.Deck, kind, a.now())
 		if _, err = a.simulationAction(event, "simulation.select", asMap(selection)); err != nil {
 			return event.SendText(friendlyError(err))
 		}

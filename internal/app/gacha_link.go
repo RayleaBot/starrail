@@ -290,7 +290,7 @@ func (a *App) updateByLink(ctx context.Context, event *rayleabot.EventContext, o
 		a.Links.forgetUpdate(owned.uid)
 		return event.SendText("抽卡链接已过期，请重新获取并绑定\n输入【" + prefix + "抽卡帮助】以查看抽卡链接获取方法")
 	}
-	return event.SendText("跃迁数据获取成功，你可以使用：\n" + prefix + "跃迁分析\n" + prefix + "角色分析\n" + prefix + "光锥分析\n" + prefix + "常驻分析\n查看具体的跃迁数据")
+	return event.SendText("跃迁数据获取成功，你可以使用：\n" + prefix + "跃迁分析\n" + prefix + "角色分析\n" + prefix + "光锥分析\n" + prefix + "常驻分析\n" + prefix + "联动分析\n查看具体的跃迁数据")
 }
 
 // readLink merges every page of a link's records into the UID's archive,

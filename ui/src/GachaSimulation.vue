@@ -6,21 +6,21 @@ import { formatTime, useOperation } from './shell/status'
 
 // 模拟抽卡: the management page's own simulation archive, drawn against a
 // reference banner; a draw keeps its request ref so a retry never double-counts.
-type Kind = 'character' | 'weapon' | 'standard'
-interface Selection { kind: Kind; banner_id: string; featured: string; fate_target: string; fate_limit: number }
+type Kind = 'character' | 'weapon' | 'standard' | 'collab_character' | 'collab_weapon'
+interface Selection { kind: Kind; banner_id: string; featured: string }
 interface Banner { id: string; version: string; half: string; from: string; characters5: string[]; weapons5: string[] }
-interface Draw { name: string; rarity: number; kind: Kind; featured: boolean; guaranteed: boolean; fate: boolean; interval: number; index: number; time_ms: number }
-interface Status { model: string; active: Kind; selections: Record<Kind, Selection>; pools: Record<Kind, { five: number; four: number; up_five: boolean; up_four: boolean; fate: number }>; deck: { banners: Banner[] }; total: number; daily_used: number; daily_limit: number; daily_remaining: number; history: Draw[]; owned: Record<string, number>; batch: { draws: Draw[]; selection: Selection } | null }
+interface Draw { name: string; rarity: number; kind: Kind; featured: boolean; guaranteed: boolean; interval: number; index: number; time_ms: number }
+interface Status { model: string; active: Kind; selections: Record<Kind, Selection>; pools: Record<Kind, { five: number; four: number; up_five: boolean; up_four: boolean }>; deck: { banners: Banner[] }; total: number; daily_used: number; daily_limit: number; daily_remaining: number; history: Draw[]; owned: Record<string, number>; batch: { draws: Draw[]; selection: Selection } | null }
 const shell = useShell()
 const { busy, error, notice, run } = useOperation('模拟操作未完成。')
-const status = ref<Status | null>(null), draft = ref<Selection>({ kind: 'character', banner_id: '', featured: '', fate_target: '', fate_limit: 2 }), quota = ref(100), last = ref<Draw[]>([]), confirmReset = ref(false), pending = ref<{ count: number; request_ref: string } | null>(null)
-const names: Record<Kind, string> = { character: '角色', weapon: '光锥', standard: '常驻' }
+const status = ref<Status | null>(null), draft = ref<Selection>({ kind: 'character', banner_id: '', featured: '' }), quota = ref(100), last = ref<Draw[]>([]), confirmReset = ref(false), pending = ref<{ count: number; request_ref: string } | null>(null)
+const names: Record<Kind, string> = { character: '角色', weapon: '光锥', standard: '常驻', collab_character: '联动角色', collab_weapon: '联动光锥' }
 const banner = computed(() => status.value?.deck.banners.find(item => item.id === draft.value.banner_id))
 const dirty = computed(() => { const current = status.value?.selections[draft.value.kind]; return !current || status.value!.active !== draft.value.kind || current.banner_id !== draft.value.banner_id || current.featured !== draft.value.featured })
 const inventory = computed(() => Object.entries(status.value?.owned ?? {}).sort((a, b) => b[1] - a[1]))
 watch(() => draft.value.kind, kind => { if (status.value) draft.value = { ...status.value.selections[kind] }; last.value = [] })
-watch([() => draft.value.kind, () => draft.value.banner_id, () => draft.value.featured, () => draft.value.fate_target, () => draft.value.fate_limit], () => { last.value = [] })
-function chooseBanner() { if (!banner.value) return; draft.value.featured = draft.value.kind === 'character' ? banner.value.characters5[0]! : banner.value.weapons5[0]!; draft.value.fate_target = ''; last.value = [] }
+watch([() => draft.value.kind, () => draft.value.banner_id, () => draft.value.featured], () => { last.value = [] })
+function chooseBanner() { if (!banner.value) return; draft.value.featured = draft.value.kind === 'character' ? banner.value.characters5[0]! : banner.value.weapons5[0]!; last.value = [] }
 function accept(value: Status) { status.value = value; draft.value = { ...value.selections[value.active] }; quota.value = value.daily_limit; if (value.batch) last.value = value.batch.draws }
 async function load() { accept(await shell.invoke<Status>('simulation.status')) }
 async function select() { await run(async () => { accept(await shell.invoke<Status>('simulation.select', { ...draft.value })) }, '模拟卡池已保存。') }
@@ -43,14 +43,14 @@ void run(load)
       <form class="field-grid" @submit.prevent="select">
         <fieldset :disabled="busy || !!pending">
           <label class="field"><span>模拟种类</span><select v-model="draft.kind"><option v-for="(name, kind) in names" :key="kind" :value="kind">{{ name }}</option></select></label>
-          <label v-if="draft.kind !== 'standard'" class="field"><span>参考期次</span><select v-model="draft.banner_id" @change="chooseBanner"><option v-for="item in status.deck.banners" :key="item.id" :value="item.id">{{ item.version }} · {{ item.half }} · {{ item.from.slice(0, 10) }}</option></select></label>
+          <label v-if="draft.kind === 'character' || draft.kind === 'weapon'" class="field"><span>参考期次</span><select v-model="draft.banner_id" @change="chooseBanner"><option v-for="item in status.deck.banners" :key="item.id" :value="item.id">{{ item.version }} · {{ item.half }} · {{ item.from.slice(0, 10) }}</option></select></label>
           <label v-if="draft.kind === 'character' || draft.kind === 'weapon'" class="field"><span>模拟目标</span><select v-model="draft.featured"><option v-for="name in (draft.kind === 'character' ? banner?.characters5 : banner?.weapons5) ?? []" :key="name" :value="name">{{ name }}</option></select></label>
           <div class="actions"><button type="submit" :disabled="!dirty">保存模拟卡池</button><span v-if="dirty" class="hint">先保存卡池选择，再进行模拟。</span></div>
         </fieldset>
       </form>
       <div class="actions"><button class="primary" type="button" :disabled="busy || dirty || !!pending || status.daily_remaining < 1" @click="draw(1)">模拟单抽</button><button class="primary" type="button" :disabled="busy || dirty || !!pending || status.daily_remaining < 10" @click="draw(10)">模拟十连</button></div>
       <StatusLine v-if="pending" kind="attention" text="上次请求结果尚未确认，可用同一请求重试以避免重复计数。"><template #actions><div class="actions"><button class="compact" type="button" :disabled="busy" @click="draw(pending!.count)">重试同一模拟请求</button><button class="compact" type="button" :disabled="busy" @click="endRetry">刷新统计并结束本次尝试</button></div></template></StatusLine>
-      <ul v-if="last.length" class="draw-results" aria-label="本次模拟结果"><li v-for="(item, index) in last" :key="index"><strong>{{ item.name }}</strong><span>{{ item.rarity }} 星{{ item.featured ? ' · 目标池' : '' }}{{ item.fate ? ' · 定轨' : '' }}{{ item.guaranteed ? ' · 保证目标池' : '' }}</span></li></ul>
+      <ul v-if="last.length" class="draw-results" aria-label="本次模拟结果"><li v-for="(item, index) in last" :key="index"><strong>{{ item.name }}</strong><span>{{ item.rarity }} 星{{ item.featured ? ' · 目标池' : '' }}{{ item.guaranteed ? ' · 保证目标池' : '' }}</span></li></ul>
       <div class="table-wrap"><table><thead><tr><th>卡池</th><th class="num">连续未出五星</th><th class="num">连续未出四星</th><th>下次五星</th></tr></thead><tbody><tr v-for="(name, kind) in names" :key="kind"><td>{{ name }}</td><td class="num">{{ status.pools[kind].five }} 抽</td><td class="num">{{ status.pools[kind].four }} 抽</td><td>{{ status.pools[kind].up_five ? '保证来自目标池' : '按参考模型判定' }}</td></tr></tbody></table></div>
       <details>
         <summary>模拟获得物品 · {{ inventory.length }} 种</summary>

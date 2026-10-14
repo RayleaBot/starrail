@@ -23,7 +23,7 @@ func parseGameData(assets Assets) (*GameData, error) {
 		if err := json.Unmarshal(assets.Simulation, deck); err != nil {
 			return nil, fmt.Errorf("simulation data is invalid")
 		}
-		for _, items := range [][]string{deck.FiveCharacters, deck.FiveWeapons, deck.FourCharacters, deck.FourWeapons, deck.ThreeWeapons} {
+		for _, items := range [][]string{deck.FiveCharacters, deck.FiveWeapons, deck.FourCharacters, deck.FourWeapons, deck.ThreeWeapons, deck.CollabCharacters, deck.CollabWeapons} {
 			if len(items) == 0 {
 				return nil, fmt.Errorf("simulation data has an empty pool")
 			}

@@ -10,6 +10,38 @@ import (
 	"github.com/RayleaBot/starrail/internal/gacha"
 )
 
+func TestGachaGroupsCollaborationAndMaintenanceGaps(t *testing.T) {
+	context := app.ImageContext{Game: app.Game{Data: &app.GameData{Resources: app.GameResources{
+		CollabPools: []app.PoolInfo{
+			{Version: "3.4", Half: "联动", Name: "一期", GachaType: "21", From: "2025-07-11 12:00:00", To: "2036-01-01 00:00:00", Characters5: []string{"Saber", "Archer"}},
+			{Version: "4.4", Half: "联动", Name: "二期", GachaType: "21", From: "2026-07-24 12:00:00", To: "2036-01-01 00:00:00", Characters5: []string{"远坂凛", "吉尔伽美什"}},
+		},
+		Pools: []app.PoolInfo{{Version: "2.0", Name: "跃迁名", From: "2024-02-06 12:00:00", To: "2024-02-26 14:59:59", Characters5: []string{"花火"}}},
+	}}}}
+	for _, tc := range []struct{ word, kind, at, name, version string }{
+		{"联动记录", "21", "2026-08-01 12:00:00", "远坂凛", "4.4"},
+		{"联动记录", "21", "2025-08-01 12:00:00", "Saber", "3.4"},
+		{"角色记录", "11", "2024-02-26 20:00:00", "花火", "2.0"},
+		{"角色记录", "11", "2024-02-28 12:00:00", "花火", ""},
+	} {
+		image, ok := Gacha(context, app.GachaImage{Word: tc.word, Archive: gacha.Archive{Records: []gacha.Record{{ID: "1", GachaType: tc.kind, Time: tc.at, Name: tc.name, Rank: "5", ItemType: "角色"}}}})
+		if !ok {
+			t.Fatal(tc)
+		}
+		group := image.Data["lists"].([]any)[0].(map[string]any)["groups"].([]any)[0].(map[string]any)
+		pool := group["pool"].(map[string]any)
+		if app.Text(pool["version"]) != tc.version || group["records"].([]any)[0].(map[string]any)["up"] != (tc.version != "") {
+			t.Fatal(tc, group)
+		}
+		if tc.version != "" && pool["name"] == "" {
+			t.Fatal(pool)
+		}
+		if tc.kind == "21" && len(image.Data["pities"].([]any)) != 1 {
+			t.Fatal(image.Data["pities"])
+		}
+	}
+}
+
 func TestGachaSelectionReadsTheWord(t *testing.T) {
 	for _, tc := range []struct {
 		words []string
@@ -68,7 +100,11 @@ func TestGachaOverviewAndCollaborationPages(t *testing.T) {
 		total    int
 	}{
 		{"全部记录", true, []string{"21", "22"}, 2},
-		{"联动记录", false, []string{"21", "22"}, 2},
+		{"联动记录", false, []string{"21"}, 1},
+		{"光锥联动记录", false, []string{"22"}, 1},
+		{"联动光锥记录", false, []string{"22"}, 1},
+		{"联动光锥分析", false, []string{"22"}, 1},
+		{"联动武器记录", false, []string{"22"}, 1},
 		{"新手记录", false, []string{"2"}, 1},
 	} {
 		image, ok := Gacha(app.ImageContext{}, app.GachaImage{Word: tc.word, Archive: archive})
@@ -102,7 +138,7 @@ func TestGachaFollowsStarRailPlugin(t *testing.T) {
 	add(5, "锋镝", "3", "光锥")
 
 	image, ok := Gacha(context, app.GachaImage{UID: "100000001", Word: "跃迁记录", Archive: gacha.Archive{Records: records}})
-	if !ok || image.Data["overview"] != true || image.Data["total"] != 85 || image.Data["pity_role"] != 5 || image.Data["current_total"] != 0 {
+	if !ok || image.Data["overview"] != true || image.Data["total"] != 85 || image.Data["pities"].([]any)[0].(map[string]any)["count"] != 5 || image.Data["pities"].([]any)[0].(map[string]any)["label"] != "角色未出五星" || image.Data["current_total"] != 0 {
 		t.Fatalf("data = %v", image.Data)
 	}
 	if hold := image.Data["hold"].([2]int); hold != [2]int{1, 1} {

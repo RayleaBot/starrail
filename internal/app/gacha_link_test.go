@@ -185,7 +185,7 @@ func TestGachaLinkUpdateReadsTheLinkAgain(t *testing.T) {
 	host.sent = nil
 	end, _ := host.message("*更新跃迁记录", "更新跃迁记录")
 	texts := sentTexts(t, host, "private", "u")
-	if end["type"] != "result" || len(host.detached) != 2 || len(texts) != 2 || texts[0] != "正在获取[100000001]的跃迁数据..." || texts[1] != "跃迁数据获取成功，你可以使用：\n*跃迁分析\n*角色分析\n*光锥分析\n*常驻分析\n查看具体的跃迁数据" {
+	if end["type"] != "result" || len(host.detached) != 2 || len(texts) != 2 || texts[0] != "正在获取[100000001]的跃迁数据..." || texts[1] != "跃迁数据获取成功，你可以使用：\n*跃迁分析\n*角色分析\n*光锥分析\n*常驻分析\n*联动分析\n查看具体的跃迁数据" {
 		t.Fatalf("the update ended with %v, answered %q", end, texts)
 	}
 	end, _ = host.message("*更新抽卡记录", "更新抽卡记录")

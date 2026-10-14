@@ -14,16 +14,16 @@ const simulationImages = "resources/gachasimulation/resources/images/"
 var simulationElements = map[string]string{"火": "Fire", "冰": "Ice", "虚数": "Imaginary", "物理": "Physical", "量子": "Quantum", "雷": "Thunder", "风": "Wind"}
 
 // simulationPaths are miao's light cone directories with StarRail-plugin's
-// path icon for each; the two newer paths use its BgPaths pictures.
+// path icon for each; all nine paths use its weaponlife pictures.
 var simulationPaths = [][2]string{{"毁灭", "毁灭"}, {"巡猎", "巡猎"}, {"智识", "智识"}, {"同谐", "同谐"}, {"虚无", "虚无"}, {"存护", "存护"}, {"丰饶", "丰饶"},
-	{"记忆", "BgPathsMemory"}, {"欢愉", "BgPathsJoy"}}
+	{"记忆", "记忆"}, {"欢愉", "欢愉"}}
 
 // GachaSimulation draws 十连 the way StarRail-plugin's gachasimulation page
 // does: the draws in order on three tilted rows of three, four and three
 // cards, each coloured by rarity, characters with their element and
 // light cones with their path, and five-stars with the pulls they took.
-// StarRail-plugin's pictures cover only its own old pool; a character or light
-// cone it lacks shows miao's splash or icon instead.
+// StarRail-plugin's pictures cover 4.6; a missing character or light cone
+// uses miao's splash or icon instead.
 func GachaSimulation(context app.ImageContext, simulation app.SimulationImage) (app.Image, bool) {
 	if context.Artwork == nil || len(simulation.Draws) == 0 {
 		return app.Image{}, false

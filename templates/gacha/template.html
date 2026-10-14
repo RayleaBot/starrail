@@ -16,8 +16,7 @@
           <div class="row">
             <div class="col"><div>{{ .total }}<span>抽</span><p>累计已抽</p></div></div>
             <div class="col"><div>{{ .current_total }}<span>抽</span><p>本期已抽</p></div></div>
-            <div class="col"><div>{{ .pity_role }}<span>抽</span><p>角色未出五星</p></div></div>
-            <div class="col"><div>{{ .pity_cone }}<span>抽</span><p>光锥未出五星</p></div></div>
+            {{ range .pities }}<div class="col"><div>{{ .count }}<span>抽</span><p>{{ .label }}</p></div></div>{{ end }}
           </div>
           {{ if .overview }}
           <div class="row">
@@ -45,7 +44,7 @@
       {{ range .lists }}
       {{ range .groups }}
       <div class="card-item">
-        <div class="card-item-head">{{ .pool.version }} {{ .pool.half }}<span class="card-item-head-tag">{{ .total }}抽</span></div>
+        <div class="card-item-head">{{ .pool.version }} {{ .pool.half }}{{ with .pool.name }} - {{ . }}{{ end }}<span class="card-item-head-tag">{{ .total }}抽</span></div>
         <div class="card-item-content">
           <ul>
             {{ range .records }}{{ if .show }}<li class="{{ .class }}{{ if .up }} item-up{{ end }}"><img{{ with .icon }} data-render-resource="{{ . }}"{{ end }} alt="{{ .name }}"><div class="number">{{ .until }}</div></li>{{ end }}{{ end }}
