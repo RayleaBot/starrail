@@ -607,7 +607,13 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		view.Image = a.entryImage(ctx, event, command, entry)
 	case "catalog":
 		query := strings.Join(args, " ")
-		entries := a.Catalog.Search(query, "", 20, a.aliasMap(event))
+		aliases := a.aliasMap(event)
+		var entries []Entry
+		if entry, ok := a.miaoCharacter(query, aliases); ok {
+			entries = []Entry{entry}
+		} else {
+			entries = a.Catalog.Search(query, "", 20, aliases)
+		}
 		if len(entries) == 1 {
 			view = EntryView(a.Game, entries[0])
 			view.Image = a.entryImage(ctx, event, command, entries[0])

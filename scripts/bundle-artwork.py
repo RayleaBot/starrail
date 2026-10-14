@@ -31,6 +31,8 @@ BUNDLES = {
         "resources/wiki/imgs/*",
         "resources/gacha/imgs/date-icon.webp",
         "resources/meta-sr/public/icons/*",
+        "resources/meta-sr/material/data.json",
+        "resources/meta-sr/material/*/*.webp",
         # Panels, rankings, the roster and the wiki draw every character's
         # splash, face, trace and eidolon icons.
         "resources/meta-sr/character/*/data.json",

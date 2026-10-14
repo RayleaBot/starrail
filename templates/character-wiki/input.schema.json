@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "elem",
+    "name",
+    "abbr",
+    "desc",
+    "path",
+    "element",
+    "allegiance",
+    "cncv",
+    "jpcv",
+    "splash",
+    "mark",
+    "star",
+    "attr",
+    "materials"
+  ],
+  "properties": {
+    "elem": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "abbr": {
+      "type": "string"
+    },
+    "desc": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "element": {
+      "type": "string"
+    },
+    "allegiance": {
+      "type": "string"
+    },
+    "cncv": {
+      "type": "string"
+    },
+    "jpcv": {
+      "type": "string"
+    },
+    "splash": {
+      "type": "string"
+    },
+    "mark": {
+      "type": "string"
+    },
+    "star": {
+      "type": "integer"
+    },
+    "attr": {
+      "type": "array"
+    },
+    "materials": {
+      "type": "array"
+    },
+    "render_footer": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,11 @@
+{
+  "id": "character-wiki",
+  "name": "星铁角色图鉴",
+  "description": "角色图鉴与资料，布局参照 miao-plugin wiki/character-wiki 的星铁模式",
+  "version": "1",
+  "entry_html": "template.html",
+  "stylesheet": "styles.css",
+  "input_schema": "input.schema.json",
+  "width": 840,
+  "height": 1000
+}

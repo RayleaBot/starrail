@@ -1,7 +1,9 @@
 package images
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"html"
 	"regexp"
 	"slices"
@@ -32,10 +34,14 @@ var (
 
 // wikiCharacter is the part of miao's Star Rail data.json the page reads.
 type wikiCharacter struct {
-	Name, Desc, Elem string
-	BaseAttr         map[string]float64
-	TalentCons       map[string]any
-	Talent           map[string]struct {
+	Name, Desc, Elem               string
+	Weapon, Allegiance, Cncv, Jpcv string
+	Star                           int
+	Sp                             float64
+	Materials                      wikiMaterials `json:"talent-materials"`
+	BaseAttr                       map[string]float64
+	TalentCons                     map[string]any
+	Talent                         map[string]struct {
 		Name, Desc string
 		Tables     map[string]struct {
 			Name   string
@@ -54,7 +60,7 @@ type wikiCharacter struct {
 // list the abilities and traces, 星魂 the Eidolons. The page reads miao's
 // character data, which comes with the downloaded miao artwork.
 func Entry(context app.ImageContext, page app.EntryImage) (app.Image, bool) {
-	if page.Command != "talent-wiki" || page.Entry.Kind != "character" || context.Artwork == nil {
+	if (page.Command != "talent-wiki" && page.Command != "catalog") || page.Entry.Kind != "character" || context.Artwork == nil {
 		return app.Image{}, false
 	}
 	raw, err := context.Artwork.Open("miao-plugin", "resources/meta-sr/character/"+page.Entry.Name+"/data.json")
@@ -62,11 +68,93 @@ func Entry(context app.ImageContext, page app.EntryImage) (app.Image, bool) {
 		return app.Image{}, false
 	}
 	var character wikiCharacter
-	if json.Unmarshal(raw, &character) != nil || len(character.Talent) == 0 {
+	if json.Unmarshal(raw, &character) != nil {
+		return app.Image{}, false
+	}
+	if page.Command == "catalog" {
+		return characterWiki(context, character, page.Entry)
+	}
+	if len(character.Talent) == 0 {
 		return app.Image{}, false
 	}
 	cons := strings.Contains(page.Word, "星魂") || strings.Contains(page.Word, "命")
 	return characterTalent(context, character, cons), true
+}
+
+// The JSON object's order is the material order in miao's character wiki.
+type wikiMaterials []struct{ Name, Count string }
+
+func (m *wikiMaterials) UnmarshalJSON(raw []byte) error {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if _, err := decoder.Token(); err != nil {
+		return err
+	}
+	for decoder.More() {
+		name, err := decoder.Token()
+		if err != nil {
+			return err
+		}
+		var count any
+		if err := decoder.Decode(&count); err != nil {
+			return err
+		}
+		*m = append(*m, struct{ Name, Count string }{name.(string), fmt.Sprint(count)})
+	}
+	_, err := decoder.Token()
+	return err
+}
+
+func characterWiki(context app.ImageContext, character wikiCharacter, entry app.Entry) (app.Image, bool) {
+	raw, err := context.Artwork.Open("miao-plugin", "resources/meta-sr/material/data.json")
+	if err != nil {
+		return app.Image{}, false
+	}
+	type material struct {
+		Name, Type string
+		Star       int
+	}
+	var metadata map[string]material
+	if json.Unmarshal(raw, &metadata) != nil {
+		return app.Image{}, false
+	}
+	byName := map[string]material{}
+	for _, item := range metadata {
+		byName[item.Name] = item
+	}
+	resources := &app.ImageResources{Context: context}
+	for _, item := range poolArtwork {
+		resources.Artwork(item[0], "miao-plugin", item[1])
+	}
+	for star := 1; star <= 5; star++ {
+		n := strconv.Itoa(star)
+		resources.Artwork("common-item-bg"+n+"-o", "miao-plugin", "resources/common/item/bg"+n+"-o.png")
+	}
+	elem := elementClasses[character.Elem]
+	resources.Artwork("common-bg-bg-"+elem, "miao-plugin", "resources/common/bg/bg-"+elem+".webp")
+	splash := resources.Artwork("splash", "miao-plugin", "resources/meta-sr/character/"+entry.Name+"/imgs/splash.webp")
+	materials := []any{}
+	for _, item := range character.Materials {
+		meta := byName[item.Name]
+		icon := resources.Artwork("material-"+strconv.Itoa(len(materials)), "miao-plugin", "resources/meta-sr/material/"+meta.Type+"/"+item.Name+".webp")
+		materials = append(materials, map[string]any{"label": item.Name, "num": item.Count, "type": meta.Type, "star": meta.Star, "icon": icon})
+	}
+	attrs := []any{}
+	for _, stat := range [][2]string{{"hp", "基础生命"}, {"atk", "基础攻击"}, {"def", "基础防御"}, {"speed", "速度"}, {"aggro", "嘲讽"}} {
+		attrs = append(attrs, map[string]any{"title": stat[1], "value": miaoComma(character.BaseAttr[stat[0]], 1)})
+	}
+	if character.Sp != 0 {
+		attrs = append(attrs, map[string]any{"title": "能量上限", "value": strconv.FormatFloat(character.Sp, 'f', -1, 64)})
+	}
+	abbr := entry.Abbr
+	if abbr == "" {
+		abbr = entry.Name
+	}
+	return app.Image{Template: "character-wiki", Data: map[string]any{
+		"elem": elementClasses[character.Elem], "name": entry.Name, "abbr": abbr, "desc": officialRichText(strings.ReplaceAll(character.Desc, "\n", "<br>")),
+		"path": character.Weapon, "element": character.Elem, "allegiance": character.Allegiance, "cncv": character.Cncv, "jpcv": character.Jpcv,
+		"star": character.Star, "attr": attrs, "materials": materials, "splash": splash, "mark": context.Game.Prefix,
+	}, Resources: resources.List}, true
 }
 
 // characterTalent draws miao's wiki/character-talent in its Star Rail mode:

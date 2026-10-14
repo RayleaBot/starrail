@@ -2,6 +2,30 @@ package app
 
 import "testing"
 
+func TestCatalogCommandPrefersResolvedCharacter(t *testing.T) {
+	a := pluginApp(t)
+	var drawn Entry
+	a.entryPage = func(_ ImageContext, page EntryImage) (Image, bool) {
+		drawn = page.Entry
+		return Image{}, false
+	}
+	host := newSDKHost(t, a, nil)
+	for _, name := range []string{"三月七", "丹恒", "姬子", "瓦尔特", "卡芙卡", "银狼", "黑塔", "希儿", "停云", "刃", "镜流", "藿藿", "加拉赫", "砂金", "花火", "黑天鹅", "知更鸟", "流萤", "乱破"} {
+		for _, suffix := range []string{"图鉴", "资料"} {
+			drawn = Entry{}
+			host.message("*"+name+suffix, name+suffix)
+			if drawn.Name != name || drawn.Kind != "character" {
+				t.Errorf("%s%s resolved to %+v", name, suffix, drawn)
+			}
+		}
+	}
+	drawn = Entry{}
+	host.message("*丹图鉴", "丹图鉴")
+	if drawn.ID != "" {
+		t.Fatal("ambiguous search drew a character", drawn)
+	}
+}
+
 func TestResolvePrefersTheExactName(t *testing.T) {
 	catalog, err := ParseCatalog([]byte(`{"version":"test","entries":[
 		{"id":"1002","name":"丹恒","kind":"character"},

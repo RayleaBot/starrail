@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><style>{{ .Stylesheet }}</style></head>
+<body class="sr-wiki elem-{{ .elem }} default-mode">
+<div class="container elem-bg" id="container">
+  <div class="basic">
+    <div class="main-pic" data-render-resource="{{ .splash }}"></div>
+    <div class="detail">
+      <div class="char-title">
+        <div class="char-name">{{ .name }}</div>
+        <div class="char-lv char-desc">{{ safeHTML .desc }}</div>
+      </div>
+      <div class="char-meta">
+        <div class="cont">
+          <ul class="attr char-attr">
+            <li><strong>命途</strong><span>{{ .path }}</span></li>
+            <li><strong>属性</strong><span>{{ .element }}</span></li>
+            <li><strong>归属</strong><span>{{ .allegiance }}</span></li>
+            <li><strong>中文CV</strong><span>{{ .cncv }}</span></li>
+            <li><strong>日文CV</strong><span>{{ .jpcv }}</span></li>
+          </ul>
+        </div>
+        <div class="cont">
+          <div class="cont-title">80级基础属性（{{ .star }}星）</div>
+          <ul class="attr char-attr">{{ range .attr }}<li><strong>{{ .title }}</strong><span>{{ .value }}</span></li>{{ end }}</ul>
+        </div>
+      </div>
+    </div>
+    <div class="material-list">
+      {{ range .materials }}
+      <div class="material-{{ .type }}">
+        <div class="num">{{ .num }}</div>
+        <div class="item-card material-card">
+          <div class="item-icon star{{ .star }} opacity-bg"><div class="item-bg"{{ with .icon }} data-render-resource="{{ . }}"{{ end }}></div></div>
+          <div class="item-title">{{ .label }}</div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+  <div class="wiki-cont"><div class="talent-notice">输入<strong>{{ .mark }}{{ .abbr }}天赋、{{ .mark }}{{ .abbr }}星魂</strong>可查看详细天赋/星魂信息</div></div>
+  {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
+</div>
+</body>
+</html>
