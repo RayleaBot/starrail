@@ -1390,7 +1390,7 @@
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^.+[换变改].+$"
+        "pattern": "^.+换.+$"
       }
     },
     {

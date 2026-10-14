@@ -15,6 +15,11 @@ func TestPanelChangeReadsMiaoWording(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for _, word := range []string{"希儿变满命", "希儿改满命"} {
+		if _, ok := parsePanelChange(catalog, nil, word); ok {
+			t.Errorf("accepted %s", word)
+		}
+	}
 	change, ok := parsePanelChange(catalog, nil, "希儿换80级5叠影夜色换快枪手4+封印站2换天赋6 10 10 10")
 	if !ok || change.CharacterID != "1102" || change.Weapon == nil || change.Weapon.ID != "23001" || change.Weapon.Level != 80 || change.Weapon.Refinement != 5 {
 		t.Fatalf("light cone: %+v", change)
