@@ -21,11 +21,6 @@ var divergentArtwork = [][2]string{
 // divergentTitles are upstream's names for the weekly difficulty IDs.
 var divergentTitles = []string{"", "I", "II", "III", "IV", "V"}
 
-var (
-	divergentIndexWord = regexp.MustCompile(`(一|二|三)`)
-	divergentIndexes   = map[string]int{"一": 1, "二": 2, "三": 3}
-)
-
 // divergentHeader is the header every Divergent Universe page shares: the
 // equilibrium level, this week's extra points and the current star rank.
 func divergentHeader(resources *challengeResources, result app.QueryResult) map[string]any {
@@ -89,16 +84,15 @@ func Divergent(context app.ImageContext, result app.QueryResult) (app.Image, boo
 }
 
 // DivergentNormal draws one Protocol run the way StarRail-plugin's
-// rogueTournNormal page does; the command word picks the first, second or
-// third most recent run.
+// rogueTournNormal page does; digits in the command pick the run.
 func DivergentNormal(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	detail, _ := result.Data["normal_detail"].(map[string]any)
 	return divergentRun(context, result, detail, "差分宇宙·常规演算", false)
 }
 
 // DivergentWeek draws one weekly run the way StarRail-plugin's
-// rogueTournWeek page does: 上期 or 上周 reads last week, the command word
-// picks the run, and the week's name and effects head the page.
+// rogueTournWeek page does: 上期 or 上周 reads last week, digits in the command
+// pick the run, and the week's name and effects head the page.
 func DivergentWeek(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	key, period := "cur_week_detail", "本期"
 	if strings.Contains(context.Word, "上期") || strings.Contains(context.Word, "上周") {
@@ -114,10 +108,7 @@ func DivergentWeek(context app.ImageContext, result app.QueryResult) (app.Image,
 // run does not exist.
 func divergentRun(context app.ImageContext, result app.QueryResult, detail map[string]any, title string, weekly bool) (app.Image, bool) {
 	records, _ := detail["records"].([]any)
-	index := 1
-	if match := divergentIndexWord.FindStringSubmatch(context.Word); match != nil {
-		index = divergentIndexes[match[1]]
-	}
+	index, _ := app.ArchiveArgs(context.Word)
 	if len(records) < index {
 		return app.Image{}, false
 	}

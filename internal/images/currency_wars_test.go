@@ -15,10 +15,10 @@ func TestCurrencyWarsArchiveFollowsStarRailPlugin(t *testing.T) {
 			"damage_list":[{"id":1212,"damage":"8000","damage_type":"DamageTypeAvatar"},{"id":90,"damage":"1234567.8","damage_type":"DamageTypeTrait"},
 				{"id":1310,"damage":"2000.5"},{"id":1,"damage":"10"},{"id":2,"damage":"9"},{"id":3,"damage":"8"}]}}]}`)
 	// The word names the second record; there is no third.
-	if _, ok := images.CurrencyWarsArchive(app.ImageContext{Word: "货币战绩三"}, app.QueryResult{Data: data}); ok {
+	if _, ok := images.CurrencyWarsArchive(app.ImageContext{Word: "货币战绩3"}, app.QueryResult{Data: data}); ok {
 		t.Fatal("third record drawn")
 	}
-	image, ok := images.CurrencyWarsArchive(app.ImageContext{Word: "货币战绩二"}, app.QueryResult{Data: data})
+	image, ok := images.CurrencyWarsArchive(app.ImageContext{Word: "货币战绩2"}, app.QueryResult{Data: data})
 	if !ok {
 		t.Fatal("archive")
 	}

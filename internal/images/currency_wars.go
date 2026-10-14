@@ -67,7 +67,7 @@ func CurrencyWars(context app.ImageContext, result app.QueryResult) (app.Image, 
 }
 
 // CurrencyWarsArchive draws 货币战绩 the way StarRail-plugin's
-// gridFightArchive page does for the record the command word names: the
+// gridFightArchive page does for the record the command digits name: the
 // header, which record of how many, the record as the latest run shows with
 // each character's first three pieces of equipment, its bonds, investment
 // environments and strategies, and the five characters or bonds that dealt
@@ -75,7 +75,7 @@ func CurrencyWars(context app.ImageContext, result app.QueryResult) (app.Image, 
 func CurrencyWarsArchive(context app.ImageContext, result app.QueryResult) (app.Image, bool) {
 	brief, _ := result.Data["grid_fight_brief"].(map[string]any)
 	records, _ := result.Data["grid_fight_archive_list"].([]any)
-	index := app.CurrencyWarsRecord(context.Word)
+	index, _ := app.ArchiveArgs(context.Word)
 	if brief == nil || len(records) < index {
 		return app.Image{}, false
 	}

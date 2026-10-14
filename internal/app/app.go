@@ -414,8 +414,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.monthlyCommand(ctx, event, command, args)
 	case "ledger":
 		return a.ledgerCommand(ctx, event, args)
-	case "currency-wars-archive":
-		return a.currencyWarsArchive(ctx, event, args)
+	case "divergent-normal", "divergent-week", "currency-wars-archive":
+		return a.archiveCommand(ctx, event, command, args)
 	case "monthly-task":
 		return a.monthlyTask(ctx, event)
 	case "challenge-remind", "challenge-stop", "challenge-status":

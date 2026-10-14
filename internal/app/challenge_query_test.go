@@ -85,7 +85,7 @@ func TestOperationInputFollowsUpstreamRules(t *testing.T) {
 		// StarRail-plugin's card and rogue rules take anything after the
 		// word and read the first number as the UID.
 		{"profile", "卡片", []string{"看看", "100000001"}, "100000001", true},
-		{"divergent-week", "本期演算", []string{"上周", "12"}, "12", true},
+		{"divergent", "差分宇宙", []string{"看看", "100000001"}, "100000001", true},
 		{"swarm", "蝗灾", []string{"简易"}, "", true},
 		// Rules that end with the word take nothing after it.
 		{"note", "体力", nil, "", true},

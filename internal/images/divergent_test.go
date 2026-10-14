@@ -52,17 +52,17 @@ func TestDivergentRunsFollowTheCommandWord(t *testing.T) {
 		"last_week_detail":{"weekly_name":"上周","records":[{"common_info_v2":{"level":4},
 			"buffs":[{"base_type":{"name":"「巡猎」"},"items":[{},{}]},{"base_type":{"name":"「毁灭」"},"items":[{}]}]}]}}`)
 	result := app.QueryResult{Data: data}
-	image, ok := DivergentNormal(app.ImageContext{Word: "常规演算二"}, result)
+	image, ok := DivergentNormal(app.ImageContext{Word: "常规演算2"}, result)
 	if !ok || image.Data["level"] != "2" || image.Data["run"] != "2 / 2" || image.Data["weekly"] != nil {
-		t.Errorf("常规演算二 = %v", image.Data)
+		t.Errorf("常规演算2 = %v", image.Data)
 	}
 	// A UID glued after the run's number leaves the number as it is.
-	if image, _ := DivergentNormal(app.ImageContext{Word: "常规演算二100000001"}, result); image.Data["run"] != "2 / 2" {
-		t.Errorf("常规演算二100000001 = %v", image.Data)
+	if image, _ := DivergentNormal(app.ImageContext{Word: "常规演算2 100000001"}, result); image.Data["run"] != "2 / 2" {
+		t.Errorf("常规演算2 100000001 = %v", image.Data)
 	}
 	// Upstream answers in text when the run does not exist.
-	if _, ok := DivergentNormal(app.ImageContext{Word: "常规演算三"}, result); ok {
-		t.Error("常规演算三 drew a missing run")
+	if _, ok := DivergentNormal(app.ImageContext{Word: "常规演算3"}, result); ok {
+		t.Error("常规演算3 drew a missing run")
 	}
 	image, _ = DivergentWeek(app.ImageContext{Word: "本期演算"}, result)
 	weekly := image.Data["weekly"].(map[string]any)
