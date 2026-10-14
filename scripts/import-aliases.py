@@ -1,12 +1,13 @@
 """Import miao-plugin's alias tables into internal/assets/catalog.json.
 
-Usage: python scripts/import-aliases.py <参考项目/2026-09-15>
+Usage: python scripts/import-aliases.py <参考项目/2026-10-13>
 
 Takes character and weapon aliases from miao-plugin (character/alias.js,
 weapon/alias.js `alias` and `abbr`, the abbreviation also kept as `abbr`), the
 character names from miao's character index, which upstream resolves names
 through, and the set abbreviations from artifact/alias.js as `set_abbrs` and
 the set aliases as `set_aliases`.
+Aliases miao resolves to another character do not belong to this character.
 Only built-in aliases are replaced; custom aliases stay in plugin settings.
 Needs node.
 """
@@ -67,6 +68,16 @@ characters = character_tables.get("alias", {})
 weapons = module(meta / "weapon/alias.js")
 path, catalog = load()
 renamed, counted = [], 0
+# Match Meta's addData, addAlias, then addAbbr: later writes take ownership.
+owner = {record["name"].lower(): cid for cid, record in index.items()}
+for name, value in characters.items():
+    for word in words(value):
+        owner[word.lower()] = owner.get(name.lower(), name)
+shorts = dict(character_tables.get("abbr", {}))
+for record in index.values():
+    shorts[record["name"]] = shorts.get(record["name"]) or record["name"]
+for name, short in shorts.items():
+    owner[short.lower()] = owner.get(name.lower(), name)
 for entry in catalog["entries"]:
     if entry["kind"] == "character" and entry["id"] in index:
         record = index[entry["id"]]
@@ -74,7 +85,7 @@ for entry in catalog["entries"]:
             renamed.append(f"{entry['id']}:{entry['name']}->{record['name']}")
             entry["name"] = record["name"]
         abbr = record.get("abbr") or character_tables.get("abbr", {}).get(entry["name"], "")
-        entry["aliases"] = unique([abbr] + words(characters.get(entry["name"])), entry["name"])
+        entry["aliases"] = [alias for alias in unique([abbr] + words(characters.get(entry["name"])), entry["name"]) if owner.get(alias.lower(), entry["id"]) == entry["id"]]
         # Upstream prints this short name where a long name does not fit.
         if abbr and abbr != entry["name"]:
             entry["abbr"] = abbr

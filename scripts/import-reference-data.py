@@ -1,11 +1,12 @@
 """Convert pinned local miao-plugin JSON into internal/assets/catalog.json.
 
-Usage: python scripts/import-reference-data.py --references <参考项目/2026-09-15>
+Usage: python scripts/import-reference-data.py --references <参考项目/2026-10-13>
 
 This reads data only. It never evaluates reference JavaScript or installs its
 dependencies. Generated catalogs carry their source version and attribution.
 Aliases, short names and the equipment-set tables that import-aliases.py adds
 are kept from the existing catalog, so the two scripts can run in any order.
+Character names come from the miao character index.
 
 Skill texts carry miao's placeholders ($1[i]%: table 1, integer, percent).
 Characters get the values of one reference level (普攻 6, others 10, the
@@ -27,6 +28,7 @@ root = pathlib.Path(__file__).resolve().parents[1]
 target = root / "internal/assets/catalog.json"
 
 PLACEHOLDER = re.compile(r"\$(\d+)\[(i|f1|f2)\](%?)")
+MATERIAL_LABELS = {"ascension": "晋阶材料", "assignment": "通用培养材料", "calyx": "行迹材料", "weekly": "周本材料"}
 REFERENCE_LEVELS = {"普攻": 6, "战技": 10, "终结技": 10, "天赋": 10}
 
 
@@ -101,16 +103,10 @@ def dump(file, value):
 
 
 def stats_of(raw):
-    """The attributes at the highest ascension, with the level they hold at."""
-    best = None
-    phases = raw.get("attr") or {}
-    for phase in (phases.values() if isinstance(phases, dict) else phases):
-        if isinstance(phase, dict) and isinstance(phase.get("attrs"), dict) and (best is None or phase.get("maxLevel", 0) > best.get("maxLevel", 0)):
-            best = phase
-    if best is None:
-        return {}
-    stats = {key: round(value, 1) if isinstance(value, float) else value for key, value in best["attrs"].items() if isinstance(value, (int, float))}
-    stats["level"] = best.get("maxLevel", 0)
+    """The level-80, fully ascended base attributes provided by miao."""
+    stats = {key: round(value, 1) if isinstance(value, float) else value for key, value in raw["baseAttr"].items() if isinstance(value, (int, float))}
+    phases = raw["attr"]
+    stats["level"] = max(phase["maxLevel"] for phase in (phases.values() if isinstance(phases, dict) else phases))
     if isinstance(raw.get("sp"), (int, float)):
         stats["sp"] = raw["sp"]
     return stats
@@ -153,6 +149,9 @@ existing = load(target) if target.exists() else {}
 kept = {entry["id"]: entry for entry in existing.get("entries", []) if isinstance(entry, dict) and "id" in entry}
 entries = {}
 base = refs / "miao-plugin/resources/meta-sr"
+# Upstream names characters by the index; a directory's data.json can disagree
+# (星·欢愉/data.json was named 星·同谐 before 0d3a43d).
+index = load(base / "character/data.json")
 for kind in ("character", "weapon"):
     for file in sorted((base / kind).rglob("data.json")):
         raw = load(file)
@@ -164,7 +163,7 @@ for kind in ("character", "weapon"):
         previous = kept.get(item_id, {})
         entry = {
             "id": item_id,
-            "name": clean(raw["name"]),
+            "name": clean(((index.get(item_id) or {}).get("name") if kind == "character" else None) or raw["name"]),
             "aliases": previous.get("aliases") or ([clean(raw["abbr"])] if raw.get("abbr") and raw["abbr"] != raw["name"] else []),
             "kind": kind,
             "rarity": raw.get("star", 0),
@@ -173,7 +172,7 @@ for kind in ("character", "weapon"):
             "element": raw.get("elem", "") if kind == "character" else "",
             "weapon": raw.get("weapon", "") if kind == "character" else clean(raw.get("type")),
             "description": clean(raw.get("desc")),
-            "materials": {k: clean(v) for k, v in (raw.get("materials") or {}).items() if isinstance(v, str)},
+            "materials": {MATERIAL_LABELS[k]: clean(v) for k, v in (raw.get("materials") or {}).items() if k in MATERIAL_LABELS and isinstance(v, str)},
             "stats": stats_of(raw),
             "talents": character_talents(raw) if kind == "character" else weapon_talents(raw),
         }
@@ -182,8 +181,9 @@ for kind in ("character", "weapon"):
         if kind == "character":
             entry["cons"] = cons_of(raw)
         entries[item_id] = entry
-source = "https://github.com/yoimiya-kokomi/miao-plugin/tree/7f6f1c84c89102bc6b1c58c8e1b06c61f4642161/resources/meta-sr"
-catalog = {"version": "miao-7f6f1c84c891", "source": source, "entries": sorted(entries.values(), key=lambda item: item["id"])}
+commit = load(refs / "miao-plugin.source.json")["commit"]
+source = f"https://github.com/yoimiya-kokomi/miao-plugin/tree/{commit}/resources/meta-sr"
+catalog = {"version": f"miao-{commit[:12]}", "source": source, "entries": sorted(entries.values(), key=lambda item: item["id"])}
 catalog.update({key: value for key, value in existing.items() if key not in catalog})
 dump(target, catalog)
 shutil.copyfile(refs / "miao-plugin/LICENSE", root / "LICENSES/miao-plugin-MIT.txt")

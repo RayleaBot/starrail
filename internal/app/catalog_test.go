@@ -6,8 +6,8 @@ func TestResolvePrefersTheExactName(t *testing.T) {
 	catalog, err := ParseCatalog([]byte(`{"version":"test","entries":[
 		{"id":"1002","name":"丹恒","kind":"character"},
 		{"id":"1213","name":"丹恒•饮月","aliases":["饮月"],"kind":"character"},
-		{"id":"8006","name":"星·同谐","kind":"character"},
-		{"id":"8010","name":"星·同谐","kind":"character"}
+		{"id":"8009","name":"穹·欢愉","aliases":["欢愉主"],"kind":"character"},
+		{"id":"8010","name":"星·欢愉","aliases":["欢愉主"],"kind":"character"}
 	]}`))
 	if err != nil {
 		t.Fatal(err)
@@ -19,9 +19,9 @@ func TestResolvePrefersTheExactName(t *testing.T) {
 			t.Fatalf("%s resolved to %q %v, want %s", query, entry.ID, ok, want)
 		}
 	}
-	// Two entries share the name exactly; only the ID can pick one.
-	if _, ok := catalog.Resolve("星·同谐", "character", nil); ok {
-		t.Fatal("an ambiguous name resolved")
+	// Two entries share an alias; only the ID can pick one.
+	if _, ok := catalog.Resolve("欢愉主", "character", nil); ok {
+		t.Fatal("an ambiguous alias resolved")
 	}
 }
 
