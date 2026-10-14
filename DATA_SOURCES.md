@@ -2,7 +2,9 @@
 
 本插件的固定资料由 `scripts/import-reference-data.py` 从已下载参考 JSON 转换，源提交记录在 `internal/assets/catalog.json`。转换保留角色与光锥的名称、命途、80 级基础属性、技能文字（角色技能按普攻 6 级、其余 10 级填入数值，光锥技能写叠影 1 到 5 的区间）、星魂文字与材料，不包含素材图片；伤害与评分由打包的上游脚本计算，见下文。
 
-星铁资料来自 miao-plugin，固定提交 7f6f1c84c89102bc6b1c58c8e1b06c61f4642161；保留 LICENSES/miao-plugin-MIT.txt。
+星铁图鉴、别名、材料、卡池、云面板装备资料、伤害与评分来自 miao-plugin，固定提交 c9fe416ea8d22140101a33246dc380a140e7e068；保留 LICENSES/miao-plugin-MIT.txt。
+
+固定快照目录为 `<参考项目/2026-10-13>`。StarRail-plugin 固定在 `3e68a03fccde6e00100536b102e93b31d609a1cf`，ark-plugin 固定在 `bdced6bf8b1821e0b5e5a96ed4d7e78beda089a1`；Miao-Yunzai 保持 `40cc2103efba1fbb279b768e3f5345d45372d357`，Yunzai-genshin 保持 `4a2e1fb8f094b2a8f039ce0768773701718b60b9`，Atlas 保持 `016e49357666e0823791abdf28fbb3b2efe68225`，对应的 `*.source.json` 随快照保存。
 
 没有账号时的面板来自 Mihomo（api.mihomo.me）的 `sr_info_parsed` 中文接口（miao-plugin 星铁的默认面板服务；上游读取未合计的 `sr_info` 后自行合计属性），按五分钟缓存；天赋等级同 miao 的 HomoApi。`templates/panel-list/` 与 `templates/artifact-list/` 按 miao-plugin 的 `character/profile-list` 与 `character/artis-list` 改写（MIT；miao 没有星铁角色的侧脸图，列表不显示头像）。抽卡导入导出遵循 [UIGF](https://uigf.org/en/standards/uigf.html)，尚未申请兼容性认证。
 
@@ -26,7 +28,7 @@ Apache-2.0 许可保留在 `LICENSES/StarRail-plugin-Apache-2.0.txt`，对应的
 
 云面板装备解释沿用同一固定 miao 快照的 artifact 元数据与 ArtisAttr 公式，包含 768 项遗器映射。转换脚本为 `scripts/import-cloud-panel-data.mjs`，不加载上游机器人运行时；缺失档位明确显示未覆盖。
 
-图鉴按 [Atlas 固定提交](https://github.com/Nwflower/atlas/tree/016e49357666e0823791abdf28fbb3b2efe68225) 的 `apps/atlas.js` 查找，各模块的规则取自其 `resource/Forlibrary/star-rail-atlas/rule_default/`，写在 `internal/assets/game.json`（GPL-3.0，见 `LICENSES/Atlas-GPL-3.0.txt`）。星铁图鉴库由管理员下载，不随插件分发；Atlas 自带的星铁别名文件以名称为键，而图鉴库以编号为键并自带全部模块的别名，因此不使用。
+图鉴按 [Atlas 固定提交](https://github.com/Nwflower/atlas/tree/016e49357666e0823791abdf28fbb3b2efe68225) 的 `apps/atlas.js` 查找，各模块的规则取自其 `resource/Forlibrary/star-rail-atlas/rule_default/`，写在 `internal/assets/game.json`（GPL-3.0，见 `LICENSES/Atlas-GPL-3.0.txt`）。星铁图鉴库由管理员下载，不随插件分发；固定快照的图鉴库收录至 4.4；Atlas 自带的星铁别名文件以名称为键，而图鉴库以编号为键并自带全部模块的别名，因此不使用。
 
 ## 补充的强化公式
 
@@ -59,3 +61,9 @@ Apache-2.0 许可保留在 `LICENSES/StarRail-plugin-Apache-2.0.txt`，对应的
 素材图按 Yunzai 原神插件 apps/material.js 的星铁分支读取米游社合集，只发送官方图床地址；Yunzai 依次读取小橙子阿 1998643（停在 V3.8）、紫喵Azunya 2146693（停在 V3.2）、让我摸个鱼吧Moyu 2279356；2026-10 起先读仍在更新的 2279356（已收录到真珠），再读另两个；三个合集分别取的图片位置与 1998643 的限制同契约；标题匹配见 contracts/game-v1.md。
 
 `templates/news/` 与 `templates/news-list/` 按 Yunzai 原神插件的 html/mysNews 与 html/mysNews-list 改写（GPL-3.0，见 `LICENSES/Miao-Yunzai-GPL-3.0.txt`），公告、资讯、活动、米游社搜索、帖子与预估按其 mysNews 的规则出图。米游社搜索同上游 mysSearch，消息含“签到”时不处理；“米游社签到”“mys签到”“米游社星铁签到”由社区签到接收；详情页的样式去掉了米游社编辑器、加载、提示与回复控件等页面用不到的规则。米游社正文是任意 HTML，而渲染器可以联网，因此正文按页面样式用到的标签、类名与颜色字号等样式重建，图片只经渲染资源引用（官方图片缓存），链接与脚本不保留。与上游不同之处：正文中没有地址的超链图片按帖子的 structured_content 补上（上游显示为空白）；纯图片帖显示全部图片（上游只显示最后一张）；上游按 4000 像素分段截图，这里出一整张长图；二维码由 go-qrcode 生成（MIT，见 `LICENSES/go-qrcode-MIT.txt`），指向帖子所在游戏的米游社地址（上游固定为原神路径）。页面的米游社标志、图标字体、列表页背景与数字字体取自“Yunzai 页面素材”素材来源。星铁的“预估”同 StarRail-plugin 的 srEstimate，合并转发作者最新“星琼统计”帖的图片；“星琼预估”“盘点”等写法同 Yunzai 原神插件，按“星琼统计汇总”出图。
+
+## 有意不跟进的上游功能
+
+StarRail-plugin 的自带面板与伤害引擎不移植，统一使用 miao；不提供 `同步面板`、`同步抽卡记录`（本插件只有一份业务档案）、alias.js（别名来自 miao）、PanelPic 图片包的 gitee/github 切换后缀，以及上游帮助和更新日志页面（命令帮助由 info.json 提供）。周期演算仍默认本期。
+
+miao 的 Tomato gacha-detail 欧皇度、大小保底与“全部记录”不移植，跃迁记录页继续使用 StarRail-plugin；不移植 proShareProfileImg、多图库来源配置、guoba、TRSS 重启、原神资源与面板图标 CSS、artis-mark 页面。面板换装只接受“换”，与 miao 837a303858、ark bdced6bf 的规则相同。

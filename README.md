@@ -89,6 +89,10 @@ ark UID 验证和交换接收已有合成验证，尚未替真人账号操作或
 
 ## 开发与打包
 
+固定快照目录为 `<参考项目/2026-10-13>`：miao-plugin `c9fe416ea8d22140101a33246dc380a140e7e068`、StarRail-plugin `3e68a03fccde6e00100536b102e93b31d609a1cf`、ark-plugin `bdced6bf8b1821e0b5e5a96ed4d7e78beda089a1`。Yunzai-genshin、Miao-Yunzai 与 Atlas 保持原提交，完整提交与许可见 [DATA_SOURCES.md](./DATA_SOURCES.md)。资料和计算统一以新快照生成，材料与常规卡池收录至 4.6。
+
+不跟进 StarRail-plugin 自带面板、伤害引擎、双向档案同步、别名及 PanelPic 源切换，也不跟进 miao 的 Tomato 记录页、“全部记录”、多图库源、proShareProfileImg、guoba、TRSS 重启和原神功能；面板与计算继续使用 miao，跃迁记录页继续使用 StarRail-plugin，命令帮助由本插件维护。Atlas 图鉴库仍停在 4.4。
+
 评分同步 miao 的实际主词条上限与单件 70 分封顶，已有群榜在刷新排名或再次查看面板后重算。
 
 工具链沿用 RayleaBot：Go 1.26.6、Node 26.7.0、pnpm 11.22.0。
@@ -103,13 +107,13 @@ $env:RAYLEA_PLUGIN_BUILD_USE_WORKSPACE='1'
 go run github.com/RayleaBot/RayleaBot/sdk/go/cmd/raylea-plugin build-go --backend ./cmd/starrail --target windows-x64 --include DATA_SOURCES.md=DATA_SOURCES.md
 ```
 
-打包前运行 `python scripts/bundle-artwork.py --references <参考项目/2026-09-15>`，把模板用到的上游图片、字体与资料文件从固定提交复制到 `assets/`（不纳入版本库，构建时随包分发）。SDK v0.7.0 发布前，独立检出仍需相邻的 RayleaBot 仓库。
+打包前运行 `python scripts/bundle-artwork.py --references <参考项目/2026-10-13>`，把模板用到的上游图片、字体与资料文件从固定提交复制到 `assets/`（不纳入版本库，构建时随包分发）。SDK v0.7.0 发布前，独立检出仍需相邻的 RayleaBot 仓库。
 
 另支持 `linux-x64` 和 `macos-arm64`。数据文件位于宿主提供的本插件数据目录内；抽卡记录属于非凭据业务数据，使用原子文件替换保存。
 
 ## 当前验证与未完成项
 
-Go 测试、Vue 类型检查、UIGF 导入导出测试和生产构建已通过。四进程开发 smoke 验证共用账号、授权撤销、默认角色、资料与抽卡档案，使用合成账号和模拟上游；主仓库另外验证真实 Registry 生命周期。浏览器使用模拟管理 API 验证查询、角色选择、资料查找、文件导入导出及删除确认。
+Go 全量测试、构建与静态检查通过。真实宿主、账号与聊天场景的验收范围见 [验收与交付计划](./docs/acceptance-plan.md)。
 
 体力聊天查询已通过真人验收。尚未完成其余真实业务查询、全角色伤害/装备评分、全部挑战详情与历史功能、自动抽卡拉取、米游社签到与其余提醒、云排名/OCR、海外认证及完整升级恢复验收。这是基础版本，不能视为参考插件的全部功能已经复刻。全量范围保留在 RayleaBot `docs/plans/game-plugins/`。
 
