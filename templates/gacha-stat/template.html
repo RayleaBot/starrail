@@ -4,6 +4,9 @@
 <body class="elem-{{ .elem }} default-mode">
 <div class="container elem-bg" id="container">
 <div class="basic">
+  {{ if and .page (gt .page.page 1.0) }}
+  <div class="page-head"><strong>{{ .name }}</strong> #{{ .uid }} · {{ .pool_name }}统计<span>第 {{ .page.page }}/{{ .page.total }} 张</span></div>
+  {{ else }}
   <div class="user-banner" data-render-resource="{{ .banner }}">
     <div class="face">
       <span data-render-resource="{{ .face }}"></span>
@@ -31,6 +34,7 @@
     <strong>{{ .mark }}全部统计</strong>全部抽卡统计，
     <strong>{{ .mark }}抽卡帮助</strong>获取帮助
   </div>
+  {{ end }}
   {{ range .versions }}
   <div class="cont avatar-cont">
     <div class="cont-title">
@@ -73,6 +77,8 @@
     </div>
   </div>
   {{ end }}
+  {{ if .hidden }}<div class="gacha-more">仅显示最近 {{ .shown }} 期卡池，更早的 {{ .hidden }} 期未显示（顶部统计包含全部数据），发送 {{ .mark }}{{ .pool_name }}全部统计 查看全部</div>{{ end }}
+  {{ with .page }}<div class="gacha-more">第 {{ .page }}/{{ .total }} 张 · 第 {{ .from }}~{{ .to }} 期，共 {{ .count }} 期卡池</div>{{ end }}
 </div>
 {{ with .render_footer }}<div class="copyright">{{ . }}</div>{{ end }}
 </div>

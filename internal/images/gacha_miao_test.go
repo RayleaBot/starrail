@@ -2,6 +2,7 @@ package images_test
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/RayleaBot/starrail/internal/app"
@@ -9,6 +10,48 @@ import (
 	"github.com/RayleaBot/starrail/internal/gacha"
 	"github.com/RayleaBot/starrail/internal/images"
 )
+
+func TestGachaStatLimitsAndPagesPeriods(t *testing.T) {
+	application, err := app.New(assets.Load(), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer application.Close()
+	archive := gacha.Archive{}
+	for index, pool := range application.Game.Data.Resources.Pools[:12] {
+		archive.Records = append(archive.Records, gacha.Record{ID: strconv.Itoa(index + 1), GachaType: "11", Name: pool.Characters5[0], Rank: "5", ItemType: "角色", Time: pool.From[:10] + " 20:00:00"})
+	}
+	context := app.ImageContext{Game: application.Game, Catalog: application.Catalog}
+	first, ok := images.GachaStat(context, app.GachaImage{Word: "角色统计", Archive: archive})
+	if !ok || len(first.Data["versions"].([]any)) != 10 || first.Data["hidden"] != 2 {
+		t.Fatal(first.Data)
+	}
+	page1, _ := images.GachaStat(context, app.GachaImage{Word: "角色全部统计", Archive: archive, Page: 1})
+	page2, _ := images.GachaStat(context, app.GachaImage{Word: "角色全部统计", Archive: archive, Page: 2})
+	if len(page2.Data["versions"].([]any)) != 2 || page2.Data["page"].(map[string]any)["total"] != 2 || !reflect.DeepEqual(page1.Data["stats"], page2.Data["stats"]) || !reflect.DeepEqual(first.Data["stats"], page1.Data["stats"]) {
+		t.Fatal(page1.Data, page2.Data)
+	}
+	all, _ := images.GachaStat(context, app.GachaImage{Word: "全部统计", Archive: archive})
+	versions := all.Data["versions"].([]any)
+	if len(versions) != 1 || versions[0].(map[string]any)["version"] != "全部统计" || all.Data["page"] != nil {
+		t.Fatal(all.Data)
+	}
+	for _, count := range []int{6, 10} {
+		single := archive
+		single.Records = single.Records[:count]
+		page, ok := images.GachaStat(context, app.GachaImage{Word: "角色全部统计", Archive: single})
+		if !ok || page.Data["page"] != nil || len(page.Data["versions"].([]any)) != count {
+			t.Fatal(page.Data)
+		}
+	}
+	for word, kind := range map[string]string{"常驻全部统计": "1", "联动全部统计": "21"} {
+		single := gacha.Archive{Records: []gacha.Record{{ID: "1", GachaType: kind, Name: "姬子", Rank: "5", ItemType: "角色", Time: "2026-10-13 12:00:00"}}}
+		page, ok := images.GachaStat(context, app.GachaImage{Word: word, Archive: single})
+		if !ok || page.Data["page"] != nil || len(page.Data["versions"].([]any)) != 1 {
+			t.Fatal(word, page.Data)
+		}
+	}
+}
 
 func TestGachaStatFollowsGachaData(t *testing.T) {
 	application, err := app.New(assets.Load(), t.TempDir())

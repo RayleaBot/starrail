@@ -1,6 +1,7 @@
 package images
 
 import (
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -172,8 +173,24 @@ var statLabels = map[string]string{"1": "常驻池", "2": "新手池", "21": "�
 // period, newest first, with its rate-ups, dates and counts and every four-
 // and five-star it gave, rate-ups marked; standard, departure, collaboration
 // warps and 全部 each form one block.
+const statPeriods = 10
+
+var statUID = regexp.MustCompile(`[0-9]+$`)
+
 func GachaStat(context app.ImageContext, image app.GachaImage) (app.Image, bool) {
-	pools, all := gachaSelection(image.Word)
+	word := strings.TrimSpace(statUID.ReplaceAllString(strings.NewReplacer("喵喵", "", "统计", "", "分析", "", "池", "").Replace(image.Word), ""))
+	paged := strings.Contains(word, "全部") && word != "全部"
+	if paged {
+		word = strings.ReplaceAll(word, "全部", "")
+	}
+	pools, all := gachaSelection(word)
+	poolName := "抽卡"
+	if slices.Equal(pools, []string{"11"}) {
+		poolName = "角色"
+	}
+	if slices.Equal(pools, []string{"12"}) {
+		poolName = "光锥"
+	}
 	label := statLabels[strings.Join(pools, ",")]
 	switch {
 	case all:
@@ -318,6 +335,18 @@ func GachaStat(context app.ImageContext, image app.GachaImage) (app.Image, bool)
 		stats = miaoStat(stats, app.JSFixed(float64(total["totalNum"])/float64(total["upNum"]), 1), "平均UP抽")
 	}
 	data := miaoPlayer(context, resources, image)
+	data["pool_name"] = poolName
+	if paged && len(versions) > statPeriods {
+		count := len(versions)
+		pages := (count + statPeriods - 1) / statPeriods
+		page := min(max(image.Page, 1), pages)
+		from, to := (page-1)*statPeriods, min(page*statPeriods, count)
+		data["page"] = map[string]any{"page": page, "total": pages, "from": from + 1, "to": to, "count": count}
+		versions = versions[from:to]
+	} else if len(versions) > statPeriods {
+		data["shown"], data["hidden"] = statPeriods, len(versions)-statPeriods
+		versions = versions[:statPeriods]
+	}
 	data["stats"], data["card_width"], data["versions"] = stats, 90, versions
 	return app.Image{Template: "gacha-stat", Data: data, Resources: resources.List}, true
 }

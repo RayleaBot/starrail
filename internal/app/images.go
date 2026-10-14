@@ -76,6 +76,8 @@ type PanelImageBuilder func(ImageContext, PanelImage) (Image, bool)
 // GachaImage is a gacha archive with the command word that asked for it;
 // upstream picks the pool from the word, as in 武器记录.
 type GachaImage struct {
+	// Page is 0 for a single image, or a one-based 全部统计 page.
+	Page    int
 	UID     string
 	Role    Role
 	Word    string

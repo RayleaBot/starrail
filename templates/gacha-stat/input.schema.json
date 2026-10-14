@@ -42,6 +42,18 @@
     },
     "render_footer": {
       "type": "string"
+    },
+    "shown": {
+      "type": "integer"
+    },
+    "hidden": {
+      "type": "integer"
+    },
+    "pool_name": {
+      "type": "string"
+    },
+    "page": {
+      "type": "object"
     }
   },
   "additionalProperties": false

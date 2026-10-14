@@ -674,6 +674,11 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		if a.gacha != nil {
 			if drawn, ok := a.gacha(a.imageContext(ctx), image); ok {
 				view.Image = &drawn
+				if command == "gacha-stat" && settings(event).ImageReplies {
+					if sent, err := a.gachaStatForward(ctx, event, image, drawn); sent {
+						return err
+					}
+				}
 			}
 		}
 	default:
