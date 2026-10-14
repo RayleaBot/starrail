@@ -21,6 +21,8 @@ func TestShippedManifestsResolveUpstreamWording(t *testing.T) {
 		"starrail": {
 			{"十连联动", "simulation", nil},
 			{"抽卡联动光锥", "simulation", nil},
+			{"导出抽卡记录", "gacha-export", nil},
+			{"导出跃迁记录json", "gacha-export", nil},
 			{"希儿面板", "panel", []string{"希儿"}},
 			{"希儿面版", "panel", []string{"希儿"}},
 			{"希儿详细", "panel", []string{"希儿"}},

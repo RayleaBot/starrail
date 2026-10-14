@@ -78,8 +78,9 @@ func senderKey(event *rayleabot.EventContext) string {
 }
 
 func (a *App) gachaFileCommand(ctx context.Context, event *rayleabot.EventContext, command string, args []string) error {
+	starRail := command == "gacha-export" && (strings.Contains(event.Event.Command(), "导出抽卡记录") || strings.Contains(event.Event.Command(), "导出跃迁记录"))
 	word := map[string]string{"gacha-export": "导出", "gacha-import": "导入"}[command]
-	if event.Event.Target.Type == "group" && !slices.Contains(args, "强制") {
+	if event.Event.Target.Type == "group" && !slices.Contains(args, "强制") && !starRail {
 		return event.Send(event.Event.Target.Type, event.Event.Target.ID, atSender(event, fmt.Sprintf("建议私聊%s，若你确认要在此%s，请发送【%s强制%s记录】", word, word, a.Game.Prefix, word))...)
 	}
 	if command == "gacha-import" {
@@ -90,7 +91,7 @@ func (a *App) gachaFileCommand(ctx context.Context, event *rayleabot.EventContex
 	if err != nil {
 		return event.SendText(friendlyError(err))
 	}
-	content, err := json.Marshal(a.gachaFile(archive, slices.Contains(args, "v2")))
+	content, err := json.Marshal(a.gachaFile(archive, !starRail && slices.Contains(args, "v2")))
 	if err != nil {
 		return err
 	}
@@ -98,8 +99,28 @@ func (a *App) gachaFileCommand(ctx context.Context, event *rayleabot.EventContex
 		return event.SendText("导出失败：记录过多，文件超过 5 MB")
 	}
 	name := archive.UID + ".json"
-	notice(ctx, event, fmt.Sprintf("导出成功：%s，共%d条 \n请接收文件", name, len(archive.Records)))
-	return sendFile(event, name, content)
+	// Post the file before ending the event so a rejected upload can be
+	// answered with the upstream failure message.
+	if _, err := post(ctx, event, rayleabot.Passthrough("file", map[string]any{"file": "base64://" + base64.StdEncoding.EncodeToString(content), "name": name})); err != nil {
+		return event.SendText("导出失败：当前适配器暂不支持发送文件")
+	}
+	if starRail {
+		lines := []string{fmt.Sprintf("UIGF v4 导出成功：%s", name)}
+		for _, pool := range [][2]string{{"1", "群星跃迁"}, {"2", "新手跃迁"}, {"11", "限定跃迁"}, {"12", "光锥跃迁"}, {"21", "角色联动跃迁"}, {"22", "光锥联动跃迁"}} {
+			count := 0
+			for _, record := range archive.Records {
+				if record.GachaType == pool[0] {
+					count++
+				}
+			}
+			if count > 0 {
+				lines = append(lines, fmt.Sprintf("%s %d 条", pool[1], count))
+			}
+		}
+		lines = append(lines, fmt.Sprintf("共 %d 条，请接收文件", len(archive.Records)))
+		return event.SendText(strings.Join(lines, "\n"))
+	}
+	return event.SendText(fmt.Sprintf("导出成功：%s，共%d条 \n请接收文件", name, len(archive.Records)))
 }
 
 // sendFile sends a file into the chat the event came from.

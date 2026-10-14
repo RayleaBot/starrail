@@ -507,12 +507,12 @@
     {
       "id": "gacha-export",
       "name": "导出记录",
-      "description": "导出跃迁记录为 UIGF 文件",
-      "usage": "#导出记录 [v2]",
+      "description": "导出跃迁记录为 UIGF 文件；导出记录在群聊中需写强制，导出抽卡记录（导出跃迁记录同义）同 StarRail-plugin 直接发送 UIGF v4",
+      "usage": "#导出记录 [v2] / #导出抽卡记录",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",
-        "pattern": "^(?:星铁)?(?P<force>强制)?导出记录(?:json)?(?P<version>v2|v4)?$"
+        "pattern": "^(?:(?:星铁)?(?P<force>强制)?导出记录(?:json)?(?P<version>v2|v4)?|导出(?:抽卡|跃迁)记录(?:json)?)$"
       }
     },
     {

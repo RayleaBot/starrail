@@ -3,11 +3,39 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 	"github.com/RayleaBot/starrail/internal/gacha"
 )
+
+func TestGachaExportReportsFileDeliveryFailure(t *testing.T) {
+	a := pluginApp(t)
+	if _, _, err := a.Gacha.Import(gacha.Archive{UID: "100000001", Region: "prod_gf_cn", Timezone: 8, Records: []gacha.Record{{ID: "1", GachaType: "11", GachaID: "2001", ItemID: "1102", Name: "希儿", Rank: "5", Time: "2026-09-01 08:00:00"}}}); err != nil {
+		t.Fatal(err)
+	}
+	host := newSDKHost(t, a, func(rayleabot.ServiceCallRequest, bool) (map[string]any, string) {
+		return asMap(Accounts{UIDBindings: map[string]UIDBinding{"starrail": {UIDs: []string{"100000001"}, Current: "100000001"}}}), ""
+	})
+	for _, word := range []string{"导出抽卡记录", "导出跃迁记录json", "导出记录", "导出记录v2"} {
+		for _, failure := range []string{"platform.unsupported", ""} {
+			host.sendFailure = failure
+			host.sent = nil
+			end, _ := host.message("*"+word, word)
+			if failure != "" {
+				if terminalText(end) != "导出失败：当前适配器暂不支持发送文件" {
+					t.Fatalf("%s: %+v", word, end)
+				}
+			} else if !strings.Contains(terminalText(end), "导出成功") {
+				t.Fatalf("%s: %+v", word, end)
+			}
+			if len(host.sent) != 1 || len(host.sent[0].Message.Segments) != 1 || host.sent[0].Message.Segments[0].Type != "file" {
+				t.Fatal(host.sent)
+			}
+		}
+	}
+}
 
 func TestGachaFilesRoundTripAndFillLegacyRecords(t *testing.T) {
 	a := pluginApp(t)
