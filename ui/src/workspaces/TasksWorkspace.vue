@@ -9,7 +9,6 @@ import { useReader } from '../reader'
 import Reminders, { reminderLabels, type ReminderTask } from '../Reminders.vue'
 import ChallengeReminders, { challengeLabels, weekdays, type ChallengeTask } from '../ChallengeReminders.vue'
 import MonthlyCollection, { monthlyLabels, type MonthlyTask } from '../MonthlyCollection.vue'
-import AccountTasks, { communityLabels, type CommunityTask } from '../AccountTasks.vue'
 
 const shell = useShell()
 const sections: Section[] = [
@@ -18,35 +17,33 @@ const sections: Section[] = [
   { id: 'challenge', label: '挑战提醒', icon: 'trophy' },
   { id: 'monthly', label: '月报收集', icon: 'calendar' },
   { id: 'signin', label: '每日签到', icon: 'checkin' },
-  { id: 'community', label: '米游社任务', icon: 'chat' },
 ]
 
 // 全部任务: every kind's list read through one adapter each, so the rows share
 // a shape. The plugin's field names are kept when reading; only the wording is common.
-type Kind = 'reminder' | 'challenge' | 'monthly' | 'signin' | 'community'
+type Kind = 'reminder' | 'challenge' | 'monthly' | 'signin'
 interface SigninTask { ref: string; role: { uid: string; nickname: string }; owner: { actor_id: string }; enabled: boolean; hour?: number; expires_at_ms: number; next_check_ms: number; last_code: string; notify?: boolean }
 interface TaskRow { key: string; kind: Kind; ref: string; remove: string; subject: string; schedule: string; owner: string; status: string; tone: string; next_check_ms: number; expires_at_ms: number }
-const kindLabels: Record<Kind, string> = { reminder: '体力提醒', challenge: '挑战提醒', monthly: '月报收集', signin: '每日签到', community: '米游社任务' }
+const kindLabels: Record<Kind, string> = { reminder: '体力提醒', challenge: '挑战提醒', monthly: '月报收集', signin: '每日签到' }
 const signinLabels: Record<string, string> = { bot_assigned: '归属已更新，请重新开启', signed: '签到成功', already_signed: '今日已签到', sign_attempted: '已尝试，结果待确认', expired: '委托已到期', 'plugin.upstream_device_required': '需要官方设备验证', 'plugin.upstream_challenge_required': '需要官方验证', 'plugin.upstream_first_sign_required': '需要在官方应用首次签到', 'plugin.account_delegation_denied': '委托失效', 'plugin.account_caller_denied': '游戏授权已撤销', 'plugin.vault_locked': '账号库锁定，稍后检查' }
 const list = useOperation('任务列表读取未完成，请重试。')
-const reminders = ref<ReminderTask[]>([]), challenges = ref<ChallengeTask[]>([]), monthlies = ref<MonthlyTask[]>([]), signins = ref<SigninTask[]>([]), communities = ref<CommunityTask[]>([]), challengeKinds = ref<{ id: string; label: string }[]>([]), removal = ref('')
+const reminders = ref<ReminderTask[]>([]), challenges = ref<ChallengeTask[]>([]), monthlies = ref<MonthlyTask[]>([]), signins = ref<SigninTask[]>([]), challengeKinds = ref<{ id: string; label: string }[]>([]), removal = ref('')
 const loaders: Record<Kind, () => Promise<void>> = {
   reminder: async () => { reminders.value = (await shell.invoke<{ items: ReminderTask[] }>('reminder.list')).items },
   challenge: async () => { challenges.value = (await shell.invoke<{ items: ChallengeTask[] }>('challenge.reminder.list')).items },
   monthly: async () => { monthlies.value = (await shell.invoke<{ items: MonthlyTask[] }>('monthly.task.list')).items },
   signin: async () => { signins.value = (await shell.invoke<{ items: SigninTask[] }>('signin.task.list')).items },
-  community: async () => { communities.value = (await shell.invoke<{ items: CommunityTask[] }>('community.task.list')).items },
 }
 async function loadChallengeKinds() { challengeKinds.value = (await shell.invoke<{ kinds: { id: string; label: string }[] }>('challenge.schema')).kinds }
 const lister = useReader(list, async () => { await Promise.all([...Object.values(loaders).map(load => load()), loadChallengeKinds()]) })
 function loadAll() { lister.request() }
 function refresh(kind: Kind) { void list.run(loaders[kind]) }
-const finished = new Set(['checked', 'notified', 'target_met', 'collected', 'signed', 'already_signed', 'step_completed', 'completed', 'cloud_completed'])
+const finished = new Set(['checked', 'notified', 'target_met', 'collected', 'signed', 'already_signed'])
 function tone(task: { enabled: boolean; last_code: string }): string {
   if (!task.enabled) return 'warning'
   const code = task.last_code
-  if (code.startsWith('plugin.') || code === 'expired' || code === 'notification_failed' || code === 'step_outcome_unknown') return 'danger'
-  if (code === 'completed_with_remaining' || code === 'metric_unknown') return 'warning'
+  if (code.startsWith('plugin.') || code === 'expired' || code === 'notification_failed') return 'danger'
+  if (code === 'metric_unknown') return 'warning'
   return finished.has(code) ? 'success' : ''
 }
 function clock(hour: number, minute: number): string { return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}` }
@@ -58,7 +55,6 @@ const rows = computed<TaskRow[]>(() => [
   ...challenges.value.map(task => row('challenge', task, challengeLabels, '等待首次检查', { remove: 'challenge.reminder.remove', subject: `${task.role.nickname} · ${task.role.uid} · ${challengeKinds.value.find(item => item.id === task.challenge_kind)?.label ?? task.challenge_kind}`, schedule: `${weekdays[task.weekday]} ${clock(task.hour, task.minute)} 检查，${task.metric} 目标 ${task.threshold}`, owner: `私聊 ${task.owner.actor_id}` })),
   ...monthlies.value.map(task => row('monthly', task, monthlyLabels, '等待首次执行', { remove: 'monthly.task.remove', subject: `${task.role.nickname} · ${task.role.uid}`, schedule: `每日 ${clock(task.hour, task.minute ?? 0)} 保存官方默认月份`, owner: `所属用户 ${task.owner.actor_id}` })),
   ...signins.value.map(task => row('signin', task, signinLabels, '等待首次检查', { remove: 'signin.task.remove', subject: `${task.role.nickname} · ${task.role.uid}`, schedule: `每日北京时间 ${task.hour ?? 0}:00 后首次检查时签到`, owner: task.notify ? `私聊通知 ${task.owner.actor_id}` : '不发送结果通知' })),
-  ...communities.value.map(task => row('community', task, communityLabels, '等待执行', { remove: `${task.kind}.task.remove`, subject: `${task.role.nickname} · 社区任务`, schedule: `${task.once ? '执行一次' : `每日 ${clock(task.hour, task.minute || 0)}（北京时间）`} · 进度 ${task.community?.cursor || 0} / ${task.community?.steps?.length || 0}`, owner: `所属用户 ${task.owner.actor_id}` })),
 ])
 async function remove(target: TaskRow) {
   await list.run(async () => {
@@ -108,7 +104,7 @@ loadAll()
             <div v-if="removal === item.key" class="confirm"><p>移除这条{{ kindLabels[item.kind] }}？开启时创建的委托会一并停止。</p><div class="actions"><button class="compact" type="button" :disabled="list.busy.value" @click="removal = ''">保留</button><button class="compact destructive" type="button" :disabled="list.busy.value" @click="remove(item)">确认移除</button></div></div>
           </li>
         </ul>
-        <EmptyState v-else-if="!list.busy.value" icon="tasks" title="还没有定时任务" text="在左侧分区为当前角色开启体力提醒、挑战提醒、月报收集、每日签到或米游社任务。" />
+        <EmptyState v-else-if="!list.busy.value" icon="tasks" title="还没有定时任务" text="在左侧分区为当前角色开启体力提醒、挑战提醒、月报收集或每日签到。" />
       </section>
 
       <Reminders v-else-if="active === 'reminder'" @changed="refresh('reminder')" />
@@ -142,7 +138,6 @@ loadAll()
         <EmptyState v-else-if="!signinTask.busy.value && !list.busy.value" icon="checkin" title="尚未开启自动签到" text="设置北京时间小时与授权天数后为当前角色开启。" />
       </section>
 
-      <AccountTasks v-else-if="active === 'community'" @changed="refresh('community')" />
     </template>
   </Workspace>
 </template>

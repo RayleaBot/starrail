@@ -29,7 +29,7 @@ func (a *App) runTrigger(ctx context.Context, event *rayleabot.EventContext) err
 }
 
 // timedTaskLabels name the timed tasks signinTask creates, by kind.
-var timedTaskLabels = map[string]string{"signin": "每日签到", "monthly": "每日月报收集", "community": "米游社任务"}
+var timedTaskLabels = map[string]string{"signin": "每日签到", "monthly": "每日月报收集"}
 
 // reminderJob is the scheduler job of a stored reminder or timed task.
 func (a *App) reminderJob(task Reminder) rayleabot.SchedulerCreateRequest {
@@ -40,8 +40,6 @@ func (a *App) reminderJob(task Reminder) rayleabot.SchedulerCreateRequest {
 		cron, label = "*/5 * * * *", challenge.Label+"挑战提醒"
 	case "signin", "monthly":
 		label = timedTaskLabels[task.Kind]
-	case "community":
-		cron, label = "* * * * *", timedTaskLabels[task.Kind]
 	}
 	return rayleabot.SchedulerCreateRequest{TaskID: task.Ref, Cron: cron, LogLabel: a.Game.Name + label}
 }

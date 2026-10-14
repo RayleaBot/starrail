@@ -14,17 +14,15 @@ import (
 )
 
 type Reminder struct {
-	Once          bool          `json:"once,omitempty"`
-	Community     CommunityPlan `json:"community,omitempty"`
-	ChallengeKind string        `json:"challenge_kind,omitempty"`
-	Metric        string        `json:"metric,omitempty"`
-	Minute        int           `json:"minute,omitempty"`
-	Weekday       int           `json:"weekday,omitempty"`
-	Kind          string        `json:"kind,omitempty"`
-	Hour          int           `json:"hour,omitempty"`
-	Notify        bool          `json:"notify,omitempty"`
-	LastSignDay   string        `json:"last_sign_day,omitempty"`
-	Ref           string        `json:"ref"`
+	ChallengeKind string `json:"challenge_kind,omitempty"`
+	Metric        string `json:"metric,omitempty"`
+	Minute        int    `json:"minute,omitempty"`
+	Weekday       int    `json:"weekday,omitempty"`
+	Kind          string `json:"kind,omitempty"`
+	Hour          int    `json:"hour,omitempty"`
+	Notify        bool   `json:"notify,omitempty"`
+	LastSignDay   string `json:"last_sign_day,omitempty"`
+	Ref           string `json:"ref"`
 	Selection
 	Owner         Subject `json:"owner"`
 	Role          Role    `json:"role"`
@@ -206,8 +204,6 @@ func (s *ReminderStore) run(task *Reminder, now int64, query func(Reminder) (Que
 		return s.save(*task)
 	}
 	switch task.Kind {
-	case "community":
-		return s.tickCommunity(task, now, query, send, game)
 	case "monthly":
 		return s.tickMonthly(task, now, query, send, game)
 	case "challenge":
@@ -273,16 +269,6 @@ func (a *App) runReminder(ctx context.Context, event *rayleabot.EventContext, re
 				return result, gameError("input_invalid", "挑战任务玩法无效。")
 			}
 			params["operation"] = kind.Operation
-		}
-		if task.Kind == "community" {
-			params["operation"] = a.Game.ID + ".community_run"
-			params["write_confirmed"] = true
-			step := task.Community.Steps[task.Community.Cursor]
-			value := map[string]any{"action": step.Action}
-			if step.PostID != "" {
-				value["post_id"] = step.PostID
-			}
-			params["input"] = value
 		}
 		if task.Kind == "monthly" {
 			params["operation"] = a.Game.ID + ".monthly"

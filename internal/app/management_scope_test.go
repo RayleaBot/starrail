@@ -21,7 +21,7 @@ func managementEvent(protocol, bot string) *rayleabot.EventContext {
 
 func TestAccountManagementRequiresHostBot(t *testing.T) {
 	app := &App{}
-	for _, action := range []string{"accounts.list", "accounts.select", "query", "groups.list", "groups.set", "groups.clear", "challenge.list", "challenge.clear", "content.subscription.list", "content.subscription.remove", "reminder.list", "reminder.create", "reminder.remove", "signin.status", "signin.run", "signin.task.create", "signin.task.remove", "monthly.list", "monthly.task.list", "challenge.reminder.create", "community.task.list", "gacha.sync.start", "gacha.sync.cancel", "gacha.task.list", "gacha.task.cancel", "billing.sync.cancel", "panel.history.export", "cloud.archive.export.close", "cloud.ocr.compare"} {
+	for _, action := range []string{"accounts.list", "accounts.select", "query", "groups.list", "groups.set", "groups.clear", "challenge.list", "challenge.clear", "content.subscription.list", "content.subscription.remove", "reminder.list", "reminder.create", "reminder.remove", "signin.status", "signin.run", "signin.task.create", "signin.task.remove", "monthly.list", "monthly.task.list", "challenge.reminder.create", "community.sign", "gacha.sync.start", "gacha.sync.cancel", "gacha.task.list", "gacha.task.cancel", "billing.sync.cancel", "panel.history.export", "cloud.archive.export.close", "cloud.ocr.compare"} {
 		t.Run(action, func(t *testing.T) {
 			_, err := app.Manage(t.Context(), managementEvent("", ""), action, map[string]any{"bot": map[string]any{"source_protocol": "onebot11", "bot_id": "forged"}})
 			if err == nil || PublicError(err).Code != "platform.invalid_request" {
@@ -88,7 +88,7 @@ func TestManagementTaskIsolation(t *testing.T) {
 	a := pluginApp(t)
 	for _, bot := range []string{"a", "b"} {
 		owner := Subject{SourceProtocol: "onebot11", BotID: bot, ActorID: "u"}
-		for _, kind := range []string{"", "signin", "monthly", "community", "challenge"} {
+		for _, kind := range []string{"", "signin", "monthly", "challenge"} {
 			if err := seedReminders(a.Reminders, []Reminder{{Ref: bot + ":" + kind, Kind: kind, Owner: owner}}); err != nil {
 				t.Fatal(err)
 			}
@@ -108,7 +108,7 @@ func TestManagementTaskIsolation(t *testing.T) {
 		a.BackgroundSyncs.begin(BackgroundSync{Ref: bot, Owner: owner, Role: Role{UID: bot}, State: "running"})
 	}
 	event := managementEvent("onebot11", "a")
-	for _, action := range []string{"reminder.list", "signin.task.list", "monthly.task.list", "community.task.list", "challenge.reminder.list"} {
+	for _, action := range []string{"reminder.list", "signin.task.list", "monthly.task.list", "challenge.reminder.list"} {
 		result, err := a.Manage(t.Context(), event, action, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -126,13 +126,13 @@ func TestManagementTaskIsolation(t *testing.T) {
 	if err != nil || len(result["items"].([]ContentSubscription)) != 1 {
 		t.Fatal(result, err)
 	}
-	for action, ref := range map[string]string{"reminder.remove": "b:", "signin.task.remove": "b:signin", "monthly.task.remove": "b:monthly", "community.task.remove": "b:community", "challenge.reminder.remove": "b:challenge", "gacha.task.remove": "sync:b", "gacha.task.run": "sync:b", "gacha.task.cancel": "b", "content.subscription.remove": "push:b"} {
+	for action, ref := range map[string]string{"reminder.remove": "b:", "signin.task.remove": "b:signin", "monthly.task.remove": "b:monthly", "challenge.reminder.remove": "b:challenge", "gacha.task.remove": "sync:b", "gacha.task.run": "sync:b", "gacha.task.cancel": "b", "content.subscription.remove": "push:b"} {
 		_, err := a.Manage(t.Context(), event, action, map[string]any{"ref": ref, "confirm": true})
 		if err == nil || PublicError(err).Code != "platform.invalid_request" {
 			t.Fatal(action, err)
 		}
 	}
-	if items, _ := a.Reminders.List(); len(items) != 10 {
+	if items, _ := a.Reminders.List(); len(items) != 8 {
 		t.Fatal("cross-account delete changed tasks")
 	}
 	if !a.BackgroundSyncs.running("b") {

@@ -17,9 +17,6 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 	if strings.HasPrefix(action, "monthly.task.") {
 		kind, root, operation, taskPrefix = "monthly", "monthly.task.", a.Game.ID+".monthly", "game.monthly."
 	}
-	if strings.HasPrefix(action, "community.task.") {
-		kind, root, operation, taskPrefix = "community", "community.task.", a.Game.ID+".community_run", "game.community."
-	}
 	label := timedTaskLabels[kind]
 	if action == root+"list" {
 		items, err := a.Reminders.List()
@@ -32,11 +29,6 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 	var q struct {
 		Selection
 		Days    int  `json:"days"`
-		Once    bool `json:"once"`
-		Read    bool `json:"read"`
-		Like    bool `json:"like"`
-		Share   bool `json:"share"`
-		Unlike  bool `json:"unlike"`
 		Hour    int  `json:"hour"`
 		Minute  int  `json:"minute"`
 		Notify  bool `json:"notify"`
@@ -46,21 +38,12 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 		return nil, gameError("input_invalid", label+"需要明确开启，并选择有效时间和 1–90 天。")
 	}
 	client := a.accountClient(event)
-	var account Account
-	var role Role
-	var err error
-	if kind == "community" {
-		q.RoleRef = ""
-		account, err = client.AuthorizeAccount(ctx, q.AccountRef)
-		role = Role{Game: a.Game.ID, Nickname: account.AccountLabel}
-	} else {
-		account, role, err = client.Authorize(ctx, q.Selection)
-	}
+	account, role, err := client.Authorize(ctx, q.Selection)
 	if err != nil {
 		return nil, err
 	}
 	sum := sha256.Sum256([]byte(client.Provider + "\x00" + q.AccountRef + "\x00" + q.RoleRef))
-	task := Reminder{Ref: taskPrefix + a.Game.ID + "." + hex.EncodeToString(sum[:]), Selection: q.Selection, Owner: account.Owner, Role: role, Provider: client.Provider, Kind: kind, Once: q.Once, Community: CommunityPlan{Read: q.Read, Like: q.Like, Share: q.Share, Unlike: q.Unlike}, Hour: q.Hour, Minute: q.Minute, Notify: q.Notify}
+	task := Reminder{Ref: taskPrefix + a.Game.ID + "." + hex.EncodeToString(sum[:]), Selection: q.Selection, Owner: account.Owner, Role: role, Provider: client.Provider, Kind: kind, Hour: q.Hour, Minute: q.Minute, Notify: q.Notify}
 	err = a.Reminders.edit(task.Ref, func(items *[]Reminder, _ int) error {
 		if len(*items) >= 256 {
 			return gameError("reminder_limit", "任务数量已达上限。")
@@ -90,7 +73,7 @@ func (a *App) signinTask(ctx context.Context, event *rayleabot.EventContext, act
 	}
 	if err == nil {
 		task.Enabled = true
-		if kind == "monthly" || (kind == "community" && !q.Once) {
+		if kind == "monthly" {
 			task.NextCheckMS = nextChallengeCheck(time.Now().UnixMilli(), q.Hour, q.Minute, 0)
 		}
 		err = a.Reminders.edit(task.Ref, func(items *[]Reminder, i int) error {

@@ -356,7 +356,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return event.SendText(friendlyError(readErr))
 		}
 		applyGroupConfig(event, config)
-		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && command != "community-stop" && command != "community-progress" && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
+		if config.Enabled != nil && !*config.Enabled && command != "help" && command != "version" && command != "unsubscribe" && command != "challenge-withdraw" && command != "challenge-stop" && command != "challenge-status" && !(command == "signin-task" && len(args) > 0 && args[0] == "关闭") {
 			return event.Result(map[string]any{"handled": false})
 		}
 	}
@@ -428,12 +428,8 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 			return a.updateByLink(ctx, event, owned)
 		}
 		return event.SendText("未绑定抽卡链接，请点击链接查看说明\nhttps://mp.weixin.qq.com/s/FFHTor5DiG3W_rfQVs3KJQ\n发送[" + prefix + "抽卡链接]绑定")
-	case "community-progress":
-		return a.communityProgress(ctx, event)
-	case "community-task", "community-stop":
-		return a.accountTaskCommand(ctx, event, command, args)
-	case "community-status", "community-sign":
-		return a.communityCommand(ctx, event, command, args)
+	case "community-sign":
+		return a.communityCommand(ctx, event, args)
 	case "cloud-verify-code", "cloud-verify":
 		return a.arkVerifyCommand(ctx, event, command, args)
 	case "public-profile":
@@ -896,11 +892,8 @@ func (a *App) Manage(ctx context.Context, event *rayleabot.EventContext, action 
 		if strings.HasPrefix(action, "artwork.") {
 			return a.artworkAction(action, input)
 		}
-		if strings.HasPrefix(action, "community.task.") {
-			return a.signinTask(ctx, event, action, input)
-		}
-		if strings.HasPrefix(action, "community.") {
-			return a.communityAction(ctx, a.accountClient(event), action, input)
+		if action == "community.sign" {
+			return a.communitySign(ctx, a.accountClient(event), input)
 		}
 		if strings.HasPrefix(action, "simulation.") {
 			return a.simulationAction(event, action, input)

@@ -13,16 +13,14 @@ import GroupsWorkspace from './workspaces/GroupsWorkspace.vue'
 import CloudWorkspace from './workspaces/CloudWorkspace.vue'
 import SettingsWorkspace from './workspaces/SettingsWorkspace.vue'
 
-// One workspace per host page. Pages the manifest no longer declares open the
-// workspace that absorbed them, so an old link still lands somewhere useful.
+// One workspace per host page; unknown page IDs open the overview.
 const workspaces = { overview: QueryWorkspace, catalog: CatalogWorkspace, gacha: GachaWorkspace, tasks: TasksWorkspace, account: AccountWorkspace, groups: GroupsWorkspace, cloud: CloudWorkspace, settings: SettingsWorkspace } as const
 type Page = keyof typeof workspaces
-const absorbed: Record<string, Page> = { history: 'overview', growth: 'overview', resources: 'catalog', guides: 'catalog', content: 'catalog', media: 'catalog', simulation: 'gacha', reminders: 'tasks', signin: 'account', community: 'account', assets: 'account', help: 'settings' }
 const accountPages = new Set<Page>(['overview', 'gacha', 'tasks', 'account', 'cloud'])
 
 const host = usePluginHost()
 const requested = host.client.pageId || 'overview'
-const page: Page = requested in workspaces ? requested as Page : absorbed[requested] ?? 'overview'
+const page: Page = requested in workspaces ? requested as Page : 'overview'
 const workspace = workspaces[page]
 
 const game = ref<Game | null>(null)
