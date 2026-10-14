@@ -12,7 +12,7 @@ const shell = useShell()
 const operation = useOperation('材料读取未完成，请重试。')
 const { busy, error } = operation
 const sourceVersion = ref(''), query = ref(''), materials = ref<Material[]>([]), total = ref(0), offset = ref(0), next = ref<number | null>(null)
-const kinds: Record<string, string> = { char: '角色晋阶材料', normal: '周本行迹材料', exp: '经验材料', material: '其他材料' }
+const kinds: Record<string, string> = { boss: '角色晋阶材料', talent: '行迹材料', normal: '通用培养材料', weekly: '周本材料', virtual: '其他材料' }
 let target = 0
 const reader = useReader(operation, async stale => {
   const at = target
@@ -37,7 +37,7 @@ load()
       <li v-for="item in materials" :key="`${item.kind}:${item.id}:${item.name}`">
         <div class="row-main">
           <strong>{{ item.name }} · {{ item.rarity }} 星</strong>
-          <div class="row-meta"><span>{{ kinds[item.kind] || '培养材料' }}</span><span v-if="item.family && item.family !== item.name">{{ item.family }}</span><span v-if="item.sources.length">来源：{{ item.sources.join('；') }}</span></div>
+          <div class="row-meta"><span>{{ kinds[item.kind] || '培养材料' }}</span><span v-if="item.family && item.family !== item.name">同系列：{{ item.family }}</span><span v-if="item.sources.length">来源：{{ item.sources.join('；') }}</span></div>
           <p v-if="item.description" class="hint">{{ item.description }}</p>
         </div>
       </li>

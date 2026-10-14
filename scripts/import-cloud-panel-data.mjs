@@ -1,7 +1,7 @@
 // Converts miao-plugin's relic metadata into the table the cloud panel reader
 // uses. Only the fixed metadata modules are read; no plugin runtime is loaded.
 //
-// Usage: node scripts/import-cloud-panel-data.mjs <参考项目/2026-09-15>
+// Usage: node scripts/import-cloud-panel-data.mjs <参考项目/2026-10-13>
 // Writes internal/assets/data/cloud-panels.json.
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -9,7 +9,9 @@ import vm from 'node:vm'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const artifactDir = path.join(path.resolve(process.argv[2]), 'miao-plugin/resources/meta-sr/artifact')
+const refs = path.resolve(process.argv[2])
+const { commit } = JSON.parse(await fs.readFile(path.join(refs, 'miao-plugin.source.json'), 'utf8'))
+const artifactDir = path.join(refs, 'miao-plugin/resources/meta-sr/artifact')
 const readJSON = async file => JSON.parse(await fs.readFile(path.join(artifactDir, file), 'utf8'))
 
 // moduleValue evaluates meta.js without its imports and returns expression.
@@ -38,6 +40,6 @@ for (const set of Object.values(await readJSON('data.json'))) {
   }
 }
 
-const out = { version: 'miao-7f6f1c84c891', attrMap: attrs, items, meta: await readJSON('meta.json') }
+const out = { version: 'miao-' + commit.slice(0, 12), attrMap: attrs, items, meta: await readJSON('meta.json') }
 await fs.writeFile(path.join(root, 'internal/assets/data/cloud-panels.json'), JSON.stringify(out) + '\n')
 console.log(JSON.stringify({ items: Object.keys(items).length }))

@@ -23,7 +23,10 @@ func resourceView(game Game, action string, result map[string]any) View {
 		items := result["materials"].([]MaterialInfo)
 		v.Title = game.Name + "材料查询"
 		for _, m := range items[:min(10, len(items))] {
-			value := fmt.Sprintf("%d 星 · %s", m.Rarity, m.Family)
+			value := fmt.Sprintf("%d 星", m.Rarity)
+			if m.Family != m.Name {
+				value += " · 同系列：" + m.Family
+			}
 			if len(m.Sources) > 0 {
 				value += "\n" + strings.Join(m.Sources, "；")
 			}
