@@ -2,7 +2,7 @@
 // Only numerical modules are transpiled; nothing here starts Yunzai, reads
 // configuration, fetches resources or loads user code.
 //
-// Usage: node scripts/bundle-reference-calculation.mjs <参考项目/2026-09-15>
+// Usage: node scripts/bundle-reference-calculation.mjs <参考项目/2026-10-13>
 //
 // Writes the miao runtime to internal/reference/miao/common.js and the calc
 // directory internal/assets/calc: catalog.json, game.js (light cone and set
@@ -21,20 +21,14 @@ if (!references) throw new Error('Usage: bundle-reference-calculation.mjs <refer
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const typescript = createRequire(path.join(root, 'ui/package.json'))('typescript')
 const miao = path.join(references, 'miao-plugin')
+const { commit } = JSON.parse(await fs.readFile(path.join(references, 'miao-plugin.source.json'), 'utf8'))
 const game = 'sr'
 
 const allowedImports = ['lodash', '#miao', './DmgCalcMeta.js', './DmgMastery.js', './AttrItem.js', '../Base.js', '../index.js', '#miao.models', './AttrData.js', './common/Elem.js', './ArtisMark.js', './ArtisMarkCfg.js', '../../artifact/artis-mark.js']
 
-// Two pinned formulas look up misnamed table rows; each patch fails loudly once
+// One pinned formula looks up a misnamed table row; the patch fails loudly once
 // upstream changes, see internal/reference/miao/PATCHES.md.
 function patch(file, source) {
-  if (file === 'resources/meta-sr/character/真珠/calc.js') {
-    for (const label of ['百分比生命', '固定值']) {
-      const before = '目标治疗·' + label
-      if (source.split(before).length !== 3) throw new Error('Pearl compatibility patch no longer applies')
-      source = source.replaceAll(before, '治疗·' + label)
-    }
-  }
   if (file === 'resources/meta-sr/character/刻律德菈/calc.js') {
     const before = "talent.t['攻击力提高上限']"
     if (source.split(before).length !== 2) throw new Error('Cerydra compatibility patch no longer applies')
@@ -49,7 +43,7 @@ async function module(file, provided) {
 }
 const relative = file => path.relative(miao, file).replaceAll('\\', '/')
 
-let common = '// Fixed miao-plugin 7f6f1c84; MIT, see LICENSES. Generated numeric modules.\n'
+let common = `// Fixed miao-plugin ${commit.slice(0, 8)}; MIT, see LICENSES. Generated numeric modules.\n`
 common += `const Elem=${await module('components/common/Elem.js')}.default;\nFormat=${await module('components/Format.js')}.default;\n`
 for (const [name, file] of [['AttrItem', 'dmg/AttrItem'], ['DmgMastery', 'dmg/DmgMastery'], ['DmgAttr', 'dmg/DmgAttr'], ['DmgCalc', 'dmg/DmgCalc'], ['AttrData', 'attr/AttrData'], ['Attr', 'attr/Attr']]) {
   if (name === 'DmgMastery') common += `const {erType,erTitle,eleBaseDmg,breakBaseDmg,cryBaseDmg,elationBaseDmg}=${await module('models/dmg/DmgCalcMeta.js')};\n`
@@ -64,7 +58,7 @@ for (const directory of ['characters', 'scores']) {
   await fs.rm(path.join(calc, directory), { recursive: true, force: true })
   await fs.mkdir(path.join(calc, directory), { recursive: true })
 }
-const catalog = { version: 'miao-7f6f1c84-reference-v1', characters: [], weapons: [], coverage: [] }
+const catalog = { version: 'miao-' + commit.slice(0, 8) + '-reference-v1', characters: [], weapons: [], coverage: [] }
 
 // Showcase answers name a relic only by ID, and 面板换装 swaps a relic's set:
 // the set and slot give the relic's name.
@@ -108,7 +102,7 @@ const scoreScript = async (directory, data) => {
   return script
 }
 // Upstream names characters through its index, which a per-character
-// data.json can disagree with (星·欢愉/data.json says 星·同谐).
+// data.json can disagree with.
 const index = JSON.parse(await fs.readFile(path.join(resources, 'character/data.json'), 'utf8'))
 const addCharacter = async (data, source, code, authored, score) => {
   const key = game + '_' + data.id

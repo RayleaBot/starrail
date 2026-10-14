@@ -13,8 +13,8 @@ import (
 )
 
 // score-vectors.json holds three shared panels and the expected per-slot marks
-// for every character. The marks were checked against the pinned miao
-// ArtisMark rules when scoring moved to the script engine; "$dmg" stands for
+// for every character, checked against miao ArtisMark at c9fe416e
+// (posMaxMark per main stat, capped at 70); "$dmg" stands for
 // the damage-slot main stat named by each vector.
 type scoreFixture struct {
 	Contexts []map[string]any `json:"contexts"`

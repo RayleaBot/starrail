@@ -321,7 +321,7 @@ function runBuild(record, weapons, input) {
     if (next && !legalPromotions(candidateProfile.weapon.level).includes(candidateProfile.weapon.promote)) throw Error('weapon.promote');
     candidate = calculateProfile(candidateProfile, input.attributes, original, input.enemy_level, input.conditions);
   }
-  return { source: 'simulation', version: 'miao-7f6f1c84-reference-v1', character_id: record.id, character: record.name, enemy_level: input.enemy_level, baseline, candidate };
+  return { source: 'simulation', version: 'miao-c9fe416e-reference-v1', character_id: record.id, character: record.name, enemy_level: input.enemy_level, baseline, candidate };
 }
 
 // scoringArtifacts stands in for upstream's Artis for ArtisMarkCfg: set

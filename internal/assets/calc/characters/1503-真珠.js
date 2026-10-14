@@ -1,17 +1,18 @@
 const characterRule=(()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buffs = exports.mainAttr = exports.defParams = exports.defDmgIdx = exports.details = void 0;
+exports.buffs = exports.createdBy = exports.mainAttr = exports.defParams = exports.defDmgIdx = exports.details = void 0;
 exports.details = [{
         title: '战技治疗',
-        dmg: ({ talent, attr }, { heal }) => heal(attr.def * talent.e['治疗·百分比生命'] + talent.e['治疗·固定值'])
+        dmg: ({ talent, attr, calc }, { heal }) => heal(calc(attr.def) * talent.e['治疗·百分比生命'] + talent.e['治疗·固定值'])
     }, {
         title: '强普治疗',
-        dmg: ({ talent, attr }, { heal }) => heal(attr.def * talent.a2['治疗·百分比生命'] + talent.a2['治疗·固定值'])
+        dmg: ({ talent, attr, calc }, { heal }) => heal(calc(attr.def) * talent.a2['治疗·百分比生命'] + talent.a2['治疗·固定值'])
     }];
 exports.defDmgIdx = 1;
 exports.defParams = { certifiedBanger: 50 };
-exports.mainAttr = 'def,cpct,cdmg';
+exports.mainAttr = 'def,heal,effDef,speed';
+exports.createdBy = '欧阳青瓜';
 exports.buffs = [{
         title: '行迹-洞察万物：自身欢愉度提高[joy]%。治疗量加成[heal]%。',
         tree: 1,
