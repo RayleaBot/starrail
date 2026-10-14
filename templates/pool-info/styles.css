@@ -1171,3 +1171,7 @@ ul.cont-msg li strong,
 
 body { width: 740px; }
 [data-render-resource]:not(img) { background-image: var(--render-resource, none) !important; }
+
+.reprint-tip { font-size: 16px; line-height: 22px; font-weight: bold; padding: 6px 20px 10px; text-shadow: 0 0 2px rgba(0,0,0,0.6); }
+.reprint-tip.is-away { color: #ff5a5a; }
+.reprint-tip.is-up { color: #3ddc84; }

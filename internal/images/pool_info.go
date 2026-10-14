@@ -83,7 +83,11 @@ func PoolInfo(context app.ImageContext, page app.PoolImage) (app.Image, bool) {
 		}
 		pools = append(pools, map[string]any{"version": pool.Version, "half": pool.Half, "from": pool.From, "to": pool.To, "mix": pool.Kind == "chronicled", "groups": groups})
 	}
-	return app.Image{Template: "pool-info", Data: map[string]any{"elem": poolElem, "pools": pools}, Resources: resources.List}, true
+	data := map[string]any{"elem": poolElem, "pools": pools}
+	if page.Reprint != nil {
+		data["reprint"] = map[string]any{"up": page.Reprint.Up, "text": page.Reprint.Text}
+	}
+	return app.Image{Template: "pool-info", Data: data, Resources: resources.List}, true
 }
 
 // lightConePaths are the light cones' paths by ID, the folders miao keeps

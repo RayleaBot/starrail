@@ -1,8 +1,11 @@
 package app
 
 import (
+	"cmp"
 	"context"
+	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,10 +15,16 @@ import (
 // PoolImage is 卡池 as miao's gacha/gacha-info draws it: the banners of a
 // version, or those that featured one character or weapon, which show only
 // the item's own row unless Detail asks for the whole banner.
+type PoolReprint struct {
+	Up   bool
+	Text string
+}
+
 type PoolImage struct {
-	Pools  []PoolInfo
-	Item   Entry
-	Detail bool
+	Reprint *PoolReprint
+	Pools   []PoolInfo
+	Item    Entry
+	Detail  bool
 }
 
 // PoolImageBuilder draws PoolImage.
@@ -67,10 +76,17 @@ func (a *App) poolCommand(ctx context.Context, event *rayleabot.EventContext, co
 			}
 		}
 	}
+	sortPoolsDesc(page.Pools)
+	if page.Item.ID != "" {
+		page.Reprint = poolReprint(page.Pools, a.now())
+	}
 	if len(page.Pools) == 0 {
 		return event.SendText("未找到 " + label + " 的卡池信息")
 	}
 	view := View{Title: a.Game.Name + "卡池", Rows: []Row{}}
+	if page.Reprint != nil {
+		view.Note = page.Reprint.Text
+	}
 	for _, pool := range page.Pools {
 		names := []string{}
 		for _, group := range [][]string{pool.Characters5, pool.Characters4, pool.Weapons5, pool.Weapons4} {
@@ -101,4 +117,45 @@ func currentPool(pools []PoolInfo, now time.Time) (pool PoolInfo, current bool) 
 		}
 	}
 	return pool, current
+}
+
+// sortPoolsDesc orders numeric versions first, then actual start times.
+func sortPoolsDesc(pools []PoolInfo) {
+	version := func(s string) int {
+		value := 0
+		for _, part := range strings.Split(s, ".") {
+			n, _ := strconv.Atoi(part)
+			value = value*1000 + n
+		}
+		return value
+	}
+	slices.SortStableFunc(pools, func(a, b PoolInfo) int {
+		if order := cmp.Compare(version(b.Version), version(a.Version)); order != 0 {
+			return order
+		}
+		return cmp.Compare(b.From, a.From)
+	})
+}
+
+func poolReprint(pools []PoolInfo, now time.Time) *PoolReprint {
+	stamp, lastTo := now.In(chinaZone).Format(time.DateTime), ""
+	for _, p := range pools {
+		if p.From > stamp {
+			continue
+		}
+		if p.To >= stamp {
+			return &PoolReprint{Up: true, Text: "该角色/武器正在UP"}
+		}
+		if p.To > lastTo {
+			lastTo = p.To
+		}
+	}
+	if lastTo == "" {
+		return nil
+	}
+	ended, err := time.ParseInLocation(time.DateTime, lastTo, chinaZone)
+	if err != nil {
+		return nil
+	}
+	return &PoolReprint{Text: fmt.Sprintf("该角色/武器已 %d 天未复刻", int(now.Sub(ended)/(24*time.Hour)))}
 }

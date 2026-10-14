@@ -4,6 +4,7 @@
 <body class="elem-{{ .elem }} default-mode">
 <div class="container elem-bg" id="container">
 <div class="basic">
+  {{ with .reprint }}<div class="reprint-tip {{ if .up }}is-up{{ else }}is-away{{ end }}">{{ .text }}</div>{{ end }}
   {{ range .pools }}
   <div class="cont pool-cont">
     <div class="cont-title pool-title">
