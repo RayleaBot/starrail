@@ -1071,8 +1071,8 @@
     {
       "id": "materials",
       "name": "材料",
-      "description": "角色或光锥所需的养成材料",
-      "usage": "#<名称>材料",
+      "description": "发送米游社合集中该角色的培养素材图（突破、材料、培养同义），“更新”重新查找；名称不是角色时查询该材料的稀有度、同系列与来源",
+      "usage": "#[更新]<角色>素材 / #<材料>材料",
       "permission": "everyone",
       "trigger": {
         "type": "pattern",

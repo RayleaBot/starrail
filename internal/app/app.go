@@ -487,7 +487,7 @@ func (a *App) Handle(ctx context.Context, event *rayleabot.EventContext) error {
 		return a.poolCommand(ctx, event, command, args)
 	case "materials":
 		if len(args) == 0 {
-			return event.SendText("使用“" + prefix + "<名称>材料”查询角色或光锥的养成材料。")
+			return event.SendText("使用“" + prefix + "<角色>素材”发送角色培养素材图，“" + prefix + "<材料>材料”查询材料来源。")
 		}
 		if answered, err := a.materialCommand(ctx, event, args); answered {
 			return err

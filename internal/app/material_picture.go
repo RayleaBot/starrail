@@ -3,29 +3,34 @@ package app
 import (
 	"context"
 	"net/url"
+	"slices"
+	"strconv"
 	"strings"
 
 	rayleabot "github.com/RayleaBot/RayleaBot/sdk/go"
 )
 
 // Yunzai's 角色素材 (material.js) for Star Rail: 符玄素材, 符玄突破, 符玄培养
-// send the character's material picture from 小橙子啊's 米游社 collection,
-// else from two others; 更新 reads the collections again.
+// send the character's material picture from 米游社 collections;
+// 更新 reads the collections again.
 
-// materialCollections are Yunzai's srCollection_id in the order it tries
-// them, with the index of the picture each keeps in a post: the first two
-// in the post's own images, the last in the listed images.
+// Yunzai's first collections, 小橙子阿 (1998643, stopped at V3.8) and
+// 紫喵Azunya (2146693, stopped at V3.2), no longer update. Prefer the active
+// 让我摸个鱼吧Moyu 养成材料合集 (2279356). In 1998643, only 角色攻略 posts
+// through V2.5 put a wide material table third; later ones put a tall
+// light-cone guide there. All three collections use image_list.
 var materialCollections = []struct {
-	id    string
-	image int
-	post  bool
-}{{"1998643", 2, true}, {"2146693", 0, true}, {"2279356", 0, false}}
+	id      string
+	image   int
+	subject string
+	wide    bool
+}{{"2279356", 0, "", false}, {"2146693", 0, "", false}, {"1998643", 2, "角色攻略", true}}
 
 var materialOSS = "?x-oss-process=image//resize,s_1000/quality,q_80/auto-orient,0/interlace,1/format,jpg"
 
 // materialPicture is the address of a character's material picture, "" when
 // no collection has a post naming it.
-func (c PublicContentClient) materialPicture(ctx context.Context, name string) (string, error) {
+func (c PublicContentClient) materialPicture(ctx context.Context, target guideTarget, others []guideTarget) (string, error) {
 	for _, collection := range materialCollections {
 		page, err := c.collection(ctx, collection.id)
 		if err != nil {
@@ -33,21 +38,23 @@ func (c PublicContentClient) materialPicture(ctx context.Context, name string) (
 		}
 		for _, raw := range asList(page["posts"]) {
 			item := asObject(raw)
-			post := asObject(item["post"])
-			if !strings.Contains(asText(post["subject"]), name) {
+			subject := asText(asObject(item["post"])["subject"])
+			if !target.names(subject) || !strings.Contains(subject, collection.subject) || slices.ContainsFunc(others, func(other guideTarget) bool { return other.names(subject) }) {
 				continue
 			}
 			images := asList(item["image_list"])
-			if collection.post {
-				images = asList(post["images"])
-			}
 			if collection.image >= len(images) {
-				break
+				continue
 			}
-			found := asText(images[collection.image])
-			if !collection.post {
-				found = asText(asObject(images[collection.image])["url"])
+			image := asObject(images[collection.image])
+			if collection.wide {
+				width, _ := strconv.ParseFloat(asText(image["width"]), 64)
+				height, _ := strconv.ParseFloat(asText(image["height"]), 64)
+				if width <= height {
+					continue
+				}
 			}
+			found := asText(image["url"])
 			link, err := url.Parse(found)
 			if err != nil || link.Scheme != "https" || !(strings.HasSuffix(link.Hostname(), ".miyoushe.com") || strings.HasSuffix(link.Hostname(), ".mihoyo.com")) {
 				return "", gameError("public_invalid", "素材图片地址不在允许范围内。")
@@ -56,6 +63,20 @@ func (c PublicContentClient) materialPicture(ctx context.Context, name string) (
 		}
 	}
 	return "", nil
+}
+
+func (a *App) otherCharacterTargets(target guideTarget) []guideTarget {
+	var others []guideTarget
+	for _, entry := range a.Catalog.Entries {
+		if entry.Kind != "character" {
+			continue
+		}
+		other := a.guideTargetFor(entry)
+		if other.Word != target.Word || other.Trailblazer != target.Trailblazer {
+			others = append(others, other)
+		}
+	}
+	return others
 }
 
 // materialCommand sends a character's material picture; a name that is no
@@ -78,7 +99,8 @@ func (a *App) materialCommand(ctx context.Context, event *rayleabot.EventContext
 	link, cached := a.guides.get(key)
 	if !cached || refresh {
 		var err error
-		if link, err = a.Content.materialPicture(ctx, entry.Name); err != nil {
+		target := a.guideTargetFor(entry)
+		if link, err = a.Content.materialPicture(ctx, target, a.otherCharacterTargets(target)); err != nil {
 			return true, event.SendText("暂无素材数据，请稍后再试")
 		}
 		if link == "" {
