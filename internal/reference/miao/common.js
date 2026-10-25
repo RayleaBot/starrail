@@ -1,4 +1,5 @@
-// Fixed miao-plugin c9fe416e; MIT, see LICENSES. Generated numeric modules.
+// Fixed miao-plugin 90c790b5; MIT, see LICENSES. Generated numeric modules.
+const referenceVersion="miao-90c790b5-reference-v1";
 const Elem=(()=>{const exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });

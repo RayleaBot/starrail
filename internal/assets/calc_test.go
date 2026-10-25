@@ -45,6 +45,7 @@ func TestReferenceProfiles(t *testing.T) {
 				t.Fatal(err)
 			}
 			var output struct {
+				Version  string `json:"version"`
 				Baseline struct {
 					Results []struct {
 						Expected *float64 `json:"expected"`
@@ -55,6 +56,9 @@ func TestReferenceProfiles(t *testing.T) {
 			}
 			if json.Unmarshal(result, &output) != nil || len(output.Baseline.Results) != len(v.Results) {
 				t.Fatal("result shape changed")
+			}
+			if output.Version != metadata.Version {
+				t.Fatalf("result version %q differs from catalog %q", output.Version, metadata.Version)
 			}
 			equal := func(a, b float64) bool { return math.Abs(a-b) <= 1e-8*math.Max(1, math.Abs(b)) }
 			for i, expected := range v.Results {

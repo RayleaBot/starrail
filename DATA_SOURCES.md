@@ -2,9 +2,11 @@
 
 本插件的固定资料由 `scripts/import-reference-data.py` 从已下载参考 JSON 转换，源提交记录在 `internal/assets/catalog.json`。转换保留角色与光锥的名称、命途、80 级基础属性、技能文字（角色技能按普攻 6 级、其余 10 级填入数值，光锥技能写叠影 1 到 5 的区间）、星魂文字与材料，不包含素材图片；伤害与评分由打包的上游脚本计算，见下文。
 
-星铁图鉴、别名、材料、卡池、云面板装备资料、伤害与评分来自 miao-plugin，固定提交 c9fe416ea8d22140101a33246dc380a140e7e068；保留 LICENSES/miao-plugin-MIT.txt。
+星铁图鉴、别名、材料、卡池、云面板装备资料、伤害与评分来自 miao-plugin，固定提交 90c790b556dc34e0cf0c7274127ea9d68e9b2dd9；保留 LICENSES/miao-plugin-MIT.txt。
 
-固定快照目录为 `<参考项目/2026-10-13>`。StarRail-plugin 固定在 `3e68a03fccde6e00100536b102e93b31d609a1cf`，ark-plugin 固定在 `bdced6bf8b1821e0b5e5a96ed4d7e78beda089a1`；Miao-Yunzai 保持 `40cc2103efba1fbb279b768e3f5345d45372d357`，Yunzai-genshin 保持 `4a2e1fb8f094b2a8f039ce0768773701718b60b9`，Atlas 保持 `016e49357666e0823791abdf28fbb3b2efe68225`，对应的 `*.source.json` 随快照保存。
+2026-10-24 核对的 StarRail-plugin 最新提交仍为 `3e68a03fccde6e00100536b102e93b31d609a1cf`；miao 新提交没有改变本插件使用的星铁资料或公式。图鉴仍为 278 项，计算目录含 108 个角色形态、170 个光锥，105 个角色形态有伤害规则。重新生成资料与计算包后，运行时结果中的版本号与计算目录使用同一来源值；抽卡模板及本页明确不移植的功能保持现有范围。
+
+固定快照目录为 `<参考项目/2026-10-24>`。StarRail-plugin 固定在 `3e68a03fccde6e00100536b102e93b31d609a1cf`，ark-plugin 固定在 `bdced6bf8b1821e0b5e5a96ed4d7e78beda089a1`；Miao-Yunzai 固定在 `354b806102f43cb5a216e8e2418b57278246fdb2`，Yunzai-genshin 固定在 `0290a17cd42c52671e3130fe4a0a5aa38a64faa4`，Atlas 保持 `016e49357666e0823791abdf28fbb3b2efe68225`，对应的 `*.source.json` 随快照保存。
 
 没有账号时的面板来自 Mihomo（api.mihomo.me）的 `sr_info_parsed` 中文接口（miao-plugin 星铁的默认面板服务；上游读取未合计的 `sr_info` 后自行合计属性），按五分钟缓存；天赋等级同 miao 的 HomoApi。`templates/panel-list/` 与 `templates/artifact-list/` 按 miao-plugin 的 `character/profile-list` 与 `character/artis-list` 改写（MIT；miao 没有星铁角色的侧脸图，列表不显示头像）。抽卡导入导出遵循 [UIGF](https://uigf.org/en/standards/uigf.html)，尚未申请兼容性认证。
 
@@ -14,7 +16,7 @@
 
 ## 装备评分
 
-评分运行 miao 提交 `c9fe416ea8d22140101a33246dc380a140e7e068` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、星魂、光锥与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。评分按实际主词条计算部位上限，单件封顶 70，同上游。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。
+评分运行 miao 提交 `90c790b556dc34e0cf0c7274127ea9d68e9b2dd9` 的 `ArtisMarkCfg`、`ArtisMark` 与角色专属 `artis.js`，规则按当前属性、星魂、光锥与套装自动选择，与上游一致。`internal/assets/calc/scores/<ID>-<角色名>.js` 由 `scripts/bundle-reference-calculation.mjs` 从 `artis.js` 生成；默认权重（`artis-mark.js`）、主副词条表与套装简称随 `game.js` 打包。评分按实际主词条计算部位上限，单件封顶 70，同上游。回归向量在 `internal/assets/testdata/score-vectors.json`。评分不等于伤害计算或队伍收益。
 
 ## 自动参考计算
 

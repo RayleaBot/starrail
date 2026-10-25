@@ -2,7 +2,7 @@
 // Only numerical modules are transpiled; nothing here starts Yunzai, reads
 // configuration, fetches resources or loads user code.
 //
-// Usage: node scripts/bundle-reference-calculation.mjs <参考项目/2026-10-13>
+// Usage: node scripts/bundle-reference-calculation.mjs <参考项目/2026-10-24>
 //
 // Writes the miao runtime to internal/reference/miao/common.js and the calc
 // directory internal/assets/calc: catalog.json, game.js (light cone and set
@@ -44,6 +44,7 @@ async function module(file, provided) {
 const relative = file => path.relative(miao, file).replaceAll('\\', '/')
 
 let common = `// Fixed miao-plugin ${commit.slice(0, 8)}; MIT, see LICENSES. Generated numeric modules.\n`
+common += `const referenceVersion=${JSON.stringify('miao-' + commit.slice(0, 8) + '-reference-v1')};\n`
 common += `const Elem=${await module('components/common/Elem.js')}.default;\nFormat=${await module('components/Format.js')}.default;\n`
 for (const [name, file] of [['AttrItem', 'dmg/AttrItem'], ['DmgMastery', 'dmg/DmgMastery'], ['DmgAttr', 'dmg/DmgAttr'], ['DmgCalc', 'dmg/DmgCalc'], ['AttrData', 'attr/AttrData'], ['Attr', 'attr/Attr']]) {
   if (name === 'DmgMastery') common += `const {erType,erTitle,eleBaseDmg,breakBaseDmg,cryBaseDmg,elationBaseDmg}=${await module('models/dmg/DmgCalcMeta.js')};\n`

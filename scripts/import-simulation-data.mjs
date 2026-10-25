@@ -1,7 +1,7 @@
 // Converts the StarRail-plugin 模拟抽卡 item pools. Neither the odds nor the
 // banners are advertised as the current official rules.
 //
-// Usage: node scripts/import-simulation-data.mjs <参考项目/2026-10-13>
+// Usage: node scripts/import-simulation-data.mjs <参考项目/2026-10-24>
 // Reads internal/assets/data/resources.json for the banners and writes
 // internal/assets/data/simulation.json.
 import fs from 'node:fs/promises'
@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const refs = path.resolve(process.argv[2])
+const { commit } = JSON.parse(await fs.readFile(path.join(refs, 'StarRail-plugin.source.json'), 'utf8'))
 const dataDir = path.join(root, 'internal/assets/data')
 
 // utils/gachasimulation.js is a data-only module.
@@ -26,7 +27,7 @@ const banners = resources.pools
   .reverse()
 
 const deck = {
-  version: 'entertainment-reference-20261013-v1',
+  version: 'entertainment-' + resources.version + '-starrail-' + commit.slice(0, 12),
   five_characters: gacha.normal.char,
   five_weapons: gacha.normal.weapon,
   four_characters: gacha['four-char'],
