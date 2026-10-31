@@ -13,7 +13,7 @@ func (a *App) assetAccountAction(ctx context.Context, client AccountsClient, act
 			return nil, gameError("input_invalid", "请确认兑换所选代码。")
 		}
 		code := strings.TrimSpace(asText(input["code"]))
-		if !publicCodePattern.MatchString(code) {
+		if !redeemCodePattern.MatchString(code) {
 			return nil, gameError("input_invalid", "兑换码格式无效。")
 		}
 		result, err := client.ExecuteConfirmed(ctx, choice, a.Game.ID+".redeem", map[string]any{"code": code})
@@ -78,7 +78,7 @@ func (a *App) codesView(result map[string]any) View {
 		view.Rows = append(view.Rows, Row{Label: asText(v["code"]), Value: text})
 	}
 	if len(view.Rows) == 0 {
-		view.Note = "当前官方入口没有可读取的兑换码；不代表其他渠道没有发布。"
+		view.Note = "当前官方前瞻入口暂未提供兑换码。"
 	}
 	return view
 }

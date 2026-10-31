@@ -75,7 +75,10 @@ func (c PublicContentClient) getUpTo(ctx context.Context, address string, header
 }
 
 var publicActPattern = regexp.MustCompile(`(?:act_id=|act_id%3[Dd])([A-Za-z0-9]{6,128})`)
-var publicCodePattern = regexp.MustCompile(`^[A-Za-z0-9-]{4,64}$`)
+
+// 官方前瞻会发布中文口令，查询结果按字符数保留汉字、字母、数字和连字符。
+var publicCodePattern = regexp.MustCompile(`^[\p{Han}A-Za-z0-9-]{4,64}$`)
+var redeemCodePattern = regexp.MustCompile(`^[A-Za-z0-9-]{4,64}$`)
 
 func extractPublicActs(value any) []string {
 	raw, _ := json.Marshal(value)
