@@ -89,7 +89,7 @@ ark UID 验证和交换接收已有合成验证，尚未替真人账号操作或
 
 ## 开发与打包
 
-固定快照目录为 `<参考项目/2026-10-24>`：miao-plugin `90c790b556dc34e0cf0c7274127ea9d68e9b2dd9`、StarRail-plugin `3e68a03fccde6e00100536b102e93b31d609a1cf`、ark-plugin `bdced6bf8b1821e0b5e5a96ed4d7e78beda089a1`。Yunzai-genshin、Miao-Yunzai 与 Atlas 保持原提交，完整提交与许可见 [DATA_SOURCES.md](./DATA_SOURCES.md)。资料和计算统一以新快照生成，材料与常规卡池收录至 4.6。
+固定快照目录为 `<参考项目/2026-11-11>`：miao-plugin `9af2f324ac2a2457d41274c45a755fb91ca49685`、StarRail-plugin `3e68a03fccde6e00100536b102e93b31d609a1cf`、ark-plugin `bdced6bf8b1821e0b5e5a96ed4d7e78beda089a1`。Yunzai-genshin、Miao-Yunzai 与 Atlas 保持原提交，完整提交与许可见 [DATA_SOURCES.md](./DATA_SOURCES.md)。资料和计算统一以新快照生成，材料与常规卡池收录至 4.6。
 
 不跟进 StarRail-plugin 自带面板、伤害引擎、双向档案同步、别名及 PanelPic 源切换，也不跟进 miao 的 Tomato 记录页、“全部记录”、多图库源、proShareProfileImg、guoba、TRSS 重启和原神功能；面板与计算继续使用 miao，跃迁记录页继续使用 StarRail-plugin，命令帮助由本插件维护。Atlas 图鉴库仍停在 4.4。
 
@@ -107,7 +107,7 @@ $env:RAYLEA_PLUGIN_BUILD_USE_WORKSPACE='1'
 go run github.com/RayleaBot/RayleaBot/sdk/go/cmd/raylea-plugin build-go --backend ./cmd/starrail --target windows-x64 --include DATA_SOURCES.md=DATA_SOURCES.md
 ```
 
-打包前运行 `python scripts/bundle-artwork.py --references <参考项目/2026-10-24>`，把模板用到的上游图片、字体与资料文件从固定提交复制到 `assets/`（不纳入版本库，构建时随包分发）。SDK v0.7.0 发布前，独立检出仍需相邻的 RayleaBot 仓库。
+打包前运行 `python scripts/bundle-artwork.py --references <参考项目/2026-11-11>`，把模板用到的上游图片、字体与资料文件从固定提交复制到 `assets/`（不纳入版本库，构建时随包分发）。SDK v0.7.0 发布前，独立检出仍需相邻的 RayleaBot 仓库。
 
 另支持 `linux-x64` 和 `macos-arm64`。数据文件位于宿主提供的本插件数据目录内；抽卡记录属于非凭据业务数据，使用原子文件替换保存。
 
