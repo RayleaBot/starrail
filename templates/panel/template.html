@@ -19,7 +19,7 @@
             <div class="value">{{ .value }}</div>
             <div class="value2">
               <span class="base{{ if .zero }} zero{{ end }}">{{ .base }}</span>
-              <span class="plus">+{{ .plus }}</span>
+              {{ if .plus }}<span class="plus">{{ if not .negative }}+{{ end }}{{ .plus }}</span>{{ end }}
             </div>
           </li>
           {{ end }}
@@ -85,9 +85,9 @@
           <span>叠影{{ .affix }}阶</span>
         </div>
         <div class="weapon-attr">
-          <div class="attr i-hp"><span>生命</span>{{ .hp }}</div>
-          <div class="attr i-atk"><span>攻击</span>{{ .atk }}</div>
-          <div class="attr i-def"><span>防御</span>{{ .def }}</div>
+          {{ with .hp }}<div class="attr i-hp"><span>生命</span>{{ . }}</div>{{ end }}
+          {{ with .atk }}<div class="attr i-atk"><span>攻击</span>{{ . }}</div>{{ end }}
+          {{ with .def }}<div class="attr i-def"><span>防御</span>{{ . }}</div>{{ end }}
         </div>
         <div class="weapon-desc">{{ range .desc }}{{ .text }}{{ if .value }}<nobr>{{ .value }}</nobr>{{ end }}{{ end }}</div>
       </div>

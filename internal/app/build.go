@@ -181,6 +181,39 @@ func buildStatNumber(raw string) (float64, bool) {
 	value, err := strconv.ParseFloat(raw, 64)
 	return value, err == nil && !math.IsNaN(value) && !math.IsInf(value, 0) && math.Abs(value) <= 1e8
 }
+func observedAttributes(panel CharacterPanel) map[string]float64 {
+	observed := map[string]float64{}
+	if value, ok := elementDamageBonus(panel); ok {
+		observed["dmg"] = value
+	}
+	for _, stat := range panel.Stats {
+		key := miaoAttributeKeys[stat.ID]
+		if key == "" {
+			continue
+		}
+		if value, ok := buildStatNumber(stat.Value); ok {
+			observed[key] = value
+		}
+		switch key {
+		case "hp", "atk", "def", "speed":
+			if value, ok := buildStatNumber(stat.Base); ok {
+				observed[key+"Base"] = value
+			}
+		}
+	}
+	return observed
+}
+
+func activeTrees(panel CharacterPanel, record reference.Character) []string {
+	trees := []string{}
+	for _, skill := range panel.Skills {
+		if skill.Active && skill.PointType != 2 && skill.ID != "" {
+			trees = append(trees, RecordSkillID(panel, record, skill))
+		}
+	}
+	return trees
+}
+
 func buildProfile(panel CharacterPanel, record reference.Character) (BuildProfile, error) {
 	if !panel.RankKnown || panel.Level < 1 || panel.Rank < 0 || panel.Rank > 6 || (panel.Weapon == nil && !panel.WeaponKnown) {
 		return BuildProfile{}, buildUnavailable("identity")
@@ -194,30 +227,12 @@ func buildProfile(panel CharacterPanel, record reference.Character) (BuildProfil
 		zero := 0
 		w = &PanelEquipment{Promote: &zero, Refinement: 1}
 	}
-	p := BuildProfile{Level: panel.Level, Promote: panel.Promote, Rank: panel.Rank, Weapon: BuildWeapon{ID: w.ID, Name: w.Name, Level: w.Level, Promote: w.Promote, Refinement: w.Refinement}, Talents: map[string]int{}, Trees: []string{}, Attributes: map[string]float64{}, Equipment: []BuildGear{}, EnemyLevel: 103}
+	p := BuildProfile{Level: panel.Level, Promote: panel.Promote, Rank: panel.Rank, Weapon: BuildWeapon{ID: w.ID, Name: w.Name, Level: w.Level, Promote: w.Promote, Refinement: w.Refinement}, Talents: map[string]int{}, Trees: activeTrees(panel, record), Attributes: observedAttributes(panel), Equipment: []BuildGear{}, EnemyLevel: 103}
 	// miao profile-detail passes enemy level 80 for Star Rail.
 	p.EnemyLevel = 80
 
 	if w.ID != "" && (w.Level < 1 || w.Level > 90 || w.Refinement < 1 || w.Refinement > 5) {
 		return p, buildUnavailable("weapon")
-	}
-	keys := map[string]string{"1": "hp", "2": "atk", "3": "def", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "58": "stance"}
-	if value, ok := elementDamageBonus(panel); ok {
-		p.Attributes["dmg"] = value
-	}
-	for _, stat := range panel.Stats {
-		key := keys[stat.ID]
-		if key == "" {
-			continue
-		}
-		if value, ok := buildStatNumber(stat.Value); ok {
-			p.Attributes[key] = value
-		}
-		if slices.Contains([]string{"hp", "atk", "def", "speed"}, key) {
-			if value, ok := buildStatNumber(stat.Base); ok {
-				p.Attributes[key+"Base"] = value
-			}
-		}
 	}
 	for _, key := range []string{"hp", "atk", "def", "hpBase", "atkBase", "defBase", "cpct", "cdmg", "dmg"} {
 		if _, ok := p.Attributes[key]; !ok {
@@ -227,11 +242,6 @@ func buildProfile(panel CharacterPanel, record reference.Character) (BuildProfil
 	talents := asObject(record.Data["talent"])
 	for key, talent := range PanelTalents(panel, record) {
 		p.Talents[key] = talent.Level
-	}
-	for _, skill := range panel.Skills {
-		if skill.Active && skill.PointType != 2 && skill.ID != "" {
-			p.Trees = append(p.Trees, RecordSkillID(panel, record, skill))
-		}
 	}
 
 	for key, raw := range talents {
@@ -464,6 +474,7 @@ func (a *App) panelView(ctx context.Context, event *rayleabot.EventContext, pane
 	if a.panel != nil {
 		if a.Game.Calc != nil {
 			image.Record, _ = findReferenceCharacter(a.Game.Calc, panel)
+			image.Numbers = a.Game.profileNumbers(ctx, panel, image.Record)
 		}
 		// As miao, 原图 then answers with the picture the panel drew.
 		var ref string

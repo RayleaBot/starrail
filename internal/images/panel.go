@@ -39,11 +39,11 @@ var elementClasses = map[string]string{"火": "pyro", "冰": "cryo", "风": "ane
 var elementDamageIDs = map[string]string{"物理": "12", "火": "14", "冰": "16", "雷": "18", "风": "20", "量子": "22", "虚数": "24"}
 
 // panelAttrs are the attribute rows of miao's Star Rail panel, with the
-// official property IDs they read; Elation has no official field yet.
+// official property IDs they read.
 var panelAttrs = []struct{ key, title, id string }{
 	{"hp", "生命值", "1"}, {"atk", "攻击力", "2"}, {"def", "防御力", "3"}, {"speed", "速度", "4"},
 	{"cpct", "暴击率", "5"}, {"cdmg", "暴击伤害", "6"}, {"dmg", "伤害加成", ""}, {"stance", "击破特攻", "58"},
-	{"effPct", "效果命中", "10"}, {"effDef", "效果抵抗", "11"}, {"heal", "治疗加成", "7"}, {"joy", "欢愉度", ""},
+	{"effPct", "效果命中", "10"}, {"effDef", "效果抵抗", "11"}, {"heal", "治疗加成", "7"}, {"joy", "欢愉度", "71"},
 }
 
 // shortTitles shortens the combined substat list as miao does.
@@ -128,11 +128,16 @@ func Panel(context app.ImageContext, image app.PanelImage) (app.Image, bool) {
 	data := map[string]any{
 		"mode": "profile", "elem": elem, "name": record.Name, "uid": image.UID, "level": panel.Level, "cons": panel.Rank,
 		"memosprite": len(talentKeys) > 4, "talents": talents, "trees": traces(panel, record, images, add),
-		"attrs": attributes(panel, record), "cons_icons": cons,
+		"attrs": attributes(panel, record, image.Numbers), "cons_icons": cons,
 		"data_source": cmp.Or(panelSources[panel.Source], panel.Source), "update_time": updated.In(chinaTime).Format("2006-01-02 15:04:05"),
 		"damage_hint": context.Game.Prefix + abbreviation(context.Catalog, record) + "伤害",
 	}
 	if weapon := panel.Weapon; weapon != nil {
+		if len(image.Numbers.Weapon) > 0 {
+			display := *weapon
+			display.Main, display.Sub = image.Numbers.Weapon, nil
+			weapon = &display
+		}
 		data["weapon"] = lightCone(context, weapon, add)
 	}
 	if detail := panel.ScoreDetail; detail != nil {
@@ -233,7 +238,7 @@ func traces(panel app.CharacterPanel, record reference.Character, images string,
 	return result
 }
 
-func attributes(panel app.CharacterPanel, record reference.Character) []any {
+func attributes(panel app.CharacterPanel, record reference.Character, numbers app.ProfileNumbers) []any {
 	stats := map[string]app.PanelStat{}
 	for _, stat := range panel.Stats {
 		stats[stat.ID] = stat
@@ -249,10 +254,14 @@ func attributes(panel app.CharacterPanel, record reference.Character) []any {
 			id = elementDamageIDs[record.Element]
 		}
 		stat, known := stats[id]
+		if calculated, ok := numbers.Stats[row.key]; ok {
+			stat, known = calculated, true
+		}
 		item := map[string]any{"key": row.key, "title": row.title}
 		if known {
 			base := statText(stat.Base)
 			item["value"], item["base"], item["plus"], item["zero"] = statText(stat.Value), base, statText(stat.Added), base == "0.0%"
+			item["negative"] = strings.HasPrefix(stat.Added, "-")
 		}
 		if w := weights[row.key]; w > 0 {
 			item["weight"] = strconv.FormatFloat(w, 'f', -1, 64)
@@ -561,8 +570,7 @@ func damageMatrixData(matrix app.DamageMatrix) map[string]any {
 	return map[string]any{"index": matrix.Index, "title": matrix.Title, "avg": comma(matrix.Avg), "dmg": critical(matrix.Dmg), "attrs": matrix.Attrs, "rows": rows}
 }
 
-// statText shows official numbers the way miao does: thousands separators on
-// whole numbers, percentages unchanged.
+// statText adds thousands separators while preserving the source precision.
 func statText(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" || strings.HasSuffix(value, "%") {
@@ -571,6 +579,9 @@ func statText(value string) string {
 	number, err := strconv.ParseFloat(strings.ReplaceAll(value, ",", ""), 64)
 	if err != nil {
 		return value
+	}
+	if _, fraction, ok := strings.Cut(value, "."); ok && !strings.ContainsAny(value, "eE") {
+		return comma(math.Trunc(number)) + "." + fraction
 	}
 	return comma(number)
 }

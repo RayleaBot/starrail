@@ -126,7 +126,7 @@ func (a *App) scorePanel(ctx context.Context, panel CharacterPanel) (CharacterPa
 }
 
 // miaoAttributeKeys maps official panel property IDs to miao attribute keys.
-var miaoAttributeKeys = map[string]string{"1": "hp", "2": "atk", "3": "def", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "58": "stance"}
+var miaoAttributeKeys = map[string]string{"1": "hp", "2": "atk", "3": "def", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "58": "stance", "71": "joy"}
 
 // miaoRelics are a panel's relics as miao scores them, by slot: miao reads a
 // relic of its player data (ArtisAttr) as the main stat at the relic's level

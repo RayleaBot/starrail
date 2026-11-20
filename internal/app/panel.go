@@ -87,7 +87,7 @@ func plainGameText(value string) string {
 	return html.UnescapeString(markup.ReplaceAllString(value, ""))
 }
 
-var srStatKeys = map[string]string{"1": "hpPlus", "2": "atkPlus", "3": "defPlus", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "12": "physical", "14": "fire", "16": "ice", "18": "lightning", "20": "wind", "22": "quantum", "24": "imaginary", "27": "hp", "29": "atk", "31": "def", "32": "hpPlus", "33": "atkPlus", "34": "defPlus", "51": "speed", "52": "cpct", "53": "cdmg", "54": "recharge", "55": "heal", "56": "effPct", "57": "effDef", "58": "stance", "59": "stance"}
+var srStatKeys = map[string]string{"1": "hpPlus", "2": "atkPlus", "3": "defPlus", "4": "speed", "5": "cpct", "6": "cdmg", "7": "heal", "9": "recharge", "10": "effPct", "11": "effDef", "12": "physical", "14": "fire", "16": "ice", "18": "lightning", "20": "wind", "22": "quantum", "24": "imaginary", "27": "hp", "29": "atk", "31": "def", "32": "hpPlus", "33": "atkPlus", "34": "defPlus", "51": "speed", "52": "cpct", "53": "cdmg", "54": "recharge", "55": "heal", "56": "effPct", "57": "effDef", "58": "stance", "59": "stance", "71": "joy"}
 
 func panelStats(raw []any, metadata map[string]any, valueKey string) []PanelStat {
 	result := []PanelStat{}
